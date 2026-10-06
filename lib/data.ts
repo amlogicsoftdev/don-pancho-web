@@ -1,4 +1,4 @@
-import { CategoryFilter, Product, SiteConfig } from './types'
+import { Product, SiteConfig } from './types'
 
 export const SITE_CONFIG: SiteConfig = {
   name: 'Don Pancho & Burger',
@@ -15,16 +15,9 @@ export const SITE_CONFIG: SiteConfig = {
   },
 }
 
+// MENÚ INICIAL PARA EL SEED (npm run db:seed). La web ya no lo lee: la carta sale de la
+// base (lib/menu/queries.ts). Cambiar esto no cambia la carta de una base ya cargada.
 export const CATEGORIES = ['Todas', 'Hamburguesas', 'Panchos', 'Combos'] as const
-
-/**
- * Categoría que corresponde al parámetro `?categoria=` de la carta (por ejemplo,
- * `/menu?categoria=panchos`). Si falta o no coincide con ninguna, devuelve 'Todas'.
- */
-export function categoryFromParam(value: string | string[] | undefined): CategoryFilter {
-  const raw = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase()
-  return CATEGORIES.find((category) => category.toLowerCase() === raw) ?? 'Todas'
-}
 
 export const PRODUCTS: Product[] = [
   {

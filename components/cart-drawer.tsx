@@ -28,6 +28,8 @@ interface CartDrawerProps {
   onUpdateQuantity: (id: number, delta: number) => void
   onRemoveItem: (id: number) => void
   onOrderCreated: () => void
+  /** Productos que estaban en el carrito y ya no están en el menú. */
+  unavailableCount?: number
 }
 
 export function CartDrawer({
@@ -37,6 +39,7 @@ export function CartDrawer({
   onUpdateQuantity,
   onRemoveItem,
   onOrderCreated,
+  unavailableCount = 0,
 }: CartDrawerProps) {
   const router = useRouter()
   const [orderType, setOrderType] = useState<'delivery' | 'retiro'>('delivery')
@@ -191,6 +194,13 @@ export function CartDrawer({
 
         {/* Contenido del carrito */}
         <div className="flex-1 overflow-y-auto p-6">
+          {!confirmation && unavailableCount > 0 && (
+            <p role="status" className="mb-4 rounded-xl border border-pancho-orange/40 bg-pancho-orange/10 p-3 text-sm text-pancho-cream">
+              {unavailableCount === 1
+                ? 'Un producto de tu pedido ya no está disponible y lo sacamos.'
+                : `${unavailableCount} productos de tu pedido ya no están disponibles y los sacamos.`}
+            </p>
+          )}
           {confirmation ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-16">
               <CheckCircle2 className="w-16 h-16 text-pancho-orange mb-4" />

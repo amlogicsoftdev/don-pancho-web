@@ -7,8 +7,9 @@ import { ArrowLeft, Plus, Check } from 'lucide-react'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { CartDrawer } from '@/components/cart-drawer'
-import { PRODUCTS, CATEGORIES, formatPrice } from '@/lib/data'
-import { Product, CategoryFilter } from '@/lib/types'
+import { formatPrice } from '@/lib/data'
+import { Category, Product, CategoryFilter } from '@/lib/types'
+import { TODAS } from '@/lib/menu/categoria'
 import { useCart } from '@/lib/cart'
 import { useMounted } from '@/hooks/use-mounted'
 import { SplitLines } from '@/components/split-lines'
@@ -51,30 +52,37 @@ const BURST_PARTICLES = [
   { x: -58, y: -22, size: 5, delay: 30 },
 ]
 
-// Ángulos de rotación orgánicos únicos para cada plato (grados numéricos exactos)
-const ROTATION_ANGLES: Record<number, number> = {
-  1: -2.8,
-  2: 2.6,
-  3: -1.8,
-  4: 3.2,
-  5: -3.0,
-  6: 2.4,
-  7: -2.2,
-  8: 2.0,
-}
+// Ángulos de rotación orgánicos para las fotos: se reparten según la posición en la carta
+const ROTATION_ANGLES = [-2.8, 2.6, -1.8, 3.2, -3.0, 2.4, -2.2, 2.0]
 
 interface MenuViewProps {
+  /** Categorías activas, en orden (vienen de la base). */
+  categories: Category[]
+  /** Productos activos, en orden (vienen de la base). */
+  products: Product[]
   /** Categoría con la que abre la carta; la define el parámetro `?categoria=` de la URL. */
   initialCategory?: CategoryFilter
 }
 
-export function MenuView({ initialCategory = 'Todas' }: MenuViewProps) {
-  const { cart, totalCartCount, handleAddToCart, handleUpdateQuantity, handleRemoveItem, handleClearCart } = useCart()
+export function MenuView({ categories, products, initialCategory = TODAS }: MenuViewProps) {
+  const {
+    cart,
+    totalCartCount,
+    unavailableCount,
+    handleAddToCart,
+    handleUpdateQuantity,
+    handleRemoveItem,
+    handleClearCart,
+  } = useCart(products)
   const mounted = useMounted()
   const [cartOpen, setCartOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>(initialCategory)
   const [hoveredProduct, setHoveredProduct] = useState<Product | null>(null)
-  const [activePhotoProduct, setActivePhotoProduct] = useState<Product>(PRODUCTS[0])
+  const [activePhotoProduct, setActivePhotoProduct] = useState<Product | null>(products[0] ?? null)
+
+  const filterOptions: CategoryFilter[] = [TODAS, ...categories.map((c) => c.name)]
+  const rotationFor = (product: Product) =>
+    ROTATION_ANGLES[Math.max(0, products.indexOf(product)) % ROTATION_ANGLES.length]
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [justAddedId, setJustAddedId] = useState<number | null>(null)
 
@@ -217,9 +225,9 @@ export function MenuView({ initialCategory = 'Todas' }: MenuViewProps) {
     }
   }
 
-  const filteredProducts = activeCategory === 'Todas'
-    ? PRODUCTS
-    : PRODUCTS.filter((p) => p.category === activeCategory)
+  const filteredProducts = activeCategory === TODAS
+    ? products
+    : products.filter((p) => p.category === activeCategory)
 
   const handleAddProduct = (product: Product) => {
     handleAddToCart(product)
@@ -296,7 +304,7 @@ export function MenuView({ initialCategory = 'Todas' }: MenuViewProps) {
                 style={{ opacity: 0 }}
               />
 
-              {CATEGORIES.map((category) => {
+              {filterOptions.map((category) => {
                 const isActive = activeCategory === category
                 const isExploding = explodingCategory === category
                 return (
@@ -347,6 +355,11 @@ export function MenuView({ initialCategory = 'Todas' }: MenuViewProps) {
           style={{ '--row-base': `${rowsDelay}ms` } as React.CSSProperties}
           className="max-w-3xl mx-auto w-full divide-y divide-neutral-800/60 relative"
         >
+          {filteredProducts.length === 0 && (
+            <p className="py-16 text-center text-neutral-400">
+              Todavía no hay productos cargados en la carta.
+            </p>
+          )}
           {filteredProducts.map((product, index) => {
             const isHovered = hoveredProduct?.id === product.id
             return (
@@ -435,7 +448,7 @@ export function MenuView({ initialCategory = 'Todas' }: MenuViewProps) {
                     <div
                       className="relative bg-pancho-card p-1.5 pb-2.5 rounded-xs shadow-[0_10px_25px_rgba(0,0,0,0.85)] border border-[#2E2E2E] transition-transform duration-300 group-hover:scale-105"
                       style={{
-                        transform: `rotate(${ROTATION_ANGLES[product.id] ?? 2}deg)`,
+                        transform: `rotate(${rotationFor(product)}deg)`,
                       }}
                     >
                       {/* Cinta masking tape realista con bordes rasgados a mano y textura crepé */}
@@ -565,7 +578,7 @@ export function MenuView({ initialCategory = 'Todas' }: MenuViewProps) {
         {/* =========================================================
             Fotografía Flotante Dinámica con Rotación Suave (Desktop)
         ========================================================= */}
-        {mounted && (
+        {mounted && activePhotoProduct && (
           <div
             aria-hidden="true"
             className="hidden lg:block pointer-events-none fixed top-0 left-0 z-50 select-none"
@@ -584,7 +597,7 @@ export function MenuView({ initialCategory = 'Todas' }: MenuViewProps) {
               style={{
                 opacity: hoveredProduct ? 1 : 0,
                 transform: hoveredProduct
-                  ? `translateY(0px) scale(1) rotate(${ROTATION_ANGLES[activePhotoProduct.id] ?? 2}deg)`
+                  ? `translateY(0px) scale(1) rotate(${rotationFor(activePhotoProduct)}deg)`
                   : 'translateY(24px) scale(0.75) rotate(-7deg)',
               }}
             >
@@ -654,6 +667,7 @@ export function MenuView({ initialCategory = 'Todas' }: MenuViewProps) {
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
         onOrderCreated={handleClearCart}
+        unavailableCount={unavailableCount}
       />
     </div>
   )
