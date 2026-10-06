@@ -45,14 +45,14 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
 
   return (
     <section className="mx-auto max-w-3xl space-y-6">
-      <Link href="/admin/pedidos" className="text-sm text-cheesy-muted hover:text-cheesy-cream">
+      <Link href="/admin/pedidos" className="text-sm text-pancho-muted hover:text-pancho-cream">
         ← Volver a pedidos
       </Link>
 
       <header className="flex flex-wrap items-center gap-3">
         <h1 className="text-3xl">Pedido N° {formatearNumero(pedido.numero)}</h1>
         <InsigniaEstado estado={pedido.estado} />
-        <span className="text-sm text-cheesy-muted">{formatearFechaHora(pedido.creadoEn)}</span>
+        <span className="text-sm text-pancho-muted">{formatearFechaHora(pedido.creadoEn)}</span>
       </header>
 
       {cancelacion && (
@@ -62,17 +62,17 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-cheesy-surface p-4">
+        <div className="rounded-xl border border-white/10 bg-pancho-surface p-4">
           <h2 className="mb-2 text-lg">Cliente</h2>
           <p className="font-semibold">{pedido.clienteNombre}</p>
-          <p className="text-sm text-cheesy-muted">Tel. {pedido.clienteTelefono}</p>
+          <p className="text-sm text-pancho-muted">Tel. {pedido.clienteTelefono}</p>
           <p className="mt-2 text-sm">{ETIQUETA_MODALIDAD[pedido.modalidad]}</p>
           {pedido.direccion && <p className="text-sm">📍 {pedido.direccion}</p>}
-          {pedido.referencia && <p className="text-sm text-cheesy-muted">Ref.: {pedido.referencia}</p>}
+          {pedido.referencia && <p className="text-sm text-pancho-muted">Ref.: {pedido.referencia}</p>}
           {pedido.notas && <p className="mt-2 text-sm">📝 {pedido.notas}</p>}
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-cheesy-surface p-4">
+        <div className="rounded-xl border border-white/10 bg-pancho-surface p-4">
           <h2 className="mb-2 text-lg">Pago</h2>
           <p className="font-semibold">{ETIQUETA_PAGO[pedido.metodoPago]}</p>
           {pedido.metodoPago === 'transferencia' && (
@@ -82,24 +82,24 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
           )}
           <dl className="mt-2 space-y-1 text-sm">
             <div className="flex justify-between">
-              <dt className="text-cheesy-muted">Subtotal</dt>
+              <dt className="text-pancho-muted">Subtotal</dt>
               <dd>{formatearPrecio(pedido.subtotal)}</dd>
             </div>
             {pedido.descuentoMonto > 0 && (
               <div className="flex justify-between">
-                <dt className="text-cheesy-muted">Descuento ({pedido.descuentoPorcentaje}%)</dt>
+                <dt className="text-pancho-muted">Descuento ({pedido.descuentoPorcentaje}%)</dt>
                 <dd>-{formatearPrecio(pedido.descuentoMonto)}</dd>
               </div>
             )}
             <div className="flex justify-between font-display text-xl">
               <dt>Total</dt>
-              <dd className="text-cheesy-yellow">{formatearPrecio(pedido.total)}</dd>
+              <dd className="text-pancho-orange">{formatearPrecio(pedido.total)}</dd>
             </div>
           </dl>
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-cheesy-surface p-4">
+      <div className="rounded-xl border border-white/10 bg-pancho-surface p-4">
         <h2 className="mb-2 text-lg">Productos</h2>
         <ul className="divide-y divide-white/10">
           {items.map((item) => (
@@ -108,7 +108,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
                 <p>
                   <span className="font-bold">{item.cantidad}x</span> {item.nombre}
                 </p>
-                {item.aclaraciones && <p className="text-sm text-cheesy-muted">{item.aclaraciones}</p>}
+                {item.aclaraciones && <p className="text-sm text-pancho-muted">{item.aclaraciones}</p>}
               </div>
               <span>{formatearPrecio(item.precioUnitario * item.cantidad)}</span>
             </li>
@@ -116,7 +116,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
         </ul>
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-cheesy-surface p-4">
+      <div className="rounded-xl border border-white/10 bg-pancho-surface p-4">
         <h2 className="mb-3 text-lg">Acciones</h2>
         <AccionesPedido
           pedidoId={pedido.id}
@@ -128,7 +128,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
         />
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-cheesy-surface p-4">
+      <div className="rounded-xl border border-white/10 bg-pancho-surface p-4">
         <h2 className="mb-2 text-lg">Historial</h2>
         <ol className="space-y-1 text-sm">
           {historial.map((h) => (
@@ -136,9 +136,9 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
               <span>
                 {h.estadoAnterior ? `${ETIQUETA_ESTADO[h.estadoAnterior]} → ` : ''}
                 <strong>{ETIQUETA_ESTADO[h.estadoNuevo]}</strong>
-                <span className="text-cheesy-muted"> · {h.usuario ?? 'Sistema (pedido web)'}</span>
+                <span className="text-pancho-muted"> · {h.usuario ?? 'Sistema (pedido web)'}</span>
               </span>
-              <span className="text-cheesy-muted">{formatearFechaHora(h.creadoEn)}</span>
+              <span className="text-pancho-muted">{formatearFechaHora(h.creadoEn)}</span>
             </li>
           ))}
         </ol>

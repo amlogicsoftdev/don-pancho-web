@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { cargarGasto } from '@/lib/caja/actions'
 import { CATEGORIAS_GASTO } from '@/lib/caja/categorias'
 
-const CAMPO = 'h-9 w-full rounded-lg border border-white/15 bg-cheesy-black px-2 outline-none focus:border-cheesy-yellow'
+const CAMPO = 'h-9 w-full rounded-lg border border-white/15 bg-pancho-black px-2 outline-none focus:border-pancho-orange'
 
 export function FormularioGasto({ diaPorDefecto }: { diaPorDefecto: string }) {
   const router = useRouter()
@@ -40,19 +40,19 @@ export function FormularioGasto({ diaPorDefecto }: { diaPorDefecto: string }) {
   }
 
   return (
-    <form onSubmit={enviar} className="space-y-3 rounded-xl border border-white/10 bg-cheesy-surface p-4">
+    <form onSubmit={enviar} className="space-y-3 rounded-xl border border-white/10 bg-pancho-surface p-4">
       <h2 className="text-lg">Cargar un gasto</h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <label className="text-sm">
-          <span className="mb-1 block text-cheesy-muted">Fecha</span>
+          <span className="mb-1 block text-pancho-muted">Fecha</span>
           <input type="date" name="fecha" required defaultValue={diaPorDefecto} className={CAMPO} />
         </label>
         <label className="text-sm lg:col-span-2">
-          <span className="mb-1 block text-cheesy-muted">Descripción</span>
+          <span className="mb-1 block text-pancho-muted">Descripción</span>
           <input name="descripcion" required maxLength={200} placeholder="Ej.: carne, pan, gas…" className={CAMPO} />
         </label>
         <label className="text-sm">
-          <span className="mb-1 block text-cheesy-muted">Categoría</span>
+          <span className="mb-1 block text-pancho-muted">Categoría</span>
           <select name="categoria" required defaultValue="Insumos" className={CAMPO}>
             {CATEGORIAS_GASTO.map((c) => (
               <option key={c}>{c}</option>
@@ -60,19 +60,19 @@ export function FormularioGasto({ diaPorDefecto }: { diaPorDefecto: string }) {
           </select>
         </label>
         <label className="text-sm">
-          <span className="mb-1 block text-cheesy-muted">Monto ($)</span>
+          <span className="mb-1 block text-pancho-muted">Monto ($)</span>
           <input name="monto" type="number" required min={1} step={1} inputMode="numeric" className={CAMPO} />
         </label>
       </div>
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-sm">
-          <span className="mb-1 block text-cheesy-muted">Pagado con</span>
+          <span className="mb-1 block text-pancho-muted">Pagado con</span>
           <select name="metodoPago" defaultValue="efectivo" className={CAMPO}>
             <option value="efectivo">Efectivo</option>
             <option value="transferencia">Transferencia</option>
           </select>
         </label>
-        <Button type="submit" size="lg" disabled={enCurso} className="h-9 bg-cheesy-yellow px-4 text-cheesy-black hover:bg-cheesy-yellow-bright">
+        <Button type="submit" size="lg" disabled={enCurso} className="h-9 bg-pancho-orange px-4 text-pancho-black hover:bg-pancho-orange-deep">
           {enCurso ? 'Guardando…' : 'Cargar gasto'}
         </Button>
         {aviso && (
@@ -86,7 +86,7 @@ export function FormularioGasto({ diaPorDefecto }: { diaPorDefecto: string }) {
           </p>
         )}
       </div>
-      <p className="text-xs text-cheesy-muted">Los gastos en efectivo se descuentan del efectivo esperado en el cierre de caja.</p>
+      <p className="text-xs text-pancho-muted">Los gastos en efectivo se descuentan del efectivo esperado en el cierre de caja.</p>
     </form>
   )
 }

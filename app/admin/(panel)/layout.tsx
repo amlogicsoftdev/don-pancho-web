@@ -22,9 +22,9 @@ export default async function PanelLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-dvh">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-cheesy-surface px-4 py-3 print:hidden">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-pancho-surface px-4 py-3 print:hidden">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span className="font-display text-xl text-cheesy-yellow">Panel</span>
+          <span className="font-display text-xl text-pancho-orange">Panel</span>
           <nav className="flex flex-wrap items-center gap-1" aria-label="Secciones del panel">
             <AvisoPedidos pendientesIniciales={pendientes} />
             <Link href="/admin/mostrador" className={ENLACE}>
@@ -49,7 +49,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
           </nav>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <span className="text-cheesy-muted">
+          <span className="text-pancho-muted">
             {usuario.nombre} · {esDueno ? 'Dueño' : 'Empleado'}
           </span>
           <LogoutButton />

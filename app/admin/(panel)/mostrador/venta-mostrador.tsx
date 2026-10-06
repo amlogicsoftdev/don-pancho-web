@@ -67,12 +67,12 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
     <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
       <div className="space-y-4">
         {menu.length === 0 && (
-          <p className="rounded-xl border border-white/10 bg-cheesy-surface p-4 text-cheesy-muted">
+          <p className="rounded-xl border border-white/10 bg-pancho-surface p-4 text-pancho-muted">
             No hay productos activos en el menú.
           </p>
         )}
         {menu.map((categoria) => (
-          <div key={categoria.id} className="rounded-xl border border-white/10 bg-cheesy-surface p-4">
+          <div key={categoria.id} className="rounded-xl border border-white/10 bg-pancho-surface p-4">
             <h2 className="mb-2 text-lg">{categoria.nombre}</h2>
             <ul className="divide-y divide-white/10">
               {categoria.productos.map((p) => {
@@ -81,7 +81,7 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
                   <li key={p.id} className="flex items-center justify-between gap-3 py-2">
                     <div className="min-w-0">
                       <p className="truncate">{p.nombre}</p>
-                      <p className="text-sm text-cheesy-muted">{formatearPrecio(p.precio)}</p>
+                      <p className="text-sm text-pancho-muted">{formatearPrecio(p.precio)}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
@@ -106,7 +106,7 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
         ))}
       </div>
 
-      <aside className="h-fit space-y-4 rounded-xl border border-white/10 bg-cheesy-surface p-4 lg:sticky lg:top-4">
+      <aside className="h-fit space-y-4 rounded-xl border border-white/10 bg-pancho-surface p-4 lg:sticky lg:top-4">
         <h2 className="text-lg">Venta</h2>
 
         {registrada && (
@@ -121,7 +121,7 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
         )}
 
         {lineas.length === 0 ? (
-          <p className="text-sm text-cheesy-muted">Todavía no agregaste productos.</p>
+          <p className="text-sm text-pancho-muted">Todavía no agregaste productos.</p>
         ) : (
           <ul className="space-y-1 text-sm">
             {lineas.map((p) => (
@@ -136,8 +136,8 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
         )}
 
         <div className="flex items-baseline justify-between border-t border-white/10 pt-3">
-          <span className="text-cheesy-muted">Total</span>
-          <span className="font-display text-2xl text-cheesy-yellow">{formatearPrecio(total)}</span>
+          <span className="text-pancho-muted">Total</span>
+          <span className="font-display text-2xl text-pancho-orange">{formatearPrecio(total)}</span>
         </div>
 
         <fieldset>
@@ -151,8 +151,8 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
                 aria-pressed={metodoPago === metodo}
                 className={`rounded-lg border px-3 py-2 text-sm font-semibold capitalize ${
                   metodoPago === metodo
-                    ? 'border-cheesy-yellow bg-cheesy-yellow text-cheesy-black'
-                    : 'border-white/15 text-cheesy-muted hover:text-cheesy-cream'
+                    ? 'border-pancho-orange bg-pancho-orange text-pancho-black'
+                    : 'border-white/15 text-pancho-muted hover:text-pancho-cream'
                 }`}
               >
                 {metodo}
@@ -167,7 +167,7 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             maxLength={80}
-            className="h-9 w-full rounded-lg border border-white/15 bg-cheesy-black px-3 outline-none focus:border-cheesy-yellow"
+            className="h-9 w-full rounded-lg border border-white/15 bg-pancho-black px-3 outline-none focus:border-pancho-orange"
           />
         </label>
 
@@ -181,7 +181,7 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
           size="lg"
           disabled={enCurso || lineas.length === 0}
           onClick={registrar}
-          className="h-10 w-full bg-cheesy-yellow text-cheesy-black hover:bg-cheesy-yellow-bright"
+          className="h-10 w-full bg-pancho-orange text-pancho-black hover:bg-pancho-orange-deep"
         >
           {enCurso ? 'Registrando…' : 'Registrar venta'}
         </Button>

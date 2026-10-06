@@ -6,7 +6,6 @@ import {
   X,
   Plus,
   Minus,
-  ArrowRight,
   Trash2,
   ShoppingCart,
   Banknote,
@@ -20,6 +19,7 @@ import {
 } from 'lucide-react'
 import { CartItem } from '@/lib/types'
 import { formatPrice, SITE_CONFIG } from '@/lib/data'
+import { PanchoButton } from './pancho-button'
 
 interface CartDrawerProps {
   items: CartItem[]
@@ -56,7 +56,7 @@ export function CartDrawer({
 
   useEffect(() => {
     try {
-      const savedAddress = localStorage.getItem('cheesybite_address')
+      const savedAddress = localStorage.getItem('donpancho_address')
       // Se lee recién al montar para que el HTML del servidor coincida con el del navegador.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       if (savedAddress) setAddress(savedAddress)
@@ -76,7 +76,7 @@ export function CartDrawer({
   const handleAddressChange = (val: string) => {
     setAddress(val)
     try {
-      localStorage.setItem('cheesybite_address', val)
+      localStorage.setItem('donpancho_address', val)
     } catch {}
   }
 
@@ -164,7 +164,7 @@ export function CartDrawer({
       {/* Panel lateral del carrito */}
       <aside
         aria-label="Tu pedido"
-        className={`fixed top-0 right-0 z-60 h-full w-full max-w-md bg-[#161616] border-l border-neutral-800 flex flex-col shadow-2xl transition-transform duration-300 ease-out transform-gpu will-change-transform ${
+        className={`fixed top-0 right-0 z-60 h-full w-full max-w-md bg-[#161616] border-l border-neutral-800 flex flex-col shadow-2xl transition-transform duration-400 ease-(--ease-drawer) transform-gpu will-change-transform ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         style={{
@@ -175,8 +175,8 @@ export function CartDrawer({
         {/* Cabecera del carrito */}
         <div className="flex items-center justify-between p-6 border-b border-neutral-800">
           <div>
-            <h2 className="text-2xl font-display font-black text-white flex items-center gap-2">
-              Tu pedido <span className="text-neutral-400 font-sans text-base font-normal">({totalCount})</span>
+            <h2 className="text-3xl font-heading text-white flex items-center gap-2">
+              Tu pedido <span className="text-neutral-400 font-sans text-base font-normal normal-case tracking-normal">({totalCount})</span>
             </h2>
           </div>
 
@@ -193,57 +193,33 @@ export function CartDrawer({
         <div className="flex-1 overflow-y-auto p-6">
           {confirmation ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-16">
-              <CheckCircle2 className="w-16 h-16 text-cheesy-yellow mb-4" />
-              <h3 className="font-display font-bold text-2xl text-white mb-2">¡Recibimos tu pedido!</h3>
+              <CheckCircle2 className="w-16 h-16 text-pancho-orange mb-4" />
+              <h3 className="font-heading text-3xl text-white mb-2">¡Recibimos tu pedido!</h3>
               <p className="text-neutral-300 mb-1">
-                Pedido <span className="font-bold text-cheesy-yellow">N° {String(confirmation.numero).padStart(4, '0')}</span>
+                Pedido <span className="font-bold text-pancho-orange">N° {String(confirmation.numero).padStart(4, '0')}</span>
               </p>
               <p className="text-neutral-400 text-sm mb-6">Total: {formatPrice(confirmation.total)}</p>
               <p className="text-neutral-400 text-sm max-w-xs mb-6">
                 El local te lo va a confirmar por WhatsApp al número que nos dejaste.
               </p>
-              <button
-                onClick={handleCloseConfirmation}
-                className="px-6 py-3 rounded-xl bg-cheesy-yellow text-cheesy-black font-bold cursor-pointer"
-              >
+              <PanchoButton onClick={handleCloseConfirmation} variant="orange" block className="max-w-xs">
                 Listo
-              </button>
+              </PanchoButton>
             </div>
           ) : items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-16">
               <div className="w-20 h-20 rounded-full bg-neutral-800/80 border border-neutral-700 flex items-center justify-center text-neutral-400 mb-4 animate-float">
-                <ShoppingCart className="w-10 h-10 text-cheesy-yellow" />
+                <ShoppingCart className="w-10 h-10 text-pancho-orange" />
               </div>
-              <h3 className="font-display font-bold text-xl text-white mb-2">
+              <h3 className="font-heading text-2xl text-white mb-2">
                 Tu carrito está vacío
               </h3>
               <p className="text-neutral-400 text-sm max-w-xs mb-6">
                 Elegí tus burgers favoritas del menú y armá tu pedido en unos pocos clics.
               </p>
-              <button
-                onClick={handleAddMore}
-                className="group relative w-full max-w-xs flex items-center justify-center gap-2.5 pt-4 pb-7 px-6 text-cheesy-black font-sans font-bold text-base transition-transform duration-200 cursor-pointer hover:scale-[1.015] active:scale-[0.98] select-none"
-              >
-                {/* Fondo artesanal con forma orgánica de queso cheddar derretido */}
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0 pointer-events-none z-0"
-                >
-                  <svg
-                    viewBox="0 0 340 88"
-                    preserveAspectRatio="none"
-                    className="w-full h-full drop-shadow-[0_8px_18px_rgba(245,185,0,0.22)] transition-transform duration-300 group-hover:scale-y-[1.02]"
-                  >
-                    <path
-                      d="M 16,13 C 42,8 68,14 100,9 C 132,4 165,11 198,7 C 232,3 268,10 295,7 C 314,5 328,10 334,18 C 340,26 339,38 335,48 C 331,58 322,62 312,64 C 300,66 292,72 284,79 C 276,86 268,84 260,74 C 252,62 242,67 232,69 C 220,71 210,65 198,63 C 186,61 176,72 168,81 C 160,88 150,86 142,75 C 134,58 124,66 112,68 C 100,70 90,64 78,63 C 66,62 56,73 46,78 C 36,82 28,76 22,66 C 14,54 4,46 2,34 C 0,22 6,15 16,13 Z"
-                      className="fill-cheesy-yellow group-hover:fill-cheesy-yellow-bright transition-colors duration-200"
-                    />
-                  </svg>
-                </div>
-
-                <span className="relative z-10">Ver el menú</span>
-                <ArrowRight className="relative z-10 w-5 h-5 ml-1 transition-transform duration-200 group-hover:translate-x-1" />
-              </button>
+              <PanchoButton onClick={handleAddMore} variant="orange" block className="max-w-xs">
+                Ver el menú
+              </PanchoButton>
             </div>
           ) : (
             <div>
@@ -251,7 +227,7 @@ export function CartDrawer({
               <div className="bg-neutral-900/50 border border-neutral-800/80 rounded-2xl p-4 space-y-4 mb-6">
                 {/* Datos del cliente: el local los usa para confirmarle el pedido */}
                 <div className="space-y-2.5">
-                  <span className="block px-1 text-xs font-bold uppercase tracking-wider text-neutral-400 font-sans">
+                  <span className="block px-1 text-xs font-bold uppercase tracking-[0.12em] text-neutral-400 font-sans">
                     Tus datos
                   </span>
                   <div className="relative flex items-center">
@@ -264,7 +240,7 @@ export function CartDrawer({
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       placeholder="Tu nombre"
-                      className="w-full bg-neutral-950 border border-neutral-800 focus:border-cheesy-yellow/70 focus:ring-1 focus:ring-cheesy-yellow/50 rounded-xl pl-9 pr-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 outline-none transition-all"
+                      className="w-full bg-neutral-950 border border-neutral-800 focus:border-pancho-orange/70 focus:ring-1 focus:ring-pancho-orange/50 rounded-xl pl-9 pr-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 outline-none transition-all"
                     />
                   </div>
                   <div className="relative flex items-center">
@@ -278,7 +254,7 @@ export function CartDrawer({
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
                       placeholder="Tu teléfono (para confirmarte el pedido)"
-                      className="w-full bg-neutral-950 border border-neutral-800 focus:border-cheesy-yellow/70 focus:ring-1 focus:ring-cheesy-yellow/50 rounded-xl pl-9 pr-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 outline-none transition-all"
+                      className="w-full bg-neutral-950 border border-neutral-800 focus:border-pancho-orange/70 focus:ring-1 focus:ring-pancho-orange/50 rounded-xl pl-9 pr-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 outline-none transition-all"
                     />
                   </div>
                   {/* Campo trampa anti-bots: oculto para las personas */}
@@ -297,7 +273,7 @@ export function CartDrawer({
                 {/* Selector Tipo de entrega */}
                 <div>
                   <div className="flex items-center justify-between mb-2 px-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-400 font-sans">
+                    <span className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-400 font-sans">
                       Forma de entrega
                     </span>
                     <span className="text-[11px] text-neutral-500 font-medium">
@@ -311,7 +287,7 @@ export function CartDrawer({
                       onClick={() => setOrderType('delivery')}
                       className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
                         orderType === 'delivery'
-                          ? 'bg-cheesy-yellow text-cheesy-black shadow-[0_2px_8px_rgba(245,185,0,0.25)]'
+                          ? 'bg-pancho-orange text-pancho-black'
                           : 'text-neutral-400 hover:text-white'
                       }`}
                     >
@@ -324,7 +300,7 @@ export function CartDrawer({
                       onClick={() => setOrderType('retiro')}
                       className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
                         orderType === 'retiro'
-                          ? 'bg-cheesy-yellow text-cheesy-black shadow-[0_2px_8px_rgba(245,185,0,0.25)]'
+                          ? 'bg-pancho-orange text-pancho-black'
                           : 'text-neutral-400 hover:text-white'
                       }`}
                     >
@@ -359,7 +335,7 @@ export function CartDrawer({
                           }}
                           onChange={(e) => handleAddressChange(e.target.value)}
                           placeholder="Calle, número, depto o referencia..."
-                          className="w-full bg-neutral-950 border border-neutral-800 focus:border-cheesy-yellow/70 focus:ring-1 focus:ring-cheesy-yellow/50 rounded-xl pl-9 pr-16 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 outline-none transition-all"
+                          className="w-full bg-neutral-950 border border-neutral-800 focus:border-pancho-orange/70 focus:ring-1 focus:ring-pancho-orange/50 rounded-xl pl-9 pr-16 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 outline-none transition-all"
                         />
                         {isInputFocused && (
                           <button
@@ -367,7 +343,7 @@ export function CartDrawer({
                             onMouseDown={(e) => e.preventDefault()}
                             onTouchStart={(e) => e.preventDefault()}
                             onClick={() => inputRef.current?.blur()}
-                            className="absolute right-2 px-2.5 py-1 text-xs font-bold bg-cheesy-yellow text-cheesy-black rounded-lg sm:hidden cursor-pointer active:scale-95 transition-transform select-none"
+                            className="absolute right-2 px-2.5 py-1 text-xs font-extrabold uppercase tracking-[0.04em] bg-pancho-orange text-pancho-black rounded-lg sm:hidden cursor-pointer active:scale-95 transition-transform select-none"
                           >
                             Listo
                           </button>
@@ -380,7 +356,7 @@ export function CartDrawer({
                 {/* Barra de opciones de Método de Pago */}
                 <div>
                   <div className="flex items-center justify-between mb-2 px-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-neutral-400 font-sans">
+                    <span className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-400 font-sans">
                       Método de pago
                     </span>
                     <span className="text-[11px] text-neutral-500 font-medium">
@@ -394,7 +370,7 @@ export function CartDrawer({
                       onClick={() => setPaymentMethod('efectivo')}
                       className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
                         paymentMethod === 'efectivo'
-                          ? 'bg-cheesy-yellow text-cheesy-black shadow-[0_2px_8px_rgba(245,185,0,0.25)]'
+                          ? 'bg-pancho-orange text-pancho-black'
                           : 'text-neutral-400 hover:text-white'
                       }`}
                     >
@@ -407,7 +383,7 @@ export function CartDrawer({
                       onClick={() => setPaymentMethod('transferencia')}
                       className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
                         paymentMethod === 'transferencia'
-                          ? 'bg-cheesy-yellow text-cheesy-black shadow-[0_2px_8px_rgba(245,185,0,0.25)]'
+                          ? 'bg-pancho-orange text-pancho-black'
                           : 'text-neutral-400 hover:text-white'
                       }`}
                     >
@@ -420,7 +396,7 @@ export function CartDrawer({
 
               {/* Encabezado y divisor de la sección de productos */}
               <div className="flex items-center gap-3 mb-3 px-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-neutral-400 font-sans shrink-0">
+                <span className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-400 font-sans shrink-0">
                   Detalle del pedido
                 </span>
                 <div className="flex-1 border-b border-neutral-800" />
@@ -435,14 +411,14 @@ export function CartDrawer({
                 >
                   {/* Fila principal estilo comanda de restaurante: Nombre ············ Subtotal */}
                   <div className="flex items-baseline justify-between gap-2">
-                    <h4 className="font-display font-bold text-base sm:text-lg text-white tracking-tight truncate">
+                    <h4 className="font-heading text-lg sm:text-xl text-white truncate">
                       {item.name}
                     </h4>
 
                     {/* Línea punteada tradicional igual que en el menú */}
                     <div className="flex-1 mx-2 sm:mx-3 border-b-2 border-dotted border-neutral-800 self-baseline mb-1 group-hover:border-neutral-700 transition-colors" />
 
-                    <span className="font-display font-black text-base sm:text-lg text-cheesy-yellow shrink-0 tracking-tight">
+                    <span className="font-heading text-lg sm:text-xl text-pancho-orange shrink-0">
                       {formatPrice(item.price * item.quantity)}
                     </span>
                   </div>
@@ -464,7 +440,7 @@ export function CartDrawer({
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="text-xs font-bold text-white min-w-4 text-center font-display">
+                        <span className="text-xs font-bold text-white min-w-4 text-center font-sans">
                           {item.quantity}
                         </span>
                         <button
@@ -479,7 +455,7 @@ export function CartDrawer({
                       {/* Botón eliminar */}
                       <button
                         onClick={() => onRemoveItem(item.id)}
-                        className="text-neutral-500 hover:text-rose-400 p-1.5 rounded-md hover:bg-neutral-900 transition-colors cursor-pointer"
+                        className="text-neutral-500 hover:text-pancho-red p-1.5 rounded-md hover:bg-neutral-900 transition-colors cursor-pointer"
                         aria-label={`Eliminar ${item.name}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -502,7 +478,7 @@ export function CartDrawer({
           >
             <div className="flex items-center justify-between text-base">
               <span className="text-neutral-400">Total</span>
-              <span className="font-display font-black text-2xl text-cheesy-yellow">
+              <span className="font-heading text-3xl text-pancho-orange">
                 {formatPrice(totalAmount)}
               </span>
             </div>
@@ -518,7 +494,7 @@ export function CartDrawer({
                   <button
                     type="button"
                     onClick={openWhatsAppFallback}
-                    className="mt-2 font-bold text-cheesy-yellow underline underline-offset-2 cursor-pointer"
+                    className="mt-2 font-bold text-pancho-orange underline underline-offset-2 cursor-pointer"
                   >
                     Enviar el pedido por WhatsApp
                   </button>
@@ -526,46 +502,16 @@ export function CartDrawer({
               </div>
             )}
 
-            <button
-              onClick={handleSubmitOrder}
-              disabled={isSending}
-              className="group relative w-full flex items-center justify-center gap-3 pt-5 pb-8 px-6 text-cheesy-black font-sans font-bold text-base transition-transform duration-200 cursor-pointer hover:scale-[1.015] active:scale-[0.98] select-none mb-1"
-            >
-              {/* Fondo artesanal con forma orgánica de queso cheddar derretido — 100% fluido y curvo, con base gruesa */}
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 pointer-events-none z-0"
-              >
-                <svg
-                  viewBox="0 0 340 88"
-                  preserveAspectRatio="none"
-                  className="w-full h-full drop-shadow-[0_8px_18px_rgba(245,185,0,0.22)] transition-transform duration-300 group-hover:scale-y-[1.02]"
-                >
-                  <path
-                    d="M 16,13 C 42,8 68,14 100,9 C 132,4 165,11 198,7 C 232,3 268,10 295,7 C 314,5 328,10 334,18 C 340,26 339,38 335,48 C 331,58 322,62 312,64 C 300,66 292,72 284,79 C 276,86 268,84 260,74 C 252,62 242,67 232,69 C 220,71 210,65 198,63 C 186,61 176,72 168,81 C 160,88 150,86 142,75 C 134,58 124,66 112,68 C 100,70 90,64 78,63 C 66,62 56,73 46,78 C 36,82 28,76 22,66 C 14,54 4,46 2,34 C 0,22 6,15 16,13 Z"
-                    className="fill-cheesy-yellow group-hover:fill-cheesy-yellow-bright transition-colors duration-200"
-                  />
-                </svg>
-              </div>
-
-              {/* Ícono de WhatsApp */}
-              <svg
-                className="relative z-10 w-5 h-5 fill-current shrink-0"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
-              </svg>
-              <span className="relative z-10">{isSending ? 'Enviando…' : 'Confirmar pedido'}</span>
-              <ArrowRight className="relative z-10 w-5 h-5 ml-1 transition-transform duration-200 group-hover:translate-x-1" />
-            </button>
+            <PanchoButton onClick={handleSubmitOrder} disabled={isSending} variant="orange" block>
+              {isSending ? 'Enviando…' : 'Confirmar pedido'}
+            </PanchoButton>
 
             {/* Botón secundario: Agregar más productos */}
             <button
               onClick={handleAddMore}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-neutral-700/80 hover:border-cheesy-yellow bg-neutral-800/40 hover:bg-neutral-800 text-neutral-300 hover:text-cheesy-yellow font-sans font-semibold text-sm transition-all duration-200 cursor-pointer active:scale-[0.98]"
+              className="w-full flex items-center justify-center gap-2 min-h-11 py-3 px-4 rounded-xs border border-neutral-700/80 hover:border-pancho-orange bg-neutral-800/40 hover:bg-neutral-800 text-neutral-300 hover:text-pancho-orange font-sans font-bold uppercase tracking-[0.04em] text-sm transition-[transform,color,background-color,border-color] duration-200 ease-(--ease-out) cursor-pointer active:scale-[0.97]"
             >
-              <Plus className="w-4 h-4 text-cheesy-yellow" />
+              <Plus className="w-4 h-4 text-pancho-orange" />
               <span>Agregar más productos</span>
             </button>
           </div>

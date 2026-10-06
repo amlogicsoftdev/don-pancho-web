@@ -65,7 +65,7 @@ export function AccionesPedido({
             size="lg"
             disabled={enCurso}
             onClick={() => ejecutar(() => avanzarPedido(pedidoId))}
-            className="h-10 bg-cheesy-yellow px-4 text-cheesy-black hover:bg-cheesy-yellow-bright"
+            className="h-10 bg-pancho-orange px-4 text-pancho-black hover:bg-pancho-orange-deep"
           >
             {etiquetaAvance}
           </Button>
@@ -96,7 +96,7 @@ export function AccionesPedido({
             checked={pagoConfirmado}
             disabled={enCurso}
             onChange={(e) => ejecutar(() => confirmarPago(pedidoId, e.target.checked))}
-            className="size-4 accent-cheesy-yellow"
+            className="size-4 accent-pancho-orange"
           />
           La transferencia ya llegó (pago confirmado)
         </label>
@@ -114,7 +114,7 @@ export function AccionesPedido({
       </div>
 
       {panel && (
-        <div className="space-y-3 rounded-xl border border-white/15 bg-cheesy-black p-4">
+        <div className="space-y-3 rounded-xl border border-white/15 bg-pancho-black p-4">
           <label className="block text-sm font-semibold" htmlFor="motivo">
             {panel === 'cancelar' ? 'Motivo de la cancelación' : 'Motivo del borrado'} (obligatorio)
           </label>
@@ -124,10 +124,10 @@ export function AccionesPedido({
             onChange={(e) => setMotivo(e.target.value)}
             maxLength={300}
             rows={3}
-            className="w-full rounded-lg border border-white/15 bg-cheesy-surface p-2 text-sm outline-none focus:border-cheesy-yellow"
+            className="w-full rounded-lg border border-white/15 bg-pancho-surface p-2 text-sm outline-none focus:border-pancho-orange"
             placeholder={panel === 'cancelar' ? 'Ej.: el cliente no respondió' : 'Ej.: pedido duplicado'}
           />
-          <p className="text-xs text-cheesy-muted">
+          <p className="text-xs text-pancho-muted">
             {panel === 'borrar'
               ? 'El pedido deja de verse en la lista, pero queda registrado con este motivo.'
               : 'El pedido queda como cancelado y no se suma al cierre de caja.'}

@@ -43,10 +43,10 @@ export default async function ComandasPage({ params }: { params: Promise<{ id: s
       <style>{ESTILO_TICKET}</style>
 
       <div className="space-y-2 print:hidden">
-        <Link href={`/admin/pedidos/${pedido.id}`} className="text-sm text-cheesy-muted hover:text-cheesy-cream">
+        <Link href={`/admin/pedidos/${pedido.id}`} className="text-sm text-pancho-muted hover:text-pancho-cream">
           ← Volver al pedido
         </Link>
-        <p className="text-sm text-cheesy-muted">
+        <p className="text-sm text-pancho-muted">
           Se imprimen dos comandas: la de cocina y la del cliente. En el diálogo elegí la impresora térmica y el
           papel de 80 mm.
         </p>

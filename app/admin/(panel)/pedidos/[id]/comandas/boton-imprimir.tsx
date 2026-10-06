@@ -7,7 +7,7 @@ export function BotonImprimir() {
     <Button
       size="lg"
       onClick={() => window.print()}
-      className="h-10 bg-cheesy-yellow px-4 text-cheesy-black hover:bg-cheesy-yellow-bright"
+      className="h-10 bg-pancho-orange px-4 text-pancho-black hover:bg-pancho-orange-deep"
     >
       Imprimir las dos comandas
     </Button>

@@ -25,19 +25,20 @@ export function Logo({ variant = 'nav', className = '' }: LogoProps) {
     <Link
       href="/#inicio"
       onClick={handleClick}
-      className={`inline-flex items-center transition-transform duration-200 hover:scale-105 active:scale-95 ${className}`}
-      aria-label="CheesyBite - Volver al inicio"
+      className={`inline-flex items-center rounded-full transition-transform duration-300 ease-(--ease-out) hover:-rotate-8 active:scale-95 ${className}`}
+      aria-label="Don Pancho & Burger - Volver al inicio"
     >
-      {/* Logotipo oficial de CheesyBite */}
+      {/* Sello redondo de Don Pancho & Burger, a color: va sobre naranja, rojo u oscuro.
+          Al pasar el mouse gira apenas, como un sticker. */}
       <Image
-        src="/images/logo.png"
-        alt="CheesyBite"
-        width={240}
-        height={96}
+        src="/images/logo-don-pancho.webp"
+        alt="Don Pancho & Burger"
+        width={512}
+        height={512}
         priority={!isFooter}
         loading="eager"
         className={`w-auto object-contain ${
-          isFooter ? 'h-14 sm:h-16' : 'h-13 sm:h-15'
+          isFooter ? 'h-28 sm:h-36' : 'h-14 sm:h-16'
         }`}
       />
     </Link>

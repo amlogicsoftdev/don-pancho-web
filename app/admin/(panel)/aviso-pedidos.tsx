@@ -77,7 +77,7 @@ export function AvisoPedidos({ pendientesIniciales }: { pendientesIniciales: num
       Pedidos
       {pendientes > 0 && (
         <span
-          className={`rounded-full bg-cheesy-yellow px-2 py-0.5 text-xs font-bold text-cheesy-black ${hayNuevo ? 'animate-pulse' : ''}`}
+          className={`rounded-full bg-pancho-orange px-2 py-0.5 text-xs font-bold text-pancho-black ${hayNuevo ? 'animate-pulse' : ''}`}
           aria-label={`${pendientes} pedidos pendientes`}
         >
           {pendientes}

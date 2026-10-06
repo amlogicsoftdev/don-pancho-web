@@ -13,7 +13,7 @@ import {
 
 type Parametros = { desde?: string; hasta?: string; origen?: string; metodo?: string }
 
-const CAMPO = 'h-9 rounded-lg border border-white/15 bg-cheesy-black px-2 text-sm'
+const CAMPO = 'h-9 rounded-lg border border-white/15 bg-pancho-black px-2 text-sm'
 
 export default async function VentasPage({ searchParams }: { searchParams: Promise<Parametros> }) {
   await requerirDueno()
@@ -35,17 +35,17 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
     <section className="mx-auto max-w-5xl space-y-6">
       <h1 className="text-3xl">Ventas</h1>
 
-      <form method="get" className="flex flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-cheesy-surface p-4">
+      <form method="get" className="flex flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-pancho-surface p-4">
         <label className="text-sm">
-          <span className="mb-1 block text-cheesy-muted">Desde</span>
+          <span className="mb-1 block text-pancho-muted">Desde</span>
           <input type="date" name="desde" defaultValue={filtro.desde} className={CAMPO} />
         </label>
         <label className="text-sm">
-          <span className="mb-1 block text-cheesy-muted">Hasta</span>
+          <span className="mb-1 block text-pancho-muted">Hasta</span>
           <input type="date" name="hasta" defaultValue={filtro.hasta} className={CAMPO} />
         </label>
         <label className="text-sm">
-          <span className="mb-1 block text-cheesy-muted">Origen</span>
+          <span className="mb-1 block text-pancho-muted">Origen</span>
           <select name="origen" defaultValue={filtro.origen} className={CAMPO}>
             <option value="todos">Todos</option>
             <option value="web">Web</option>
@@ -53,48 +53,48 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
           </select>
         </label>
         <label className="text-sm">
-          <span className="mb-1 block text-cheesy-muted">Pago</span>
+          <span className="mb-1 block text-pancho-muted">Pago</span>
           <select name="metodo" defaultValue={filtro.metodo} className={CAMPO}>
             <option value="todos">Todos</option>
             <option value="efectivo">Efectivo</option>
             <option value="transferencia">Transferencia</option>
           </select>
         </label>
-        <button className="h-9 rounded-lg bg-cheesy-yellow px-4 text-sm font-bold text-cheesy-black">Filtrar</button>
+        <button className="h-9 rounded-lg bg-pancho-orange px-4 text-sm font-bold text-pancho-black">Filtrar</button>
       </form>
 
-      <p className="text-sm text-cheesy-muted">
+      <p className="text-sm text-pancho-muted">
         Período: {mostrarDia(filtro.desde)} al {mostrarDia(filtro.hasta)}. No incluye pedidos cancelados ni borrados.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-white/10 bg-cheesy-surface p-4">
-          <p className="text-sm text-cheesy-muted">Ventas ({reporte.cantidad})</p>
-          <p className="font-display text-2xl text-cheesy-yellow">{formatearPrecio(reporte.totalVentas)}</p>
+        <div className="rounded-xl border border-white/10 bg-pancho-surface p-4">
+          <p className="text-sm text-pancho-muted">Ventas ({reporte.cantidad})</p>
+          <p className="font-display text-2xl text-pancho-orange">{formatearPrecio(reporte.totalVentas)}</p>
         </div>
-        <div className="rounded-xl border border-white/10 bg-cheesy-surface p-4">
-          <p className="text-sm text-cheesy-muted">Gastos del período</p>
+        <div className="rounded-xl border border-white/10 bg-pancho-surface p-4">
+          <p className="text-sm text-pancho-muted">Gastos del período</p>
           <p className="font-display text-2xl">{formatearPrecio(reporte.totalGastos)}</p>
         </div>
-        <div className="rounded-xl border border-white/10 bg-cheesy-surface p-4">
-          <p className="text-sm text-cheesy-muted">Ventas menos gastos</p>
+        <div className="rounded-xl border border-white/10 bg-pancho-surface p-4">
+          <p className="text-sm text-pancho-muted">Ventas menos gastos</p>
           <p className="font-display text-2xl">{formatearPrecio(reporte.totalVentas - reporte.totalGastos)}</p>
         </div>
       </div>
       {(filtro.origen !== 'todos' || filtro.metodo !== 'todos') && (
-        <p className="text-xs text-cheesy-muted">
+        <p className="text-xs text-pancho-muted">
           Con filtros de origen o pago, el total de gastos sigue siendo el de todo el período.
         </p>
       )}
 
       {reporte.filas.length === 0 ? (
-        <p className="rounded-xl border border-white/10 bg-cheesy-surface p-6 text-center text-cheesy-muted">
+        <p className="rounded-xl border border-white/10 bg-pancho-surface p-6 text-center text-pancho-muted">
           No hay ventas con estos filtros.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/10 bg-cheesy-surface">
+        <div className="overflow-x-auto rounded-xl border border-white/10 bg-pancho-surface">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/10 text-cheesy-muted">
+            <thead className="border-b border-white/10 text-pancho-muted">
               <tr>
                 <th className="p-3">N°</th>
                 <th className="p-3">Fecha</th>
@@ -109,7 +109,7 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
               {reporte.filas.map((v) => (
                 <tr key={v.id}>
                   <td className="p-3 font-semibold">
-                    <Link href={`/admin/pedidos/${v.id}`} className="text-cheesy-yellow hover:underline">
+                    <Link href={`/admin/pedidos/${v.id}`} className="text-pancho-orange hover:underline">
                       {formatearNumero(v.numero)}
                     </Link>
                   </td>

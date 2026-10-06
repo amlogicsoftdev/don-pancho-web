@@ -9,18 +9,18 @@ export default async function AnulacionesPage() {
   return (
     <section className="mx-auto max-w-4xl">
       <h1 className="mb-1 text-3xl">Cancelados y borrados</h1>
-      <p className="mb-4 text-sm text-cheesy-muted">
+      <p className="mb-4 text-sm text-pancho-muted">
         Registro de todos los pedidos cancelados o borrados, con el motivo y quién lo hizo.
       </p>
 
       {anulaciones.length === 0 ? (
-        <p className="rounded-xl border border-white/10 bg-cheesy-surface p-6 text-center text-cheesy-muted">
+        <p className="rounded-xl border border-white/10 bg-pancho-surface p-6 text-center text-pancho-muted">
           Todavía no hay pedidos cancelados ni borrados.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/10 bg-cheesy-surface">
+        <div className="overflow-x-auto rounded-xl border border-white/10 bg-pancho-surface">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/10 text-cheesy-muted">
+            <thead className="border-b border-white/10 text-pancho-muted">
               <tr>
                 <th className="p-3">N°</th>
                 <th className="p-3">Acción</th>

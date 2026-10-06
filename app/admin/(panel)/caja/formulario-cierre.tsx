@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { cerrarCaja } from '@/lib/caja/actions'
 import { formatearPrecio } from '@/lib/orders/estados'
 
-const CAMPO = 'h-10 w-full rounded-lg border border-white/15 bg-cheesy-black px-3 outline-none focus:border-cheesy-yellow'
+const CAMPO = 'h-10 w-full rounded-lg border border-white/15 bg-pancho-black px-3 outline-none focus:border-pancho-orange'
 
 interface Props {
   dia: string
@@ -42,21 +42,21 @@ export function FormularioCierre({ dia, ventasEfectivo, gastosEfectivo, cierraCo
   }
 
   return (
-    <div className="space-y-4 rounded-xl border border-white/10 bg-cheesy-surface p-4">
+    <div className="space-y-4 rounded-xl border border-white/10 bg-pancho-surface p-4">
       <h2 className="text-lg">Cerrar la caja</h2>
 
       <label className="block text-sm">
-        <span className="mb-1 block text-cheesy-muted">Fondo inicial en efectivo (opcional)</span>
+        <span className="mb-1 block text-pancho-muted">Fondo inicial en efectivo (opcional)</span>
         <input type="number" min={0} step={1} inputMode="numeric" value={fondo} onChange={(e) => setFondo(e.target.value)} placeholder="0" className={CAMPO} />
       </label>
 
       <p className="flex justify-between text-sm">
-        <span className="text-cheesy-muted">Efectivo esperado según el sistema</span>
+        <span className="text-pancho-muted">Efectivo esperado según el sistema</span>
         <strong>{formatearPrecio(esperado)}</strong>
       </p>
 
       <label className="block text-sm">
-        <span className="mb-1 block text-cheesy-muted">Efectivo que contaste en la caja</span>
+        <span className="mb-1 block text-pancho-muted">Efectivo que contaste en la caja</span>
         <input type="number" min={0} step={1} inputMode="numeric" value={contado} onChange={(e) => setContado(e.target.value)} className={CAMPO} />
       </label>
 
@@ -89,11 +89,11 @@ export function FormularioCierre({ dia, ventasEfectivo, gastosEfectivo, cierraCo
         size="lg"
         disabled={enCurso || !hayContado || Number(contado) < 0}
         onClick={cerrar}
-        className="h-10 bg-cheesy-yellow px-4 text-cheesy-black hover:bg-cheesy-yellow-bright"
+        className="h-10 bg-pancho-orange px-4 text-pancho-black hover:bg-pancho-orange-deep"
       >
         {enCurso ? 'Cerrando…' : 'Cerrar caja'}
       </Button>
-      <p className="text-xs text-cheesy-muted">
+      <p className="text-xs text-pancho-muted">
         Queda guardado con la fecha, la hora y tu usuario ({cierraComo}). Una vez cerrada, la caja de este día no se
         puede volver a cerrar.
       </p>

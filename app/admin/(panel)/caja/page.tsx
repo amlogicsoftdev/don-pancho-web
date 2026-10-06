@@ -7,8 +7,8 @@ import { FormularioCierre } from './formulario-cierre'
 
 const Fila = ({ etiqueta, valor, destacado }: { etiqueta: string; valor: string; destacado?: boolean }) => (
   <div className={`flex justify-between gap-3 py-1.5 ${destacado ? 'font-display text-xl' : 'text-sm'}`}>
-    <dt className={destacado ? '' : 'text-cheesy-muted'}>{etiqueta}</dt>
-    <dd className={destacado ? 'text-cheesy-yellow' : ''}>{valor}</dd>
+    <dt className={destacado ? '' : 'text-pancho-muted'}>{etiqueta}</dt>
+    <dd className={destacado ? 'text-pancho-orange' : ''}>{valor}</dd>
   </div>
 )
 
@@ -35,7 +35,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
               Siguiente →
             </Link>
           ) : (
-            <span className="rounded-lg border border-white/5 px-3 py-1.5 text-cheesy-muted">Hoy</span>
+            <span className="rounded-lg border border-white/5 px-3 py-1.5 text-pancho-muted">Hoy</span>
           )}
         </nav>
       </header>
@@ -47,7 +47,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
         </p>
       )}
 
-      <dl className="rounded-xl border border-white/10 bg-cheesy-surface p-4">
+      <dl className="rounded-xl border border-white/10 bg-pancho-surface p-4">
         <Fila etiqueta={`Ventas del día (${resumen.cantidadVentas})`} valor={formatearPrecio(resumen.ventasEfectivo + resumen.transferenciasConfirmadas)} destacado />
         <Fila etiqueta="Efectivo" valor={formatearPrecio(resumen.ventasEfectivo)} />
         <Fila etiqueta="Transferencias confirmadas" valor={formatearPrecio(resumen.transferenciasConfirmadas)} />
@@ -66,7 +66,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
       {cierre ? (
         <div className="space-y-2 rounded-xl border border-emerald-400/40 bg-emerald-400/10 p-4">
           <h2 className="text-lg text-emerald-200">Caja cerrada</h2>
-          <p className="text-sm text-cheesy-muted">
+          <p className="text-sm text-pancho-muted">
             Por {cierre.usuario} el {formatearFechaHora(cierre.creadoEn)}
           </p>
           <dl>
@@ -80,7 +80,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
           </dl>
         </div>
       ) : diaEsFuturo ? (
-        <p className="text-sm text-cheesy-muted">No se puede cerrar la caja de un día que todavía no empezó.</p>
+        <p className="text-sm text-pancho-muted">No se puede cerrar la caja de un día que todavía no empezó.</p>
       ) : (
         <FormularioCierre
           dia={dia}
@@ -93,11 +93,11 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
       <div>
         <h2 className="mb-2 text-lg">Cierres anteriores</h2>
         {cierres.length === 0 ? (
-          <p className="text-sm text-cheesy-muted">Todavía no se cerró ninguna caja.</p>
+          <p className="text-sm text-pancho-muted">Todavía no se cerró ninguna caja.</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-white/10 bg-cheesy-surface">
+          <div className="overflow-x-auto rounded-xl border border-white/10 bg-pancho-surface">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-white/10 text-cheesy-muted">
+              <thead className="border-b border-white/10 text-pancho-muted">
                 <tr>
                   <th className="p-3">Día</th>
                   <th className="p-3 text-right">Esperado</th>
@@ -110,7 +110,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
                 {cierres.map((c) => (
                   <tr key={c.id}>
                     <td className="p-3">
-                      <Link href={`/admin/caja?dia=${c.fecha}`} className="text-cheesy-yellow hover:underline">
+                      <Link href={`/admin/caja?dia=${c.fecha}`} className="text-pancho-orange hover:underline">
                         {mostrarDia(c.fecha)}
                       </Link>
                     </td>
@@ -122,7 +122,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
                     </td>
                     <td className="p-3">
                       {c.usuario}
-                      <span className="text-cheesy-muted"> · {formatearFechaHora(c.creadoEn)}</span>
+                      <span className="text-pancho-muted"> · {formatearFechaHora(c.creadoEn)}</span>
                     </td>
                   </tr>
                 ))}

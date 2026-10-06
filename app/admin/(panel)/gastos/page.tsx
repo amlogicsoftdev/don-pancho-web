@@ -20,16 +20,16 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
 
       <FormularioGasto diaPorDefecto={hoy} />
 
-      <form method="get" className="flex flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-cheesy-surface p-4">
+      <form method="get" className="flex flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-pancho-surface p-4">
         <label className="text-sm">
-          <span className="mb-1 block text-cheesy-muted">Desde</span>
-          <input type="date" name="desde" defaultValue={desde} className="h-9 rounded-lg border border-white/15 bg-cheesy-black px-2" />
+          <span className="mb-1 block text-pancho-muted">Desde</span>
+          <input type="date" name="desde" defaultValue={desde} className="h-9 rounded-lg border border-white/15 bg-pancho-black px-2" />
         </label>
         <label className="text-sm">
-          <span className="mb-1 block text-cheesy-muted">Hasta</span>
-          <input type="date" name="hasta" defaultValue={hasta} className="h-9 rounded-lg border border-white/15 bg-cheesy-black px-2" />
+          <span className="mb-1 block text-pancho-muted">Hasta</span>
+          <input type="date" name="hasta" defaultValue={hasta} className="h-9 rounded-lg border border-white/15 bg-pancho-black px-2" />
         </label>
-        <button className="h-9 rounded-lg bg-cheesy-yellow px-4 text-sm font-bold text-cheesy-black">Filtrar</button>
+        <button className="h-9 rounded-lg bg-pancho-orange px-4 text-sm font-bold text-pancho-black">Filtrar</button>
       </form>
 
       <div className="flex items-baseline justify-between">
@@ -37,18 +37,18 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
           {mostrarDia(desde)} al {mostrarDia(hasta)}
         </h2>
         <p>
-          Total: <strong className="font-display text-xl text-cheesy-yellow">{formatearPrecio(total)}</strong>
+          Total: <strong className="font-display text-xl text-pancho-orange">{formatearPrecio(total)}</strong>
         </p>
       </div>
 
       {gastos.length === 0 ? (
-        <p className="rounded-xl border border-white/10 bg-cheesy-surface p-6 text-center text-cheesy-muted">
+        <p className="rounded-xl border border-white/10 bg-pancho-surface p-6 text-center text-pancho-muted">
           No hay gastos en este período.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/10 bg-cheesy-surface">
+        <div className="overflow-x-auto rounded-xl border border-white/10 bg-pancho-surface">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/10 text-cheesy-muted">
+            <thead className="border-b border-white/10 text-pancho-muted">
               <tr>
                 <th className="p-3">Fecha</th>
                 <th className="p-3">Descripción</th>

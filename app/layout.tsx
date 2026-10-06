@@ -1,42 +1,31 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Chewy, Inter, Caveat_Brush } from 'next/font/google'
+import { Anton, Montserrat } from 'next/font/google'
 import './globals.css'
 
-const chewy = Chewy({
+// Títulos y nombres. También es el reemplazo de Agharti (titulares) hasta tener el archivo de esa fuente.
+const anton = Anton({
   subsets: ['latin'],
-  variable: '--font-chewy',
+  variable: '--font-anton',
   weight: '400',
 })
 
-const inter = Inter({
+// Texto, botones, etiquetas y navegación
+const montserrat = Montserrat({
   subsets: ['latin'],
-  variable: '--font-sans',
-})
-
-const caveatBrush = Caveat_Brush({
-  subsets: ['latin'],
-  variable: '--font-badge',
-  weight: '400',
+  variable: '--font-montserrat',
 })
 
 export const metadata: Metadata = {
-  title: 'CheesyBite | Burgers con alma',
-  description: 'Hamburguesas artesanales, jugosas y con el mejor cheddar. Pedí tu CheesyBite por WhatsApp.',
-  icons: {
-    icon: '/images/icono.png',
-    apple: '/images/icono.png',
-  },
+  title: 'Don Pancho & Burger | Hamburguesas y panchos',
+  description: 'Hamburguesas y panchos con delivery o retiro. Armá tu pedido desde la web.',
 }
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   colorScheme: 'light dark',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
-  ],
+  themeColor: '#ff7300',
 }
 
 export default function RootLayout({
@@ -45,8 +34,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" className={`${chewy.variable} ${inter.variable} ${caveatBrush.variable}`}>
-      <body className="antialiased bg-cheesy-black text-cheesy-cream font-sans selection:bg-cheesy-yellow selection:text-cheesy-black">
+    <html lang="es" className={`${anton.variable} ${montserrat.variable}`}>
+      <body className="antialiased bg-pancho-black text-pancho-cream font-sans selection:bg-pancho-orange selection:text-pancho-black">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
