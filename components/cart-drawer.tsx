@@ -45,6 +45,8 @@ export function CartDrawer({
   useEffect(() => {
     try {
       const savedAddress = localStorage.getItem('cheesybite_address')
+      // Se lee recién al montar para que el HTML del servidor coincida con el del navegador.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (savedAddress) setAddress(savedAddress)
     } catch {}
   }, [])

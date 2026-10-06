@@ -13,6 +13,9 @@ export function useCart() {
     try {
       const saved = localStorage.getItem(CART_STORAGE_KEY)
       if (saved) {
+        // Se lee recién al montar para que el HTML del servidor coincida con el del navegador.
+        // El carrito se rehace en la etapa 2 (guardar solo id y cantidad).
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCart(JSON.parse(saved))
       }
     } catch {

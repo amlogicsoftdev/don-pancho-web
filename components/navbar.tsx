@@ -11,22 +11,30 @@ interface NavbarProps {
   onOpenCart: () => void
 }
 
+const navLinks = [
+  { label: 'Inicio', href: '/#inicio', key: 'inicio' },
+  { label: 'Nuestro Menú', href: '/menu', key: 'menu' },
+  { label: 'Nosotros', href: '/#nosotros', key: 'nosotros' },
+  { label: 'Contacto', href: '/#contacto', key: 'contacto' },
+]
+
 export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
   const pathname = usePathname()
   const [isScrolled, setIsScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [cartBadgeAnimate, setCartBadgeAnimate] = useState(false)
+  const [prevCartCount, setPrevCartCount] = useState(cartCount)
   const [activeSection, setActiveSection] = useState('inicio')
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 })
 
   const navLinksRef = useRef<(HTMLAnchorElement | null)[]>([])
 
-  const navLinks = [
-    { label: 'Inicio', href: '/#inicio', key: 'inicio' },
-    { label: 'Nuestro Menú', href: '/menu', key: 'menu' },
-    { label: 'Nosotros', href: '/#nosotros', key: 'nosotros' },
-    { label: 'Contacto', href: '/#contacto', key: 'contacto' },
-  ]
+  // Pulso del contador del carrito: se activa durante el render al cambiar la cantidad
+  // (patrón recomendado por React en vez de un setState dentro de un efecto)
+  if (cartCount !== prevCartCount) {
+    setPrevCartCount(cartCount)
+    if (cartCount > 0) setCartBadgeAnimate(true)
+  }
 
   const isLinkActive = (linkKey: string) => {
     if (pathname === '/menu') return linkKey === 'menu'
@@ -88,12 +96,10 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
   }, [pathname])
 
   useEffect(() => {
-    if (cartCount > 0) {
-      setCartBadgeAnimate(true)
-      const timer = setTimeout(() => setCartBadgeAnimate(false), 300)
-      return () => clearTimeout(timer)
-    }
-  }, [cartCount])
+    if (!cartBadgeAnimate) return
+    const timer = setTimeout(() => setCartBadgeAnimate(false), 300)
+    return () => clearTimeout(timer)
+  }, [cartBadgeAnimate, cartCount])
 
   // Desplazamiento automático y suave a la sección al navegar desde otra página con hash (#nosotros, #contacto, etc.)
   useEffect(() => {

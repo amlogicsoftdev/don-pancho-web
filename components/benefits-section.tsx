@@ -19,16 +19,15 @@ function useAnimatedCount(
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    if (prefersReducedMotion) {
-      setCount(target)
-      return
-    }
-
     let start: number | null = null
     let rafId: number
-    let timeoutId: NodeJS.Timeout
 
-    timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
+      if (prefersReducedMotion) {
+        setCount(target)
+        return
+      }
+
       const step = (timestamp: number) => {
         if (!start) start = timestamp
         const elapsed = timestamp - start
