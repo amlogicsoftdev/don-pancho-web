@@ -20,3 +20,6 @@ node_modules
 CLAUDE.md
 docs/PLAN.md
 .codegraph/
+
+# Generado por Next en cada dev/build (cambia solo y ensucia los commits)
+next-env.d.ts
