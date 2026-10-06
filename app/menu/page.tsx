@@ -77,7 +77,7 @@ const ROTATION_ANGLES: Record<number, number> = {
 }
 
 export default function MenuPage() {
-  const { cart, totalCartCount, handleAddToCart, handleUpdateQuantity, handleRemoveItem } = useCart()
+  const { cart, totalCartCount, handleAddToCart, handleUpdateQuantity, handleRemoveItem, handleClearCart } = useCart()
   const mounted = useMounted()
   const [cartOpen, setCartOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>('Todas')
@@ -651,6 +651,7 @@ export default function MenuPage() {
         onClose={() => setCartOpen(false)}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
+        onOrderCreated={handleClearCart}
       />
     </div>
   )

@@ -14,6 +14,9 @@ import {
   Bike,
   Store,
   MapPin,
+  User,
+  Phone,
+  CheckCircle2,
 } from 'lucide-react'
 import { CartItem } from '@/lib/types'
 import { formatPrice, SITE_CONFIG } from '@/lib/data'
@@ -24,6 +27,7 @@ interface CartDrawerProps {
   onClose: () => void
   onUpdateQuantity: (id: number, delta: number) => void
   onRemoveItem: (id: number) => void
+  onOrderCreated: () => void
 }
 
 export function CartDrawer({
@@ -32,13 +36,21 @@ export function CartDrawer({
   onClose,
   onUpdateQuantity,
   onRemoveItem,
+  onOrderCreated,
 }: CartDrawerProps) {
   const router = useRouter()
-  const [orderType, setOrderType] = useState<'delivery' | 'retirar'>('delivery')
+  const [orderType, setOrderType] = useState<'delivery' | 'retiro'>('delivery')
   const [address, setAddress] = useState('')
   const [isInputFocused, setIsInputFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [paymentMethod, setPaymentMethod] = useState<'Efectivo' | 'Transferencia'>('Efectivo')
+  const [paymentMethod, setPaymentMethod] = useState<'efectivo' | 'transferencia'>('efectivo')
+  const [customerName, setCustomerName] = useState('')
+  const [customerPhone, setCustomerPhone] = useState('')
+  const [website, setWebsite] = useState('') // anti-bots: las personas no lo ven ni lo completan
+  const [isSending, setIsSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [fallbackAvailable, setFallbackAvailable] = useState(false)
+  const [confirmation, setConfirmation] = useState<{ numero: number; total: number } | null>(null)
   const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const totalCount = items.reduce((sum, item) => sum + item.quantity, 0)
 
@@ -73,9 +85,8 @@ export function CartDrawer({
     router.push('/menu')
   }
 
-  const handleCheckoutWhatsApp = () => {
-    if (items.length === 0) return
-
+  // Respaldo: si no se pudo guardar el pedido, se manda por WhatsApp al local para no perder la venta.
+  const openWhatsAppFallback = () => {
     const itemLines = items
       .map((item) => `🍔 ${item.quantity}x ${item.name} (${formatPrice(item.price * item.quantity)})`)
       .join('\n')
@@ -85,10 +96,58 @@ export function CartDrawer({
         ? `🛵 Entrega: Delivery\n📍 Mi dirección: ${address.trim() || 'A coordinar por chat'}`
         : '🏪 Entrega: Para retirar por el local'
 
-    const message = `¡Hola ${SITE_CONFIG.name}! 🍔 Quiero hacer el siguiente pedido:\n\n${itemLines}\n\n💰 Total: ${formatPrice(totalAmount)}\n💳 Método de pago: ${paymentMethod}\n${deliveryLines}\n\n¡Muchas gracias!`
+    const paymentLabel = paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'
+    const message = `¡Hola ${SITE_CONFIG.name}! 🍔 Quiero hacer el siguiente pedido:\n\n${itemLines}\n\n💰 Total: ${formatPrice(totalAmount)}\n💳 Método de pago: ${paymentLabel}\n${deliveryLines}\n👤 Nombre: ${customerName.trim()}\n📞 Teléfono: ${customerPhone.trim()}\n\n¡Muchas gracias!`
 
     const encoded = encodeURIComponent(message)
     window.open(`https://wa.me/${SITE_CONFIG.whatsappNumber}?text=${encoded}`, '_blank', 'noopener,noreferrer')
+  }
+
+  const handleSubmitOrder = async () => {
+    if (items.length === 0 || isSending) return
+    setError(null)
+    setFallbackAvailable(false)
+
+    if (!customerName.trim()) return setError('Ingresá tu nombre.')
+    if (!customerPhone.trim()) return setError('Ingresá tu teléfono para poder confirmarte el pedido.')
+    if (orderType === 'delivery' && !address.trim()) return setError('Ingresá la dirección de entrega.')
+
+    setIsSending(true)
+    try {
+      // Solo se mandan ids y cantidades: el servidor calcula los precios y el total.
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modalidad: orderType,
+          metodoPago: paymentMethod,
+          clienteNombre: customerName,
+          clienteTelefono: customerPhone,
+          direccion: orderType === 'delivery' ? address : null,
+          website,
+          items: items.map((item) => ({ productoId: item.id, cantidad: item.quantity })),
+        }),
+      })
+      const data = await response.json().catch(() => ({}))
+
+      if (response.ok) {
+        setConfirmation({ numero: data.numero, total: data.total })
+        onOrderCreated()
+        return
+      }
+      setError(data.error ?? 'No pudimos guardar tu pedido.')
+      setFallbackAvailable(response.status >= 500)
+    } catch {
+      setError('No pudimos conectarnos. Revisá tu conexión.')
+      setFallbackAvailable(true)
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  const handleCloseConfirmation = () => {
+    setConfirmation(null)
+    onClose()
   }
 
   return (
@@ -132,7 +191,25 @@ export function CartDrawer({
 
         {/* Contenido del carrito */}
         <div className="flex-1 overflow-y-auto p-6">
-          {items.length === 0 ? (
+          {confirmation ? (
+            <div className="h-full flex flex-col items-center justify-center text-center py-16">
+              <CheckCircle2 className="w-16 h-16 text-cheesy-yellow mb-4" />
+              <h3 className="font-display font-bold text-2xl text-white mb-2">¡Recibimos tu pedido!</h3>
+              <p className="text-neutral-300 mb-1">
+                Pedido <span className="font-bold text-cheesy-yellow">N° {String(confirmation.numero).padStart(4, '0')}</span>
+              </p>
+              <p className="text-neutral-400 text-sm mb-6">Total: {formatPrice(confirmation.total)}</p>
+              <p className="text-neutral-400 text-sm max-w-xs mb-6">
+                El local te lo va a confirmar por WhatsApp al número que nos dejaste.
+              </p>
+              <button
+                onClick={handleCloseConfirmation}
+                className="px-6 py-3 rounded-xl bg-cheesy-yellow text-cheesy-black font-bold cursor-pointer"
+              >
+                Listo
+              </button>
+            </div>
+          ) : items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-16">
               <div className="w-20 h-20 rounded-full bg-neutral-800/80 border border-neutral-700 flex items-center justify-center text-neutral-400 mb-4 animate-float">
                 <ShoppingCart className="w-10 h-10 text-cheesy-yellow" />
@@ -172,6 +249,51 @@ export function CartDrawer({
             <div>
               {/* Contenedor de opciones de entrega y pago */}
               <div className="bg-neutral-900/50 border border-neutral-800/80 rounded-2xl p-4 space-y-4 mb-6">
+                {/* Datos del cliente: el local los usa para confirmarle el pedido */}
+                <div className="space-y-2.5">
+                  <span className="block px-1 text-xs font-bold uppercase tracking-wider text-neutral-400 font-sans">
+                    Tus datos
+                  </span>
+                  <div className="relative flex items-center">
+                    <User className="w-4 h-4 text-neutral-400 absolute left-3 pointer-events-none" />
+                    <input
+                      type="text"
+                      aria-label="Tu nombre"
+                      autoComplete="name"
+                      maxLength={80}
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Tu nombre"
+                      className="w-full bg-neutral-950 border border-neutral-800 focus:border-cheesy-yellow/70 focus:ring-1 focus:ring-cheesy-yellow/50 rounded-xl pl-9 pr-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="relative flex items-center">
+                    <Phone className="w-4 h-4 text-neutral-400 absolute left-3 pointer-events-none" />
+                    <input
+                      type="tel"
+                      aria-label="Tu teléfono"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      maxLength={30}
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      placeholder="Tu teléfono (para confirmarte el pedido)"
+                      className="w-full bg-neutral-950 border border-neutral-800 focus:border-cheesy-yellow/70 focus:ring-1 focus:ring-cheesy-yellow/50 rounded-xl pl-9 pr-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 outline-none transition-all"
+                    />
+                  </div>
+                  {/* Campo trampa anti-bots: oculto para las personas */}
+                  <input
+                    type="text"
+                    name="website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    className="absolute -left-[9999px] h-0 w-0 opacity-0"
+                  />
+                </div>
+
                 {/* Selector Tipo de entrega */}
                 <div>
                   <div className="flex items-center justify-between mb-2 px-1">
@@ -199,9 +321,9 @@ export function CartDrawer({
 
                     <button
                       type="button"
-                      onClick={() => setOrderType('retirar')}
+                      onClick={() => setOrderType('retiro')}
                       className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
-                        orderType === 'retirar'
+                        orderType === 'retiro'
                           ? 'bg-cheesy-yellow text-cheesy-black shadow-[0_2px_8px_rgba(245,185,0,0.25)]'
                           : 'text-neutral-400 hover:text-white'
                       }`}
@@ -262,16 +384,16 @@ export function CartDrawer({
                       Método de pago
                     </span>
                     <span className="text-[11px] text-neutral-500 font-medium">
-                      {paymentMethod === 'Efectivo' ? 'Abonás al recibir' : 'Transferís al confirmar'}
+                      {paymentMethod === 'efectivo' ? 'Abonás al recibir' : 'Transferís al confirmar'}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 p-1 bg-neutral-950 rounded-xl gap-1">
                     <button
                       type="button"
-                      onClick={() => setPaymentMethod('Efectivo')}
+                      onClick={() => setPaymentMethod('efectivo')}
                       className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
-                        paymentMethod === 'Efectivo'
+                        paymentMethod === 'efectivo'
                           ? 'bg-cheesy-yellow text-cheesy-black shadow-[0_2px_8px_rgba(245,185,0,0.25)]'
                           : 'text-neutral-400 hover:text-white'
                       }`}
@@ -282,9 +404,9 @@ export function CartDrawer({
 
                     <button
                       type="button"
-                      onClick={() => setPaymentMethod('Transferencia')}
+                      onClick={() => setPaymentMethod('transferencia')}
                       className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
-                        paymentMethod === 'Transferencia'
+                        paymentMethod === 'transferencia'
                           ? 'bg-cheesy-yellow text-cheesy-black shadow-[0_2px_8px_rgba(245,185,0,0.25)]'
                           : 'text-neutral-400 hover:text-white'
                       }`}
@@ -389,8 +511,24 @@ export function CartDrawer({
               El costo de envío y horario de entrega se confirman por WhatsApp.
             </p>
 
+            {error && (
+              <div role="alert" className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-300">
+                <p>{error}</p>
+                {fallbackAvailable && (
+                  <button
+                    type="button"
+                    onClick={openWhatsAppFallback}
+                    className="mt-2 font-bold text-cheesy-yellow underline underline-offset-2 cursor-pointer"
+                  >
+                    Enviar el pedido por WhatsApp
+                  </button>
+                )}
+              </div>
+            )}
+
             <button
-              onClick={handleCheckoutWhatsApp}
+              onClick={handleSubmitOrder}
+              disabled={isSending}
               className="group relative w-full flex items-center justify-center gap-3 pt-5 pb-8 px-6 text-cheesy-black font-sans font-bold text-base transition-transform duration-200 cursor-pointer hover:scale-[1.015] active:scale-[0.98] select-none mb-1"
             >
               {/* Fondo artesanal con forma orgánica de queso cheddar derretido — 100% fluido y curvo, con base gruesa */}
@@ -418,7 +556,7 @@ export function CartDrawer({
               >
                 <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
               </svg>
-              <span className="relative z-10">Pedir por WhatsApp</span>
+              <span className="relative z-10">{isSending ? 'Enviando…' : 'Confirmar pedido'}</span>
               <ArrowRight className="relative z-10 w-5 h-5 ml-1 transition-transform duration-200 group-hover:translate-x-1" />
             </button>
 
