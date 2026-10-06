@@ -57,6 +57,8 @@ export function useCart() {
     setCart((current) => current.filter((item) => item.id !== id))
   }
 
+  const handleClearCart = () => setCart([])
+
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
 
   return {
@@ -65,5 +67,6 @@ export function useCart() {
     handleAddToCart,
     handleUpdateQuantity,
     handleRemoveItem,
+    handleClearCart,
   }
 }

@@ -11,7 +11,7 @@ import { CartDrawer } from '@/components/cart-drawer'
 import { useCart } from '@/lib/cart'
 
 export default function CheesyBiteLanding() {
-  const { cart, totalCartCount, handleUpdateQuantity, handleRemoveItem } = useCart()
+  const { cart, totalCartCount, handleUpdateQuantity, handleRemoveItem, handleClearCart } = useCart()
   const [cartOpen, setCartOpen] = useState(false)
 
   return (
@@ -36,13 +36,14 @@ export default function CheesyBiteLanding() {
       {/* Pie de página */}
       <Footer />
 
-      {/* Carrito lateral desplegable con checkout por WhatsApp */}
+      {/* Carrito lateral desplegable */}
       <CartDrawer
         items={cart}
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
+        onOrderCreated={handleClearCart}
       />
     </div>
   )
