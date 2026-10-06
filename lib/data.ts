@@ -1,7 +1,7 @@
-import { Product, SiteConfig } from './types'
+import { CategoryFilter, Product, SiteConfig } from './types'
 
 export const SITE_CONFIG: SiteConfig = {
-  name: 'CheesyBite',
+  name: 'Don Pancho & Burger',
   slogan: 'El verdadero sabor de la felicidad',
   // TEMPORAL: WhatsApp de Alex para pruebas. Reemplazar por el del local antes de la entrega.
   whatsappNumber: '5493442668413',
@@ -15,13 +15,22 @@ export const SITE_CONFIG: SiteConfig = {
   },
 }
 
-export const CATEGORIES = ['Todas', 'Clásicas', 'Especiales', 'Vegetarianas', 'Combos'] as const
+export const CATEGORIES = ['Todas', 'Hamburguesas', 'Panchos', 'Combos'] as const
+
+/**
+ * Categoría que corresponde al parámetro `?categoria=` de la carta (por ejemplo,
+ * `/menu?categoria=panchos`). Si falta o no coincide con ninguna, devuelve 'Todas'.
+ */
+export function categoryFromParam(value: string | string[] | undefined): CategoryFilter {
+  const raw = (Array.isArray(value) ? value[0] : value)?.trim().toLowerCase()
+  return CATEGORIES.find((category) => category.toLowerCase() === raw) ?? 'Todas'
+}
 
 export const PRODUCTS: Product[] = [
   {
     id: 1,
     name: 'La Clásica',
-    category: 'Clásicas',
+    category: 'Hamburguesas',
     description: 'Carne 150g, cheddar, lechuga, tomate, cebolla y salsa especial.',
     price: 5500,
     image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80',
@@ -29,7 +38,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 2,
     name: 'Bacon Lover',
-    category: 'Especiales',
+    category: 'Hamburguesas',
     description: 'Carne 150g, cheddar, panceta crujiente, lechuga, tomate y salsa BBQ.',
     price: 6500,
     badge: 'Más pedida',
@@ -38,7 +47,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 3,
     name: 'Champi Power',
-    category: 'Especiales',
+    category: 'Hamburguesas',
     description: 'Carne 150g, cheddar, champiñones salteados, lechuga y salsa de la casa.',
     price: 6200,
     image: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=800&q=80',
@@ -46,7 +55,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 4,
     name: 'Green Burger',
-    category: 'Vegetarianas',
+    category: 'Hamburguesas',
     description: 'Medallón de vegetales, cheddar, aguacate, lechuga, tomate y cebolla.',
     price: 5800,
     badge: 'Veggie',
@@ -55,7 +64,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 5,
     name: 'Doble Cheddar Smash',
-    category: 'Clásicas',
+    category: 'Hamburguesas',
     description: 'Doble carne smash 120g, cuádruple cheddar fundido y cebolla caramelizada.',
     price: 7200,
     badge: 'Bomba',
@@ -72,7 +81,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 7,
     name: 'Crispy Onion BBQ',
-    category: 'Especiales',
+    category: 'Hamburguesas',
     description: 'Carne smash 160g, cheddar americano, aros de cebolla crocantes y salsa BBQ ahumada.',
     price: 6800,
     image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?auto=format&fit=crop&w=900&q=85',
@@ -85,6 +94,24 @@ export const PRODUCTS: Product[] = [
     price: 13500,
     badge: 'Promo',
     image: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?auto=format&fit=crop&w=900&q=85',
+  },
+  // EJEMPLO: panchos de muestra para poder probar el filtro de la carta.
+  // Nombres, descripciones y precios inventados: reemplazar por la carta real de Don Pancho.
+  {
+    id: 9,
+    name: 'Pancho Clásico',
+    category: 'Panchos',
+    description: 'Salchicha, pan y aderezos a elección.',
+    price: 3500,
+    image: '/images/pancho-recortado.webp',
+  },
+  {
+    id: 10,
+    name: 'Pancho Cheddar y Panceta',
+    category: 'Panchos',
+    description: 'Salchicha, cheddar fundido y panceta en cubos.',
+    price: 4500,
+    image: '/images/pancho-recortado.webp',
   },
 ]
 

@@ -37,8 +37,8 @@ export default async function PedidosPage({ searchParams }: { searchParams: Prom
             aria-current={p.filtro === filtro ? 'page' : undefined}
             className={`rounded-full border px-4 py-1.5 text-sm font-semibold ${
               p.filtro === filtro
-                ? 'border-cheesy-yellow bg-cheesy-yellow text-cheesy-black'
-                : 'border-white/15 text-cheesy-muted hover:text-cheesy-cream'
+                ? 'border-pancho-orange bg-pancho-orange text-pancho-black'
+                : 'border-white/15 text-pancho-muted hover:text-pancho-cream'
             }`}
           >
             {p.titulo}
@@ -47,7 +47,7 @@ export default async function PedidosPage({ searchParams }: { searchParams: Prom
       </nav>
 
       {pedidos.length === 0 ? (
-        <p className="rounded-xl border border-white/10 bg-cheesy-surface p-6 text-center text-cheesy-muted">
+        <p className="rounded-xl border border-white/10 bg-pancho-surface p-6 text-center text-pancho-muted">
           No hay pedidos en esta lista.
         </p>
       ) : (
@@ -56,22 +56,22 @@ export default async function PedidosPage({ searchParams }: { searchParams: Prom
             <li key={p.id}>
               <Link
                 href={`/admin/pedidos/${p.id}`}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-cheesy-surface p-4 hover:border-cheesy-yellow/60"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-pancho-surface p-4 hover:border-pancho-orange/60"
               >
                 <div className="min-w-0">
                   <p className="flex items-center gap-2">
-                    <span className="font-display text-xl text-cheesy-yellow">N° {formatearNumero(p.numero)}</span>
+                    <span className="font-display text-xl text-pancho-orange">N° {formatearNumero(p.numero)}</span>
                     <InsigniaEstado estado={p.estado} />
                   </p>
                   <p className="mt-1 truncate font-semibold">{p.clienteNombre}</p>
-                  <p className="text-sm text-cheesy-muted">
+                  <p className="text-sm text-pancho-muted">
                     {ETIQUETA_MODALIDAD[p.modalidad]} · {ETIQUETA_PAGO[p.metodoPago]}
                     {p.metodoPago === 'transferencia' && (p.pagoConfirmado ? ' (pago confirmado)' : ' (pago sin confirmar)')}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="font-display text-xl">{formatearPrecio(p.total)}</p>
-                  <p className="text-sm text-cheesy-muted">
+                  <p className="text-sm text-pancho-muted">
                     {formatearHora(p.creadoEn)} · {formatearSoloFecha(p.creadoEn)}
                   </p>
                   <p className="sr-only">{ETIQUETA_ESTADO[p.estado]}</p>

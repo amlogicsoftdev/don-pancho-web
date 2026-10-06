@@ -1,7 +1,7 @@
 export interface Product {
   id: number
   name: string
-  category: 'Clásicas' | 'Especiales' | 'Vegetarianas' | 'Combos'
+  category: 'Hamburguesas' | 'Panchos' | 'Combos'
   description: string
   price: number
   image: string
@@ -12,7 +12,7 @@ export interface CartItem extends Product {
   quantity: number
 }
 
-export type CategoryFilter = 'Todas' | 'Clásicas' | 'Especiales' | 'Vegetarianas' | 'Combos'
+export type CategoryFilter = 'Todas' | 'Hamburguesas' | 'Panchos' | 'Combos'
 
 export interface SiteConfig {
   name: string
