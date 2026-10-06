@@ -1,14 +1,8 @@
+import { redirect } from 'next/navigation'
 import { requerirUsuario } from '@/lib/auth/guards'
 
+// Por ahora la pantalla de inicio del panel es la lista de pedidos.
 export default async function PanelInicio() {
-  const usuario = await requerirUsuario()
-
-  return (
-    <section>
-      <h1 className="mb-2 text-3xl">Hola, {usuario.nombre}</h1>
-      <p className="text-pancho-muted">
-        Acá van a aparecer los pedidos y las herramientas del local a medida que se vayan sumando las próximas etapas.
-      </p>
-    </section>
-  )
+  await requerirUsuario()
+  redirect('/admin/pedidos')
 }
