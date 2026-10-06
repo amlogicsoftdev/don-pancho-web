@@ -1,0 +1,113 @@
+import { Product, SiteConfig } from './types'
+
+export const SITE_CONFIG: SiteConfig = {
+  name: 'CheesyBite',
+  slogan: 'El verdadero sabor de la felicidad',
+  whatsappNumber: '543442668413',
+  displayPhone: '+54 3442 66-8413',
+  address: 'Honduras 4920, Palermo Soho, CABA',
+  schedule: 'Mar — Dom · 19:00 a 00:30',
+  socialLinks: {
+    instagram: 'https://instagram.com',
+    facebook: 'https://facebook.com',
+    tiktok: 'https://tiktok.com',
+  },
+}
+
+export const CATEGORIES = ['Todas', 'Clásicas', 'Especiales', 'Vegetarianas', 'Combos'] as const
+
+export const PRODUCTS: Product[] = [
+  {
+    id: 1,
+    name: 'La Clásica',
+    category: 'Clásicas',
+    description: 'Carne 150g, cheddar, lechuga, tomate, cebolla y salsa especial.',
+    price: 5500,
+    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 2,
+    name: 'Bacon Lover',
+    category: 'Especiales',
+    description: 'Carne 150g, cheddar, panceta crujiente, lechuga, tomate y salsa BBQ.',
+    price: 6500,
+    badge: 'Más pedida',
+    image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 3,
+    name: 'Champi Power',
+    category: 'Especiales',
+    description: 'Carne 150g, cheddar, champiñones salteados, lechuga y salsa de la casa.',
+    price: 6200,
+    image: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 4,
+    name: 'Green Burger',
+    category: 'Vegetarianas',
+    description: 'Medallón de vegetales, cheddar, aguacate, lechuga, tomate y cebolla.',
+    price: 5800,
+    badge: 'Veggie',
+    image: 'https://images.unsplash.com/photo-1520072959219-c595dc870360?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 5,
+    name: 'Doble Cheddar Smash',
+    category: 'Clásicas',
+    description: 'Doble carne smash 120g, cuádruple cheddar fundido y cebolla caramelizada.',
+    price: 7200,
+    badge: 'Bomba',
+    image: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=900&q=85',
+  },
+  {
+    id: 6,
+    name: 'Papas Cheesy Bacon',
+    category: 'Combos',
+    description: 'Papas bastón crocantes bañadas en cheddar fundido y lluvia de panceta crocante.',
+    price: 3900,
+    image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=900&q=85',
+  },
+  {
+    id: 7,
+    name: 'Crispy Onion BBQ',
+    category: 'Especiales',
+    description: 'Carne smash 160g, cheddar americano, aros de cebolla crocantes y salsa BBQ ahumada.',
+    price: 6800,
+    image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?auto=format&fit=crop&w=900&q=85',
+  },
+  {
+    id: 8,
+    name: 'Combo Cheesy Dúo',
+    category: 'Combos',
+    description: '2 Burgers Clásicas simples + Papas cheddar grandes + 2 gaseosas a elección.',
+    price: 13500,
+    badge: 'Promo',
+    image: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?auto=format&fit=crop&w=900&q=85',
+  },
+]
+
+export const BENEFITS = [
+  {
+    icon: 'Utensils',
+    title: 'Ingredientes de primera',
+    description: 'Productos frescos y de la mejor calidad.',
+  },
+  {
+    icon: 'Star',
+    title: 'Recetas únicas',
+    description: 'Combinaciones que te van a sorprender.',
+  },
+  {
+    icon: 'Bike',
+    title: 'Envíos rápidos',
+    description: 'Tu pedido, en la puerta de tu casa.',
+  },
+  {
+    icon: 'Heart',
+    title: 'Clientes felices',
+    description: 'Más de 10.000 pedidos nos respaldan.',
+  },
+] as const
+
+export const formatPrice = (value: number): string => `$${value.toLocaleString('es-AR')}`

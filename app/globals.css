@@ -1,0 +1,856 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@theme {
+  --font-display: var(--font-chewy), cursive, sans-serif;
+  --font-sans: var(--font-sans), system-ui, sans-serif;
+  --font-badge: var(--font-badge), cursive, sans-serif;
+  --color-cheesy-black: #0D0D0D;
+  --color-cheesy-surface: #171717;
+  --color-cheesy-card: #181818;
+  --color-cheesy-yellow: #F5B900;
+  --color-cheesy-yellow-bright: #FFC21A;
+  --color-cheesy-cream: #F7F7F5;
+  --color-cheesy-muted: #A3A3A0;
+}
+
+:root {
+  --black: #0D0D0D;
+  --surface: #171717;
+  --surface-card: #181818;
+  --yellow: #F5B900;
+  --yellow-bright: #FFC21A;
+  --cream: #F7F7F5;
+  --muted: #A3A3A0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
+body {
+  margin: 0;
+  background-color: var(--black);
+  color: var(--cream);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display), cursive, sans-serif;
+}
+
+.font-badge {
+  font-family: var(--font-badge), cursive, sans-serif;
+}
+
+/* Scrollbar Personalizado */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0D0D0D;
+}
+::-webkit-scrollbar-thumb {
+  background: #2A2A2A;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #F5B900;
+}
+
+/* Keyframe Animations */
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1.5deg);
+  }
+}
+
+@keyframes floatReverse {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(8px) rotate(-1.5deg);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 25px rgba(245, 185, 0, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 45px rgba(245, 185, 0, 0.45);
+  }
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-float {
+  animation: floatSlow 5s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: floatReverse 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s infinite ease-in-out;
+}
+
+.animate-pop {
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Animación de explosión de partículas al agregar al carrito */
+@keyframes particleExplosion {
+  0% {
+    transform: translate(0, 0) scale(0.3);
+    opacity: 1;
+  }
+  40% {
+    transform: translate(calc(var(--tx) * 0.6), calc(var(--ty) * 0.6)) scale(1.3);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(0);
+    opacity: 0;
+  }
+}
+
+.animate-particle {
+  animation: particleExplosion 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Animaciones de entrada del Hero */
+@keyframes heroFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroBurgerEnter {
+  from {
+    opacity: 0;
+    transform: translateY(60px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes heroBadgePop {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-10deg);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.15) rotate(3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes heroLineDraw {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 303;
+  }
+  6% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Animación para cuñas de énfasis (nacen como punto y se estiran en su forma original) */
+@keyframes heroBurstWedge {
+  0% {
+    opacity: 0;
+    transform: scale(0.06);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(0.22);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes heroArrowDraw {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 45;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes heroArrowHeadDraw {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 28;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes heroScalePop {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animación de queso cheddar derritiéndose bajo el botón — flujo continuo natural sin rebote */
+@keyframes heroCheddarMelt {
+  0% {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+/* Redondeo progresivo de los bordes superiores al derretirse el queso cheddar */
+@keyframes heroBtnMeltTop {
+  0% {
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+  }
+  100% {
+    border-top-left-radius: 22px;
+    border-top-right-radius: 22px;
+  }
+}
+
+.animate-hero-eyebrow {
+  animation: heroFadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
+.animate-hero-title {
+  animation: heroFadeUp 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.28s both;
+}
+
+.animate-hero-burst-title-1 {
+  transform-origin: 31.5px 13.7px;
+  transform-box: view-box;
+  animation: heroBurstWedge 0.65s cubic-bezier(0.35, 0, 0.25, 1) 0.48s both;
+}
+
+.animate-hero-burst-title-2 {
+  transform-origin: 33px 34px;
+  transform-box: view-box;
+  animation: heroBurstWedge 0.65s cubic-bezier(0.35, 0, 0.25, 1) 0.52s both;
+}
+
+.animate-hero-burst-title-3 {
+  transform-origin: 20px 48px;
+  transform-box: view-box;
+  animation: heroBurstWedge 0.65s cubic-bezier(0.35, 0, 0.25, 1) 0.56s both;
+}
+
+.animate-hero-burst-burger-1 {
+  transform-origin: 46.4px 24.7px;
+  transform-box: view-box;
+  animation: heroBurstWedge 0.7s cubic-bezier(0.35, 0, 0.25, 1) 0.72s both;
+}
+
+.animate-hero-burst-burger-2 {
+  transform-origin: 37px 42px;
+  transform-box: view-box;
+  animation: heroBurstWedge 0.7s cubic-bezier(0.35, 0, 0.25, 1) 0.76s both;
+}
+
+.animate-hero-burst-burger-3 {
+  transform-origin: 25px 58px;
+  transform-box: view-box;
+  animation: heroBurstWedge 0.7s cubic-bezier(0.35, 0, 0.25, 1) 0.80s both;
+}
+
+.animate-hero-desc {
+  animation: heroFadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+}
+
+.animate-hero-btn {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  animation:
+    heroFadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both,
+    heroBtnMeltTop 1.45s cubic-bezier(0.22, 1, 0.36, 1) 1.25s forwards;
+}
+
+.animate-hero-melt-left {
+  opacity: 0;
+  transform: scaleY(0);
+  transform-origin: top center;
+  animation: heroCheddarMelt 1.4s cubic-bezier(0.22, 1, 0.36, 1) 1.25s forwards;
+}
+
+.animate-hero-melt-right {
+  opacity: 0;
+  transform: scaleY(0);
+  transform-origin: top center;
+  animation: heroCheddarMelt 1.55s cubic-bezier(0.22, 1, 0.36, 1) 1.38s forwards;
+}
+
+.animate-hero-melt-top {
+  opacity: 0;
+  transform: scaleY(0);
+  transform-origin: bottom center;
+  animation: heroCheddarMeltTop 1.4s cubic-bezier(0.22, 1, 0.36, 1) 1.25s forwards;
+}
+
+@keyframes heroCheddarMeltTop {
+  0% {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+.animate-hero-burger {
+  animation: heroBurgerEnter 0.95s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+  transform-origin: bottom center;
+}
+
+.animate-hero-sparks {
+  animation: heroScalePop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.8s both;
+  transform-origin: center;
+}
+
+.animate-hero-drops {
+  animation: heroScalePop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.85s both;
+  transform-origin: center;
+}
+
+.animate-hero-badge {
+  animation: heroBadgePop 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.95s both;
+  transform-origin: center;
+}
+
+.animate-hero-badge-arrow {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 45;
+  opacity: 0;
+  animation: heroArrowDraw 0.5s cubic-bezier(0.35, 0, 0.25, 1) 1.25s forwards;
+}
+
+.animate-hero-badge-arrowhead {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 28;
+  opacity: 0;
+  animation: heroArrowHeadDraw 0.4s cubic-bezier(0.35, 0, 0.25, 1) 1.55s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-eyebrow,
+  .animate-hero-title,
+  .animate-hero-desc,
+  .animate-hero-btn,
+  .animate-hero-melt-left,
+  .animate-hero-melt-right,
+  .animate-hero-melt-top,
+  .animate-hero-burger,
+  .animate-hero-sparks,
+  .animate-hero-drops,
+  .animate-hero-badge {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .animate-hero-underline,
+  .animate-hero-burst-title-1,
+  .animate-hero-burst-title-2,
+  .animate-hero-burst-title-3,
+  .animate-hero-burst-burger-1,
+  .animate-hero-burst-burger-2,
+  .animate-hero-burst-burger-3,
+  .animate-hero-badge-arrow,
+  .animate-hero-badge-arrowhead {
+    animation: none !important;
+    opacity: 1 !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
+
+/* Ocultar scrollbar en mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Transición suave al cambiar de producto en el visor flotante del menú */
+@keyframes menuPhotoSwitch {
+  0% {
+    opacity: 0.25;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-menu-photo {
+  animation: menuPhotoSwitch 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes menuTitleSwitch {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-menu-title {
+  animation: menuTitleSwitch 0.25s ease-out forwards;
+}
+
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.32);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.18);
+  }
+  70% {
+    transform: scale(1);
+  }
+}
+
+.animate-heartbeat {
+  transform-origin: center;
+  animation: heartbeat 1.35s ease-in-out infinite;
+}
+
+@keyframes textWallBounce {
+  0% {
+    opacity: 0;
+    transform: translate3d(115px, 0, 0) rotate(0.6deg);
+    animation-timing-function: cubic-bezier(0.22, 0.8, 0.36, 1);
+  }
+  58% {
+    opacity: 1;
+    transform: translate3d(-7px, 0, 0) rotate(-1.3deg);
+    animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  80% {
+    transform: translate3d(2.5px, 0, 0) rotate(0.4deg);
+    animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+@keyframes aboutImageEntrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateX(-35px) rotate(-1.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0) rotate(0deg);
+  }
+}
+
+.animate-about-image {
+  animation: aboutImageEntrance 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.animate-bounce-eyebrow {
+  transform-origin: left bottom;
+  animation: textWallBounce 0.72s linear 0.15s both;
+}
+
+.animate-bounce-title-1 {
+  transform-origin: left bottom;
+  animation: textWallBounce 0.72s linear 0.55s both;
+}
+
+.animate-bounce-title-2 {
+  transform-origin: left bottom;
+  animation: textWallBounce 0.72s linear 0.95s both;
+}
+
+.animate-bounce-desc {
+  animation: heroFadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.75s both;
+}
+
+.animate-about-burst-1 {
+  transform-origin: 28px 16px;
+  transform-box: view-box;
+  animation: heroBurstWedge 0.65s cubic-bezier(0.35, 0, 0.25, 1) 0.4s both;
+}
+
+.animate-about-burst-2 {
+  transform-origin: 32px 34px;
+  transform-box: view-box;
+  animation: heroBurstWedge 0.65s cubic-bezier(0.35, 0, 0.25, 1) 0.45s both;
+}
+
+.animate-about-burst-3 {
+  transform-origin: 20px 48px;
+  transform-box: view-box;
+  animation: heroBurstWedge 0.65s cubic-bezier(0.35, 0, 0.25, 1) 0.5s both;
+}
+
+/* Borde orgánico y rotación leve al pasar el mouse */
+.about-organic-image {
+  filter: none;
+  transition: filter 0.35s ease-out, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.group:hover .about-organic-image {
+  filter: 
+    drop-shadow(2px 0 0 #F5B900)
+    drop-shadow(-2px 0 0 #F5B900)
+    drop-shadow(0 2px 0 #F5B900)
+    drop-shadow(0 -2px 0 #F5B900)
+    drop-shadow(1.5px 1.5px 0 #F5B900)
+    drop-shadow(-1.5px -1.5px 0 #F5B900)
+    drop-shadow(1.5px -1.5px 0 #F5B900)
+    drop-shadow(-1.5px 1.5px 0 #F5B900);
+  transform: scale(1.025) rotate(-1.2deg);
+}
+
+/* =========================================================
+   ANIMACIÓN DEL TÍTULO: NUESTRO + CÍRCULO CON EXPLOSIÓN TIPO MENÚ (SIN SHADOW)
+========================================================= */
+
+/* 1. "Nuestro" aparición estética limpia (sin shadow) */
+@keyframes nuestroCleanReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-nuestro-reveal {
+  animation: nuestroCleanReveal 0.5s ease-out forwards;
+}
+
+/* 2. Círculo amarillo que aparece y estalla */
+@keyframes cheddarCirclePop {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  70% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  88% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.animate-cheddar-circle {
+  animation: cheddarCirclePop 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.25s forwards;
+  opacity: 0;
+}
+
+/* 3. Frase "Secreto Artesanal" emergente de la explosión (sin shadow) */
+@keyframes cheddarSecretPopClean {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  80% {
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-cheddar-secret-emerge {
+  animation: cheddarSecretPopClean 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.85s forwards;
+  opacity: 0;
+}
+
+/* =========================================================
+   ANIMACIÓN DE ESCRITURA POR CONTORNO REAL (BURGUERS CON ALMA)
+========================================================= */
+
+/* Línea 1: BURGUERS - se escribe por contorno real a partir de 2.55s */
+@keyframes badgeContourLine1 {
+  0% {
+    stroke-dasharray: 600;
+    stroke-dashoffset: 600;
+    clip-path: inset(0 100% 0 0);
+    fill: transparent;
+    opacity: 0;
+  }
+  2% {
+    opacity: 1;
+    fill: transparent;
+  }
+  75% {
+    stroke-dashoffset: 0;
+    clip-path: inset(0 0% 0 0);
+    fill: transparent;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    clip-path: inset(0 0% 0 0);
+    fill: #F5B900;
+    opacity: 1;
+  }
+}
+
+.animate-badge-contour-line1 {
+  animation: badgeContourLine1 0.75s ease-out 2.55s forwards;
+  opacity: 0;
+}
+
+/* Línea 2: CON ALMA - se escribe por contorno real a partir de 3.30s */
+@keyframes badgeContourLine2 {
+  0% {
+    stroke-dasharray: 550;
+    stroke-dashoffset: 550;
+    clip-path: inset(0 100% 0 0);
+    fill: transparent;
+    opacity: 0;
+  }
+  2% {
+    opacity: 1;
+    fill: transparent;
+  }
+  75% {
+    stroke-dashoffset: 0;
+    clip-path: inset(0 0% 0 0);
+    fill: transparent;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    clip-path: inset(0 0% 0 0);
+    fill: #F5B900;
+    opacity: 1;
+  }
+}
+
+.animate-badge-contour-line2 {
+  animation: badgeContourLine2 0.75s ease-out 3.30s forwards;
+  opacity: 0;
+}
+
+/* Curva subrayada del badge */
+@keyframes badgeCurveDraw {
+  0% {
+    stroke-dasharray: 55;
+    stroke-dashoffset: 55;
+    opacity: 0;
+  }
+  1% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dasharray: 55;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+.animate-badge-curve {
+  animation: badgeCurveDraw 0.5s ease-out 4.05s forwards;
+  opacity: 0;
+}
+
+/* Corazón del badge */
+@keyframes badgeHeartPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-badge-heart {
+  animation: badgeHeartPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) 4.55s forwards;
+  opacity: 0;
+}
+
+/* Partículas radiales del título (sin sombras) */
+@keyframes titleParticleBurst {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0);
+  }
+  1% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0.4);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(calc(var(--tx) * 0.65), calc(var(--ty) * 0.65)) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(0);
+  }
+}
+
+.animate-title-particle {
+  animation: titleParticleBurst 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  opacity: 0;
+}
+
+/* =========================================================
+   ANIMACIONES SMASH & CHEDDAR DRIP PARA ITEMS DESTACADOS
+========================================================= */
+
+@keyframes smashEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(-28px) scale(0.85);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(3px) scale(1.06);
+  }
+  82% {
+    transform: translateY(-1.5px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cheddarDripDeploy {
+  0% {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes smashTitleReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+
+
+
