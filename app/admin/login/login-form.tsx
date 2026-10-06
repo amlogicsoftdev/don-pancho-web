@@ -40,7 +40,7 @@ export function LoginForm() {
           type="email"
           required
           autoComplete="username"
-          className="h-10 rounded-lg border border-white/15 bg-cheesy-black px-3 outline-none focus:border-cheesy-yellow"
+          className="h-10 rounded-lg border border-white/15 bg-pancho-black px-3 outline-none focus:border-pancho-orange"
         />
       </label>
       <label className="flex flex-col gap-1.5 text-sm">
@@ -50,7 +50,7 @@ export function LoginForm() {
           type="password"
           required
           autoComplete="current-password"
-          className="h-10 rounded-lg border border-white/15 bg-cheesy-black px-3 outline-none focus:border-cheesy-yellow"
+          className="h-10 rounded-lg border border-white/15 bg-pancho-black px-3 outline-none focus:border-pancho-orange"
         />
       </label>
       {error && (
@@ -58,7 +58,7 @@ export function LoginForm() {
           {error}
         </p>
       )}
-      <Button type="submit" size="lg" disabled={enviando} className="h-10 bg-cheesy-yellow text-cheesy-black hover:bg-cheesy-yellow-bright">
+      <Button type="submit" size="lg" disabled={enviando} className="h-10 bg-pancho-orange text-pancho-black hover:bg-pancho-orange-deep">
         {enviando ? 'Ingresando…' : 'Ingresar'}
       </Button>
     </form>
