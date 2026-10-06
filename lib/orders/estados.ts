@@ -64,7 +64,8 @@ export function etiquetaAvance(estado: EstadoPedido, modalidad: ModalidadPedido)
 /** Número legible del pedido: 152 → "0152". */
 export const formatearNumero = (numero: number) => String(numero).padStart(4, '0')
 
-export const formatearPrecio = (valor: number) => `$${valor.toLocaleString('es-AR')}`
+export const formatearPrecio = (valor: number) =>
+  valor < 0 ? `-$${(-valor).toLocaleString('es-AR')}` : `$${valor.toLocaleString('es-AR')}`
 
 const ZONA = 'America/Argentina/Buenos_Aires'
 

@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { and, count, eq, gte, inArray } from 'drizzle-orm'
 import { db, schema } from '@/lib/db'
-import type { PedidoEntrada } from './validate'
+import type { ItemPedidoEntrada, PedidoEntrada, VentaMostradorEntrada } from './validate'
 
 // Pedidos seguidos desde un mismo teléfono: protección básica contra pedidos repetidos o falsos.
 const VENTANA_MINUTOS = 10
@@ -17,6 +17,7 @@ export class ErrorPedido extends Error {
 }
 
 export interface PedidoCreado {
+  id: number
   numero: number
   token: string
   total: number
@@ -30,6 +31,49 @@ async function leerDescuentoPorcentaje(): Promise<number> {
   const porcentaje = Number(fila?.valor ?? 0)
   // Nunca confiar ciegamente en lo guardado: se acota a 0–100.
   return Number.isInteger(porcentaje) && porcentaje >= 0 && porcentaje <= 100 ? porcentaje : 0
+}
+
+/**
+ * Toma los precios de la base (solo productos activos de categorías activas) y calcula
+ * subtotal, descuento y total. Del navegador solo se usan ids y cantidades.
+ */
+async function calcularLineas(items: ItemPedidoEntrada[]) {
+  const ids = [...new Set(items.map((i) => i.productoId))]
+  const productos = await db
+    .select({
+      id: schema.productos.id,
+      nombre: schema.productos.nombre,
+      precio: schema.productos.precio,
+    })
+    .from(schema.productos)
+    .innerJoin(schema.categorias, eq(schema.productos.categoriaId, schema.categorias.id))
+    .where(
+      and(
+        inArray(schema.productos.id, ids),
+        eq(schema.productos.activo, true),
+        eq(schema.categorias.activa, true),
+      ),
+    )
+  const porId = new Map(productos.map((p) => [p.id, p]))
+  if (porId.size !== ids.length) {
+    throw new ErrorPedido('Algún producto ya no está disponible. Actualizá el menú y volvé a armar el pedido.', 409)
+  }
+
+  const lineas = items.map((item) => {
+    const producto = porId.get(item.productoId)!
+    return {
+      productoId: producto.id,
+      nombre: producto.nombre,
+      precioUnitario: producto.precio,
+      cantidad: item.cantidad,
+      aclaraciones: item.aclaraciones,
+    }
+  })
+
+  const subtotal = lineas.reduce((suma, l) => suma + l.precioUnitario * l.cantidad, 0)
+  const descuentoPorcentaje = await leerDescuentoPorcentaje()
+  const descuentoMonto = Math.round((subtotal * descuentoPorcentaje) / 100)
+  return { lineas, subtotal, descuentoPorcentaje, descuentoMonto, total: subtotal - descuentoMonto }
 }
 
 /**
@@ -52,46 +96,10 @@ export async function crearPedidoWeb(entrada: PedidoEntrada): Promise<PedidoCrea
     throw new ErrorPedido('Hiciste varios pedidos seguidos. Esperá unos minutos o escribinos por WhatsApp.', 429)
   }
 
-  const ids = [...new Set(entrada.items.map((i) => i.productoId))]
-  const productos = await db
-    .select({
-      id: schema.productos.id,
-      nombre: schema.productos.nombre,
-      precio: schema.productos.precio,
-    })
-    .from(schema.productos)
-    .innerJoin(schema.categorias, eq(schema.productos.categoriaId, schema.categorias.id))
-    .where(
-      and(
-        inArray(schema.productos.id, ids),
-        eq(schema.productos.activo, true),
-        eq(schema.categorias.activa, true),
-      ),
-    )
-  const porId = new Map(productos.map((p) => [p.id, p]))
-  if (porId.size !== ids.length) {
-    throw new ErrorPedido('Algún producto ya no está disponible. Actualizá el menú y volvé a armar el pedido.', 409)
-  }
-
-  const lineas = entrada.items.map((item) => {
-    const producto = porId.get(item.productoId)!
-    return {
-      productoId: producto.id,
-      nombre: producto.nombre,
-      precioUnitario: producto.precio,
-      cantidad: item.cantidad,
-      aclaraciones: item.aclaraciones,
-    }
-  })
-
-  const subtotal = lineas.reduce((suma, l) => suma + l.precioUnitario * l.cantidad, 0)
-  const descuentoPorcentaje = await leerDescuentoPorcentaje()
-  const descuentoMonto = Math.round((subtotal * descuentoPorcentaje) / 100)
-  const total = subtotal - descuentoMonto
-
+  const { lineas, subtotal, descuentoPorcentaje, descuentoMonto, total } = await calcularLineas(entrada.items)
   const token = randomBytes(24).toString('base64url')
 
-  const numero = await db.transaction(async (tx) => {
+  const { id, numero } = await db.transaction(async (tx) => {
     const [pedido] = await tx
       .insert(schema.pedidos)
       .values({
@@ -119,8 +127,51 @@ export async function crearPedidoWeb(entrada: PedidoEntrada): Promise<PedidoCrea
       estadoNuevo: 'pendiente',
       usuarioId: null,
     })
-    return pedido.numero
+    return { id: pedido.id, numero: pedido.numero }
   })
 
-  return { numero, token, total }
+  return { id, numero, token, total }
+}
+
+/**
+ * Guarda una venta de mostrador: entra al sistema ya entregada y cobrada, a nombre de quien la
+ * cargó, así suma sola a los reportes y al cierre de caja.
+ */
+export async function crearVentaMostrador(entrada: VentaMostradorEntrada, usuarioId: string): Promise<PedidoCreado> {
+  const { lineas, subtotal, descuentoPorcentaje, descuentoMonto, total } = await calcularLineas(entrada.items)
+  const token = randomBytes(24).toString('base64url')
+
+  const { id, numero } = await db.transaction(async (tx) => {
+    const [pedido] = await tx
+      .insert(schema.pedidos)
+      .values({
+        tokenSeguimiento: token,
+        origen: 'mostrador',
+        estado: 'entregado',
+        modalidad: 'retiro',
+        metodoPago: entrada.metodoPago,
+        // En el mostrador se cobra en el momento.
+        pagoConfirmado: true,
+        clienteNombre: entrada.clienteNombre ?? 'Mostrador',
+        clienteTelefono: '',
+        notas: entrada.notas,
+        subtotal,
+        descuentoPorcentaje,
+        descuentoMonto,
+        total,
+        creadoPor: usuarioId,
+      })
+      .returning({ id: schema.pedidos.id, numero: schema.pedidos.numero })
+
+    await tx.insert(schema.pedidoItems).values(lineas.map((l) => ({ ...l, pedidoId: pedido.id })))
+    await tx.insert(schema.pedidoHistorial).values({
+      pedidoId: pedido.id,
+      estadoAnterior: null,
+      estadoNuevo: 'entregado',
+      usuarioId,
+    })
+    return { id: pedido.id, numero: pedido.numero }
+  })
+
+  return { id, numero, token, total }
 }
