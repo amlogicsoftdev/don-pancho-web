@@ -3,7 +3,8 @@ import { Product, SiteConfig } from './types'
 export const SITE_CONFIG: SiteConfig = {
   name: 'CheesyBite',
   slogan: 'El verdadero sabor de la felicidad',
-  whatsappNumber: '543442668413',
+  // TEMPORAL: WhatsApp de Alex para pruebas. Reemplazar por el del local antes de la entrega.
+  whatsappNumber: '5493442668413',
   displayPhone: '+54 3442 66-8413',
   address: 'Honduras 4920, Palermo Soho, CABA',
   schedule: 'Mar — Dom · 19:00 a 00:30',
