@@ -87,3 +87,27 @@ export async function leerNombreLocal(): Promise<string> {
     .where(eq(schema.configuracion.clave, 'nombre'))
   return fila?.valor ?? 'Don Pancho & Burger'
 }
+
+/** Menú vigente (categorías y productos activos) para cargar ventas de mostrador. */
+export async function listarMenuActivo() {
+  const filas = await db
+    .select({
+      categoriaId: schema.categorias.id,
+      categoria: schema.categorias.nombre,
+      productoId: schema.productos.id,
+      nombre: schema.productos.nombre,
+      precio: schema.productos.precio,
+    })
+    .from(schema.productos)
+    .innerJoin(schema.categorias, eq(schema.productos.categoriaId, schema.categorias.id))
+    .where(and(eq(schema.productos.activo, true), eq(schema.categorias.activa, true)))
+    .orderBy(asc(schema.categorias.orden), asc(schema.productos.orden), asc(schema.productos.id))
+
+  const porCategoria = new Map<number, { id: number; nombre: string; productos: { id: number; nombre: string; precio: number }[] }>()
+  for (const f of filas) {
+    const grupo = porCategoria.get(f.categoriaId) ?? { id: f.categoriaId, nombre: f.categoria, productos: [] }
+    grupo.productos.push({ id: f.productoId, nombre: f.nombre, precio: f.precio })
+    porCategoria.set(f.categoriaId, grupo)
+  }
+  return [...porCategoria.values()]
+}

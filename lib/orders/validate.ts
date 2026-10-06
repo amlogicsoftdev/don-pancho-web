@@ -58,6 +58,37 @@ export function normalizarTelefono(valor: string): string {
   return valor.replace(/\D/g, '')
 }
 
+type ResultadoItems = { ok: true; items: ItemPedidoEntrada[] } | { ok: false; error: string }
+
+function validarItems(crudos: unknown): ResultadoItems {
+  if (!Array.isArray(crudos) || crudos.length === 0) {
+    return { ok: false, error: 'El pedido no tiene productos.' }
+  }
+  if (crudos.length > LIMITES.maxLineas) {
+    return { ok: false, error: 'El pedido tiene demasiados productos.' }
+  }
+
+  const items: ItemPedidoEntrada[] = []
+  for (const crudo of crudos) {
+    if (typeof crudo !== 'object' || crudo === null) {
+      return { ok: false, error: 'Hay un producto inválido en el pedido.' }
+    }
+    const { productoId, cantidad, aclaraciones } = crudo as Record<string, unknown>
+    if (!Number.isInteger(productoId) || (productoId as number) <= 0) {
+      return { ok: false, error: 'Hay un producto inválido en el pedido.' }
+    }
+    if (!Number.isInteger(cantidad) || (cantidad as number) < 1 || (cantidad as number) > LIMITES.maxCantidad) {
+      return { ok: false, error: `La cantidad de cada producto debe estar entre 1 y ${LIMITES.maxCantidad}.` }
+    }
+    const aclaracion = texto(aclaraciones, LIMITES.aclaraciones)
+    if (aclaracion === undefined) {
+      return { ok: false, error: 'Una aclaración es demasiado larga.' }
+    }
+    items.push({ productoId: productoId as number, cantidad: cantidad as number, aclaraciones: aclaracion })
+  }
+  return { ok: true, items }
+}
+
 export function validarPedido(cuerpo: unknown): Resultado {
   if (typeof cuerpo !== 'object' || cuerpo === null || Array.isArray(cuerpo)) {
     return { ok: false, error: 'El pedido no es válido.' }
@@ -90,31 +121,9 @@ export function validarPedido(cuerpo: unknown): Resultado {
     return { ok: false, error: 'Ingresá la dirección de entrega.' }
   }
 
-  if (!Array.isArray(dato.items) || dato.items.length === 0) {
-    return { ok: false, error: 'El pedido no tiene productos.' }
-  }
-  if (dato.items.length > LIMITES.maxLineas) {
-    return { ok: false, error: 'El pedido tiene demasiados productos.' }
-  }
-
-  const items: ItemPedidoEntrada[] = []
-  for (const crudo of dato.items) {
-    if (typeof crudo !== 'object' || crudo === null) {
-      return { ok: false, error: 'Hay un producto inválido en el pedido.' }
-    }
-    const { productoId, cantidad, aclaraciones } = crudo as Record<string, unknown>
-    if (!Number.isInteger(productoId) || (productoId as number) <= 0) {
-      return { ok: false, error: 'Hay un producto inválido en el pedido.' }
-    }
-    if (!Number.isInteger(cantidad) || (cantidad as number) < 1 || (cantidad as number) > LIMITES.maxCantidad) {
-      return { ok: false, error: `La cantidad de cada producto debe estar entre 1 y ${LIMITES.maxCantidad}.` }
-    }
-    const aclaracion = texto(aclaraciones, LIMITES.aclaraciones)
-    if (aclaracion === undefined) {
-      return { ok: false, error: 'Una aclaración es demasiado larga.' }
-    }
-    items.push({ productoId: productoId as number, cantidad: cantidad as number, aclaraciones: aclaracion })
-  }
+  const resultadoItems = validarItems(dato.items)
+  if (!resultadoItems.ok) return resultadoItems
+  const items = resultadoItems.items
 
   return {
     ok: true,
@@ -130,4 +139,34 @@ export function validarPedido(cuerpo: unknown): Resultado {
       items,
     },
   }
+}
+
+export interface VentaMostradorEntrada {
+  metodoPago: MetodoPago
+  clienteNombre: string | null
+  notas: string | null
+  items: ItemPedidoEntrada[]
+}
+
+type ResultadoMostrador = { ok: true; venta: VentaMostradorEntrada } | { ok: false; error: string }
+
+/** Venta cargada a mano en el mostrador: no pide teléfono ni dirección. */
+export function validarVentaMostrador(cuerpo: unknown): ResultadoMostrador {
+  if (typeof cuerpo !== 'object' || cuerpo === null || Array.isArray(cuerpo)) {
+    return { ok: false, error: 'La venta no es válida.' }
+  }
+  const dato = cuerpo as Record<string, unknown>
+
+  if (!esEnum(METODOS_PAGO, dato.metodoPago)) {
+    return { ok: false, error: 'Elegí efectivo o transferencia.' }
+  }
+  const nombre = texto(dato.clienteNombre, LIMITES.nombre)
+  const notas = texto(dato.notas, LIMITES.notas)
+  if (nombre === undefined || notas === undefined) {
+    return { ok: false, error: 'Algún dato de la venta es demasiado largo o no es válido.' }
+  }
+  const resultadoItems = validarItems(dato.items)
+  if (!resultadoItems.ok) return resultadoItems
+
+  return { ok: true, venta: { metodoPago: dato.metodoPago, clienteNombre: nombre, notas, items: resultadoItems.items } }
 }

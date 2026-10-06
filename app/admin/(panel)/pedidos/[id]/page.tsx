@@ -122,7 +122,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
           pedidoId={pedido.id}
           etiquetaAvance={etiquetaAvance(pedido.estado, pedido.modalidad)}
           sePuedeCancelar={sePuedeCancelar(pedido.estado)}
-          linkWhatsApp={pedido.estado === 'cancelado' ? null : enlaceWhatsApp}
+          linkWhatsApp={pedido.estado === 'cancelado' || pedido.origen === 'mostrador' ? null : enlaceWhatsApp}
           esTransferencia={pedido.metodoPago === 'transferencia'}
           pagoConfirmado={pedido.pagoConfirmado}
         />

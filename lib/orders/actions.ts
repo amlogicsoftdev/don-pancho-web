@@ -4,7 +4,9 @@ import { and, eq, isNull } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { requerirUsuario } from '@/lib/auth/guards'
 import { db, schema } from '@/lib/db'
+import { crearVentaMostrador, ErrorPedido } from './create'
 import { sePuedeCancelar, siguienteEstado } from './estados'
+import { validarVentaMostrador } from './validate'
 
 // Acciones del panel sobre un pedido. Cada una verifica sesión y rol en el servidor
 // (los Server Actions se pueden invocar con un POST directo, no solo desde los botones),
@@ -170,4 +172,24 @@ export async function confirmarPago(id: number, confirmado: boolean): Promise<Re
 
   refrescar()
   return { ok: true }
+}
+
+export type ResultadoVenta = { ok: true; id: number; numero: number; total: number } | { ok: false; error: string }
+
+/** Carga una venta de mostrador (la hace tanto el empleado como el dueño). */
+export async function registrarVentaMostrador(entrada: unknown): Promise<ResultadoVenta> {
+  const usuario = await requerirUsuario()
+
+  const validado = validarVentaMostrador(entrada)
+  if (!validado.ok) return { ok: false, error: validado.error }
+
+  try {
+    const creado = await crearVentaMostrador(validado.venta, usuario.id)
+    refrescar()
+    return { ok: true, id: creado.id, numero: creado.numero, total: creado.total }
+  } catch (error) {
+    if (error instanceof ErrorPedido) return { ok: false, error: error.message }
+    console.error('No se pudo guardar la venta de mostrador', error)
+    return { ok: false, error: 'No se pudo guardar la venta. Probá de nuevo.' }
+  }
 }
