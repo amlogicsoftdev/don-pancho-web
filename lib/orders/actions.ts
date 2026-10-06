@@ -35,9 +35,9 @@ async function leerPedido(id: number) {
   return pedido ?? null
 }
 
-function refrescar(id: number) {
-  revalidatePath('/admin/pedidos')
-  revalidatePath(`/admin/pedidos/${id}`)
+function refrescar() {
+  // El layout muestra el contador de pendientes, por eso se revalida todo el panel.
+  revalidatePath('/admin', 'layout')
 }
 
 /** Avanza el pedido al estado siguiente del flujo (confirmar, en camino, entregado). */
@@ -69,7 +69,7 @@ export async function avanzarPedido(id: number): Promise<ResultadoAccion> {
     return true
   })
 
-  refrescar(id)
+  refrescar()
   if (!cambiado) return { ok: false, error: 'El pedido cambió mientras lo mirabas. Se actualizó la pantalla.' }
   return { ok: true }
 }
@@ -110,7 +110,7 @@ export async function cancelarPedido(id: number, motivoCrudo: string): Promise<R
     return true
   })
 
-  refrescar(id)
+  refrescar()
   if (!cambiado) return { ok: false, error: 'El pedido cambió mientras lo mirabas. Se actualizó la pantalla.' }
   return { ok: true }
 }
@@ -147,7 +147,7 @@ export async function borrarPedido(id: number, motivoCrudo: string): Promise<Res
     return true
   })
 
-  refrescar(id)
+  refrescar()
   if (!cambiado) return { ok: false, error: 'El pedido ya estaba borrado.' }
   return { ok: true }
 }
@@ -168,6 +168,6 @@ export async function confirmarPago(id: number, confirmado: boolean): Promise<Re
     .set({ pagoConfirmado: confirmado, actualizadoEn: new Date() })
     .where(eq(schema.pedidos.id, id))
 
-  refrescar(id)
+  refrescar()
   return { ok: true }
 }

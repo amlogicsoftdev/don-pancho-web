@@ -10,7 +10,7 @@ interface Props {
   pedidoId: number
   etiquetaAvance: string | null
   sePuedeCancelar: boolean
-  linkWhatsApp: string
+  linkWhatsApp: string | null
   esTransferencia: boolean
   pagoConfirmado: boolean
 }
@@ -70,6 +70,7 @@ export function AccionesPedido({
             {etiquetaAvance}
           </Button>
         )}
+        {linkWhatsApp && (
         <a
           href={linkWhatsApp}
           target="_blank"
@@ -78,6 +79,7 @@ export function AccionesPedido({
         >
           Confirmar por WhatsApp
         </a>
+        )}
         <Link
           href={`/admin/pedidos/${pedidoId}/comandas`}
           target="_blank"
@@ -102,7 +104,7 @@ export function AccionesPedido({
 
       <div className="flex flex-wrap gap-2">
         {sePuedeCancelar && (
-          <Button variant="destructive" size="lg" className="h-9 px-3" onClick={() => setPanel('cancelar')} disabled={enCurso}>
+          <Button variant="outline" size="lg" className="h-9 border-rose-400/50 px-3 text-rose-300 hover:bg-rose-400/10" onClick={() => setPanel('cancelar')} disabled={enCurso}>
             Cancelar pedido
           </Button>
         )}
@@ -132,9 +134,9 @@ export function AccionesPedido({
           </p>
           <div className="flex gap-2">
             <Button
-              variant="destructive"
+              variant="outline"
               size="lg"
-              className="h-9 px-3"
+              className="h-9 border-rose-400/50 px-3 text-rose-300 hover:bg-rose-400/10"
               disabled={enCurso || motivo.trim().length < 3}
               onClick={confirmarMotivo}
             >
