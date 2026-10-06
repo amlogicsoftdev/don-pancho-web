@@ -1,108 +1,12 @@
 'use client'
 
 import React, { useRef, useEffect } from 'react'
-import Image from 'next/image'
-import { Heart, Flame, Sparkles, ChefHat } from 'lucide-react'
+import { Flame, Sparkles, ChefHat } from 'lucide-react'
 import { useInView } from '@/hooks/use-in-view'
-
-// 16 Partículas radiales suaves para la explosión del título "Nuestro Secreto Artesanal" (sin sombras, estilo filtro del menú)
-const TITLE_EXPLOSION_PARTICLES = [
-  { x: 0, y: -45, size: 6, delay: 0 },
-  { x: 32, y: -32, size: 6, delay: 30 },
-  { x: 55, y: -12, size: 5, delay: 15 },
-  { x: 62, y: 0, size: 6, delay: 45 },
-  { x: 55, y: 12, size: 5, delay: 20 },
-  { x: 32, y: 32, size: 6, delay: 50 },
-  { x: 0, y: 45, size: 6, delay: 10 },
-  { x: -32, y: 32, size: 6, delay: 35 },
-  { x: -55, y: 12, size: 5, delay: 25 },
-  { x: -62, y: 0, size: 6, delay: 45 },
-  { x: -55, y: -12, size: 5, delay: 15 },
-  { x: -32, y: -32, size: 6, delay: 40 },
-  { x: 20, y: -48, size: 5, delay: 60 },
-  { x: -20, y: -48, size: 5, delay: 60 },
-  { x: 20, y: 48, size: 5, delay: 70 },
-  { x: -20, y: 48, size: 5, delay: 70 },
-]
-
-interface HandwrittenBadgeProps {
-  isTriggered: boolean
-}
-
-function HandwrittenBadge({ isTriggered }: HandwrittenBadgeProps) {
-  return (
-    <div className="flex flex-col items-start select-none rotate-[-7deg]">
-      {/* Contenedor del texto manuscrito trazado por su contorno real */}
-      <svg
-        viewBox="0 0 170 70"
-        className="w-37.5 sm:w-43.75 lg:w-48.75 h-auto overflow-visible select-none pointer-events-none"
-        aria-label="BURGERS CON ALMA"
-      >
-        {/* Línea 1: BURGERS trazada por contorno real a partir de 2.55s */}
-        <text
-          x="2"
-          y="28"
-          className={`font-badge select-none ${
-            isTriggered ? 'animate-badge-contour-line1' : 'opacity-0'
-          }`}
-          style={{
-            fontFamily: 'var(--font-badge), cursive, sans-serif',
-            fontSize: '31px',
-            letterSpacing: '0.04em',
-            stroke: '#F5B900',
-            strokeWidth: '1.4px',
-            strokeLinecap: 'round',
-            strokeLinejoin: 'round',
-          }}
-        >
-          BURGERS
-        </text>
-
-        {/* Línea 2: CON ALMA trazada por contorno real a partir de 3.30s */}
-        <text
-          x="2"
-          y="62"
-          className={`font-badge select-none ${
-            isTriggered ? 'animate-badge-contour-line2' : 'opacity-0'
-          }`}
-          style={{
-            fontFamily: 'var(--font-badge), cursive, sans-serif',
-            fontSize: '31px',
-            letterSpacing: '0.04em',
-            stroke: '#F5B900',
-            strokeWidth: '1.4px',
-            strokeLinecap: 'round',
-            strokeLinejoin: 'round',
-          }}
-        >
-          CON ALMA
-        </text>
-      </svg>
-
-      {/* Línea curva desde la esquina inferior que termina en el costado del corazón */}
-      <div className="flex items-center mt-1 -ml-1">
-        <svg viewBox="0 0 65 30" fill="none" className="w-14 sm:w-16 h-7 sm:h-8 text-cheesy-yellow overflow-visible">
-          <path
-            d="M 6 2 C 10 16, 32 24, 60 18"
-            stroke="currentColor"
-            strokeWidth="3.2"
-            strokeLinecap="round"
-            className={isTriggered ? 'animate-badge-curve' : 'opacity-0'}
-          />
-        </svg>
-
-        {/* Corazón latiendo al costado de la curva */}
-        <div
-          className={`ml-1.5 -mt-1 ${
-            isTriggered ? 'animate-badge-heart' : 'opacity-0'
-          }`}
-        >
-          <Heart className="w-6 h-6 sm:w-7 sm:h-7 text-cheesy-yellow fill-current animate-heartbeat rotate-12" />
-        </div>
-      </div>
-    </div>
-  )
-}
+import { PanchoButton } from './pancho-button'
+import { SplitLines } from './split-lines'
+import { Stamp } from './stamp'
+import { TiltPhoto } from './tilt-photo'
 
 interface ScrollPillarBandProps {
   step: string
@@ -110,7 +14,7 @@ interface ScrollPillarBandProps {
   description: string
   icon: React.ElementType
   direction: 'left-to-right' | 'right-to-left'
-  theme: 'dark' | 'yellow'
+  theme: 'dark' | 'orange'
 }
 
 function ScrollPillarBand({
@@ -268,8 +172,8 @@ function ScrollPillarBand({
             relative w-full overflow-hidden transition-colors duration-500 rounded-none will-change-transform
             ${
               isDark
-                ? 'bg-[#0E0E0E] border-y border-neutral-800/90 shadow-[0_25px_60px_rgba(0,0,0,0.85)]'
-                : 'bg-cheesy-yellow border-y border-[#E0A800]'
+                ? 'bg-pancho-black border-y border-neutral-800/90 shadow-[0_25px_60px_rgba(0,0,0,0.85)]'
+                : 'bg-pancho-orange border-y border-pancho-orange-deep'
             }
           `}
           style={{
@@ -308,8 +212,8 @@ function ScrollPillarBand({
                   }}
                 >
                   <span
-                    className={`font-display font-black text-3xl sm:text-5xl lg:text-6xl tracking-tighter leading-none ${
-                      isDark ? 'text-cheesy-yellow/35' : 'text-black/25'
+                    className={`font-display text-4xl sm:text-6xl lg:text-7xl leading-none ${
+                      isDark ? 'text-pancho-orange/35' : 'text-black/25'
                     }`}
                   >
                     {step}
@@ -319,8 +223,8 @@ function ScrollPillarBand({
                 {/* Título de la sección: arranca agrandado y desplazado hacia abajo, luego se achica y sube */}
                 <h4
                   ref={titleRef}
-                  className={`text-2xl sm:text-4xl lg:text-5xl font-display font-black tracking-tight leading-tight origin-top-left will-change-transform ${
-                    isDark ? 'text-white' : 'text-[#0A0A0A]'
+                  className={`text-3xl sm:text-5xl lg:text-6xl font-display leading-none origin-top-left will-change-transform ${
+                    isDark ? 'text-white' : 'text-pancho-black'
                   }`}
                   style={{
                     transformOrigin: 'left top',
@@ -374,7 +278,7 @@ export function AboutSection() {
     title: string
     description: string
     direction: 'left-to-right' | 'right-to-left'
-    theme: 'dark' | 'yellow'
+    theme: 'dark' | 'orange'
   }> = [
     {
       step: '01',
@@ -390,9 +294,9 @@ export function AboutSection() {
       icon: Sparkles,
       title: 'Cascada de Cheddar',
       description:
-        'El corazón de CheesyBite. Queso cheddar de verdad, fundido al vapor para envolver cada piso con la textura cremosa que nos define.',
+        'El corazón de Don Pancho. Queso cheddar de verdad, fundido al vapor para envolver cada piso con la textura cremosa que nos define.',
       direction: 'right-to-left',
-      theme: 'yellow',
+      theme: 'orange',
     },
     {
       step: '03',
@@ -411,202 +315,80 @@ export function AboutSection() {
       className="relative py-20 sm:py-28 lg:py-36 select-none w-full overflow-x-clip"
     >
       {/* =========================================================
-          BLOQUE SUPERIOR: CHEF, HISTORIA Y DOODLE (Centrado)
+          BLOQUE SUPERIOR: FOTO Y TEXTO
+          Todo entra cuando el bloque aparece en pantalla (data-inview).
       ========================================================= */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div ref={heroRef} className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-          {/* Columna Izquierda: Imagen con animación pronunciada + Líneas estirándose apuntando a su posición final */}
-          <div className="lg:col-span-6 relative flex justify-center items-center">
-          {/* Líneas de énfasis arriba a la izquierda — fijas apuntando a la posición final, estirándose con la animación del hero */}
-          <div
-            className="pointer-events-none absolute -top-8 left-2 sm:-top-10 sm:-left-6 lg:-top-12 lg:-left-8 z-20 text-cheesy-yellow rotate-32"
-          >
-            <svg
-              viewBox="-5 -5 55 60"
-              fill="none"
-              className="h-14 w-12 sm:h-16 sm:w-14 lg:h-18 lg:w-16 overflow-visible"
-              aria-hidden="true"
-            >
-              {/* Cuña superior */}
-              <g className={isHeroInView ? 'animate-about-burst-1' : 'opacity-0'}>
-                <path
-                  d="M16 2 C14 0 16 6 28 16 C30 18 32 16 30 14 C24 8 18 4 16 2 Z"
-                  fill="currentColor"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                  transform="rotate(-15 22 9)"
-                />
-              </g>
-              {/* Cuña intermedia — más larga */}
-              <g className={isHeroInView ? 'animate-about-burst-2' : 'opacity-0'}>
-                <path
-                  d="M2 22 C0 20 4 18 32 30 C34 32 34 36 32 36 C18 34 4 26 2 24 Z"
-                  fill="currentColor"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                />
-              </g>
-              {/* Cuña inferior */}
-              <g className={isHeroInView ? 'animate-about-burst-3' : 'opacity-0'}>
-                <path
-                  d="M2 42 C0 40 4 38 20 44 C22 46 20 50 18 50 C10 48 4 46 2 44 Z"
-                  fill="currentColor"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                />
-              </g>
-            </svg>
-          </div>
-
-          {/* Imagen con borde sobre su silueta redondeada y rotación leve al hover */}
-          <div
-            className={`
-              group relative w-full max-w-lg lg:max-w-xl aspect-1672/941 cursor-pointer select-none
-              ${isHeroInView ? 'animate-about-image' : 'opacity-0'}
-            `}
-          >
-            {/* Imagen orgánica sin caja rectangular: borde dorado y rotación sutil al hover */}
-            <div className="relative w-full h-full">
-              <Image
-                src="/images/nosotros1.png"
-                alt="Chef de CheesyBite preparando una hamburguesa artesanal"
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
-                className="object-contain about-organic-image"
-                priority={false}
-              />
+        <div
+          ref={heroRef}
+          data-inview={isHeroInView}
+          className="grid grid-cols-1 lg:grid-cols-12 gap-14 lg:gap-16 items-center"
+        >
+          {/* Columna izquierda: foto en marco blanco, con profundidad, y el sello girando en la esquina */}
+          <div className="lg:col-span-6 flex justify-center items-center">
+            <div className="rv-photo w-full max-w-xs sm:max-w-sm">
+              <TiltPhoto
+                src="/images/burger-1.webp"
+                alt="Hamburguesa de Don Pancho & Burger con cheddar, bacon, tomate y lechuga"
+                sizes="(max-width: 640px) 320px, 384px"
+                imageClassName="object-[50%_72%]"
+              >
+                <div className="tilt-float -right-3 -bottom-9 sm:-right-10 sm:-bottom-10">
+                  <div className="rv-pop" style={{ '--d': '700ms' } as React.CSSProperties}>
+                    <Stamp className="size-28 sm:size-36" />
+                  </div>
+                </div>
+              </TiltPhoto>
             </div>
           </div>
-        </div>
 
-        {/* Columna Derecha: Texto escalonado con choque de pared y rebote (sin recortes de div) */}
-        <div className="lg:col-span-6 flex flex-col items-start relative overflow-visible">
-          {/* 1. Antetítulo SOBRE NOSOTROS (más grande, viene de la derecha, choca contra la pared y rebota) */}
-          <div className="mb-4 overflow-visible">
-            <span
-              className={`
-                inline-block text-cheesy-yellow font-extrabold tracking-[0.28em] text-sm sm:text-base uppercase font-display
-                ${isHeroInView ? 'animate-bounce-eyebrow' : 'opacity-0'}
-              `}
-            >
-              Sobre Nosotros
+          {/* Columna derecha: etiqueta, título línea por línea, texto y botón */}
+          <div className="lg:col-span-6 flex flex-col items-start">
+            <span className="rv-wipe inline-block -rotate-3 bg-pancho-red px-2 py-1 font-sans text-[19px] font-extrabold uppercase leading-[1.1] text-white sm:text-xl sm:tracking-[0.02em]">
+              Sobre nosotros
             </span>
-          </div>
 
-          {/* 2 y 3. Título escalonado línea por línea (sin recortes, choque y rebote natural) */}
-          <div className="mb-6 flex flex-col items-start overflow-visible">
-            <div className="overflow-visible">
-              <h2
-                className={`
-                  text-3xl sm:text-5xl lg:text-6xl font-display font-black text-white leading-[1.08] tracking-tight
-                  ${isHeroInView ? 'animate-bounce-title-1' : 'opacity-0'}
-                `}
-              >
-                Una pasión
-              </h2>
+            <h2
+              style={{ '--d': '120ms' } as React.CSSProperties}
+              className="rv-lines mt-5 text-5xl sm:text-7xl lg:text-8xl text-white leading-[0.95]"
+            >
+              <SplitLines lines={['Una pasión', 'que se', 'comparte']} />
+            </h2>
+
+            <p
+              style={{ '--d': '420ms' } as React.CSSProperties}
+              className="rv-up mt-6 text-neutral-300 text-base sm:text-lg leading-relaxed max-w-lg font-normal"
+            >
+              En <strong className="text-white font-semibold">Don Pancho & Burger</strong> creemos que una buena hamburguesa no es solo comida, es una experiencia. Por eso, usamos ingredientes de calidad, recetas originales y mucho amor en cada pedido.
+            </p>
+
+            <div className="rv-up mt-8" style={{ '--d': '540ms' } as React.CSSProperties}>
+              <PanchoButton href="/menu" variant="orange">
+                Ver el menú
+              </PanchoButton>
             </div>
-            <div className="overflow-visible">
-              <span
-                className={`
-                  inline-block text-3xl sm:text-5xl lg:text-6xl font-display font-black text-cheesy-yellow leading-[1.08] tracking-tight
-                  ${isHeroInView ? 'animate-bounce-title-2' : 'opacity-0'}
-                `}
-              >
-                que se comparte
-              </span>
-            </div>
-          </div>
-
-          {/* 4. Párrafo descriptivo (aparece último con clara diferencia de tiempo) */}
-          <p
-            className={`
-              text-[#D1D0CB] text-base sm:text-lg leading-relaxed mb-3 sm:mb-4 max-w-lg font-normal
-              ${isHeroInView ? 'animate-bounce-desc' : 'opacity-0'}
-            `}
-          >
-            En <strong className="text-white font-semibold">CheesyBite</strong> creemos que una buena hamburguesa no es solo comida, es una experiencia. Por eso, usamos ingredientes de calidad, recetas originales y mucho amor en cada pedido.
-          </p>
-
-          {/* =====================================================
-              BADGE ABAJO A LA DERECHA:
-              - Animación de escritura live tras cargar el párrafo superior
-              - Tipografía idéntica al badge del hero (font-badge / Caveat Brush)
-              - Pegado al párrafo y desplazado a la derecha
-              - Línea curva y corazón sincronizados al terminar de escribir
-          ===================================================== */}
-          <div className="w-full flex justify-end mt-0 sm:mt-1 translate-x-0 sm:translate-x-8 lg:translate-x-12">
-            <HandwrittenBadge isTriggered={isHeroInView} />
           </div>
         </div>
       </div>
-    </div>
 
       {/* =========================================================
           BLOQUE INFERIOR: NUESTRO SECRETO ARTESANAL (SCROLL-DRIVEN)
       ========================================================= */}
       <div className="mt-28 sm:mt-36 pt-16 border-t border-neutral-900 w-full">
-        {/* Encabezado: "Nuestro" + Gota de Cheddar que explota y revela "Secreto Artesanal" */}
+        {/* Encabezado de un solo color: sube desde atrás de la máscara */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div
             ref={pillarsRef}
+            data-inview={isPillarsInView}
             className="text-center max-w-4xl mx-auto mb-16 sm:mb-24"
           >
-            {/* Título interactivo */}
-            <h3 className="text-3xl sm:text-5xl lg:text-6xl font-display font-black leading-tight tracking-tight flex flex-wrap items-center justify-center gap-x-3 sm:gap-x-4">
-              {/* "Nuestro" con aparición estética */}
-              <span
-                className={`text-white transition-all ${
-                  isPillarsInView ? 'animate-nuestro-reveal' : 'opacity-0'
-                }`}
-              >
-                Nuestro
-              </span>
-
-              {/* Contenedor de "Secreto Artesanal" con círculo y explosión estilo menú (sin sombras) */}
-              <span className="relative inline-flex items-center justify-center">
-                {/* Círculo que aparece y estalla con partículas radiales tipo filtro del menú */}
-                {isPillarsInView && (
-                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center z-20">
-                    {/* Círculo amarillo central limpio (sin sombras) */}
-                    <span className="animate-cheddar-circle w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-cheesy-yellow inline-block" />
-
-                    {/* Partículas radiales expulsadas al estallar (sin sombras) */}
-                    {TITLE_EXPLOSION_PARTICLES.map((p, i) => (
-                      <span
-                        key={i}
-                        className="animate-title-particle absolute rounded-full bg-cheesy-yellow"
-                        style={
-                          {
-                            width: `${p.size}px`,
-                            height: `${p.size}px`,
-                            '--tx': `${p.x}px`,
-                            '--ty': `${p.y}px`,
-                            animationDelay: `${800 + p.delay}ms`,
-                          } as React.CSSProperties
-                        }
-                      />
-                    ))}
-                  </span>
-                )}
-
-                {/* Frase "Secreto Artesanal" que sale de la explosión (sin sombra) */}
-                <span
-                  className={`relative z-10 inline-block text-cheesy-yellow ${
-                    isPillarsInView ? 'animate-cheddar-secret-emerge' : 'opacity-0'
-                  }`}
-                >
-                  Secreto Artesanal
-                </span>
-              </span>
+            <h3 className="rv-lines text-4xl sm:text-6xl lg:text-7xl text-white leading-[0.95]">
+              <SplitLines lines={['Nuestro secreto artesanal']} />
             </h3>
 
             <p
-              className={`mt-4 text-neutral-400 text-sm sm:text-base max-w-xl mx-auto font-normal transition-opacity duration-1000 delay-1000 ${
-                isPillarsInView ? 'opacity-100' : 'opacity-0'
-              }`}
+              style={{ '--d': '250ms' } as React.CSSProperties}
+              className="rv-up mt-4 text-neutral-400 text-sm sm:text-base max-w-xl mx-auto font-normal"
             >
               Tres pilares donde la temperatura, los cortes seleccionados y la textura se funden a medida que avanzás en el recorrido.
             </p>

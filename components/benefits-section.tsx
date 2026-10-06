@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useInView } from '@/hooks/use-in-view'
+import { SplitLines } from './split-lines'
 
 // Hook para conteo numérico animado suave con soporte de delay
 function useAnimatedCount(
@@ -64,117 +65,87 @@ export function BenefitsSection() {
     rootMargin: '0px 0px -40px 0px',
   })
 
-  // Los contadores numéricos arrancan justo en el momento en que cada tarjeta impacta
-  const countBurgers = useAnimatedCount(50, isGridInView, 1300, 100)
-  const countCarne = useAnimatedCount(100, isGridInView, 1200, 320)
-  const countRating = useAnimatedCount(49, isGridInView, 1200, 540)
+  // Cada contador arranca cuando su cifra empieza a subir desde atrás de la máscara
+  const countBurgers = useAnimatedCount(50, isGridInView, 1300, 0)
+  const countCarne = useAnimatedCount(100, isGridInView, 1300, 110)
+  const countRating = useAnimatedCount(49, isGridInView, 1300, 220)
 
   const items = [
     {
       metric: `+${countBurgers}K`,
       title: 'Burgers servidas',
       pill: '★ 100% artesanal',
-      delay: 100,
+      delay: 0,
     },
     {
       metric: `${countCarne}%`,
       title: 'Carne fresca vacuna',
       pill: 'Novillo seleccionado',
-      delay: 320,
+      delay: 110,
     },
     {
       metric: `${(countRating / 10).toFixed(1)} ★`,
       title: 'Calificación clientes',
       pill: '+10.000 reseñas reales',
-      delay: 540,
+      delay: 220,
     },
     {
       metric: 'Express',
       title: 'Envíos a tu puerta',
       pill: 'Directo y caliente',
-      delay: 760,
+      delay: 330,
     },
   ]
 
   return (
-    <section className="py-20 sm:py-28 border-t border-neutral-900 bg-cheesy-black relative overflow-hidden">
+    <section className="py-20 sm:py-28 border-t border-neutral-900 bg-pancho-black relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* Encabezado limpio */}
+        {/* Encabezado de un solo color: sube línea por línea */}
         <div
           ref={headerRef}
-          className={`text-center max-w-3xl mx-auto mb-16 sm:mb-24 transition-all duration-700 ease-out ${
-            isHeaderInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-          }`}
+          data-inview={isHeaderInView}
+          className="text-center max-w-3xl mx-auto mb-16 sm:mb-24"
         >
-          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-display font-black text-white tracking-tight leading-tight">
-            La diferencia de hacer una <span className="text-cheesy-yellow">burger de verdad</span>
+          <h2 className="rv-lines text-4xl sm:text-6xl lg:text-7xl text-white leading-[0.95]">
+            <SplitLines lines={['La diferencia de hacer', 'una burger de verdad']} />
           </h2>
         </div>
 
-        {/* Tira editorial de alto impacto que se activa en cascada cuando el usuario scrollea bien adentro */}
+        {/* Tira de cifras: cada una sube desde atrás de su máscara, una después de la otra */}
         <div
           ref={gridRef}
+          data-inview={isGridInView}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-8 lg:gap-6 divide-y sm:divide-y-0 sm:divide-x divide-neutral-900/90 pt-4"
         >
           {items.map((item) => {
             return (
               <div
                 key={item.title}
-                className="flex flex-col items-center text-center px-4 pt-6 pb-8 sm:py-0 group cursor-default"
+                className="flex flex-col items-center text-center px-4 pt-6 pb-8 sm:py-0"
               >
-                {/* Contenedor métrica con el queso cheddar derretido naciendo directamente de su base */}
+                {/* Cifra en tipografía display */}
                 <div
-                  className="flex flex-col items-center select-none"
-                  style={{
-                    animation: isGridInView
-                      ? `smashEntrance 0.65s cubic-bezier(0.16, 1, 0.3, 1) ${item.delay}ms both`
-                      : 'none',
-                    opacity: isGridInView ? undefined : 0,
-                  }}
+                  className="rv-lines select-none"
+                  style={{ '--d': `${item.delay}ms` } as React.CSSProperties}
                 >
-                  {/* Número o métrica en tipografía display */}
-                  <span className="font-display font-black text-5xl sm:text-6xl lg:text-7xl leading-none text-cheesy-yellow tracking-tight transition-transform duration-300 group-hover:scale-105">
-                    {item.metric}
+                  <span className="line-mask">
+                    <span className="line font-display text-6xl sm:text-7xl lg:text-8xl leading-none text-pancho-orange">
+                      {item.metric}
+                    </span>
                   </span>
-
-                  {/* Gota de queso cheddar derretido pegada al número (sin corte ni overflow-hidden) */}
-                  <div
-                    className="-mt-1 text-cheesy-yellow overflow-visible"
-                    style={{
-                      animation: isGridInView
-                        ? `cheddarDripDeploy 0.55s cubic-bezier(0.22, 1, 0.36, 1) ${item.delay + 180}ms both`
-                        : 'none',
-                      transformOrigin: 'top center',
-                      opacity: isGridInView ? undefined : 0,
-                    }}
-                  >
-                    <svg
-                      viewBox="-2 0 72 22"
-                      className="w-14 sm:w-18 h-3.5 sm:h-4.5 fill-cheesy-yellow overflow-visible transition-transform duration-300 group-hover:scale-y-125 origin-top"
-                      aria-hidden="true"
-                    >
-                      <path d="M 0 0 L 0 3 C 8 3, 10 14, 18 14 C 24 14, 28 4, 36 4 C 44 4, 48 18, 56 18 C 62 18, 64 3, 68 3 L 68 0 Z" />
-                    </svg>
-                  </div>
                 </div>
 
-                {/* Título conciso y destacado */}
+                {/* Título y micro-etiqueta: aparecen apenas después de su cifra */}
                 <div
-                  className="mt-3.5"
-                  style={{
-                    animation: isGridInView
-                      ? `smashTitleReveal 0.5s ease-out ${item.delay + 280}ms both`
-                      : 'none',
-                    opacity: isGridInView ? undefined : 0,
-                  }}
+                  className="rv-up mt-3.5"
+                  style={{ '--d': `${item.delay + 260}ms` } as React.CSSProperties}
                 >
-                  <h3 className="font-display font-bold text-lg sm:text-xl lg:text-2xl text-white uppercase tracking-wide leading-tight group-hover:text-cheesy-yellow transition-colors duration-200">
+                  <h3 className="font-heading text-xl sm:text-2xl text-white leading-tight">
                     {item.title}
                   </h3>
 
-                  {/* Micro-etiqueta dorada sutil */}
                   <div className="mt-2">
-                    <span className="inline-block text-[11px] font-semibold uppercase tracking-wider text-neutral-400 group-hover:text-neutral-200 transition-colors">
+                    <span className="inline-block text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-400">
                       {item.pill}
                     </span>
                   </div>
