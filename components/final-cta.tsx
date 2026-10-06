@@ -8,11 +8,10 @@ import { SITE_CONFIG, formatPrice } from '@/lib/data'
 import { CartItem } from '@/lib/types'
 
 interface FinalCTAProps {
-  onQuickOrder?: () => void
   cart?: CartItem[]
 }
 
-export function FinalCTA({ onQuickOrder, cart = [] }: FinalCTAProps) {
+export function FinalCTA({ cart = [] }: FinalCTAProps) {
   const router = useRouter()
 
   const handleAction = () => {

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { Heart, Flame, Sparkles, ChefHat } from 'lucide-react'
 import { useInView } from '@/hooks/use-in-view'

@@ -6,11 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowRight } from 'lucide-react'
 import { CheddarHeroWaveBottom } from './doodles'
 
-interface HeroProps {
-  onQuickOrder: () => void
-}
-
-export function Hero({ onQuickOrder }: HeroProps) {
+export function Hero() {
   const router = useRouter()
   const underlinePathRef = useRef<SVGPathElement>(null)
 

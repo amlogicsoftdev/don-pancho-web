@@ -11,7 +11,7 @@ import { CartDrawer } from '@/components/cart-drawer'
 import { useCart } from '@/lib/cart'
 
 export default function CheesyBiteLanding() {
-  const { cart, totalCartCount, handleAddToCart, handleUpdateQuantity, handleRemoveItem } = useCart()
+  const { cart, totalCartCount, handleUpdateQuantity, handleRemoveItem } = useCart()
   const [cartOpen, setCartOpen] = useState(false)
 
   return (
@@ -21,7 +21,7 @@ export default function CheesyBiteLanding() {
 
       <main>
         {/* Sección principal (Hero) con composición visual */}
-        <Hero onQuickOrder={() => setCartOpen(true)} />
+        <Hero />
 
         {/* Sección Sobre nosotros con animación de entrada guiada por scroll */}
         <AboutSection />
@@ -30,7 +30,7 @@ export default function CheesyBiteLanding() {
         <BenefitsSection />
 
         {/* Banner final de conversión */}
-        <FinalCTA cart={cart} onQuickOrder={() => setCartOpen(true)} />
+        <FinalCTA cart={cart} />
       </main>
 
       {/* Pie de página */}

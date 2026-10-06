@@ -10,6 +10,7 @@ import { CartDrawer } from '@/components/cart-drawer'
 import { PRODUCTS, CATEGORIES, formatPrice } from '@/lib/data'
 import { Product, CategoryFilter } from '@/lib/types'
 import { useCart } from '@/lib/cart'
+import { useMounted } from '@/hooks/use-mounted'
 
 // Siluetas SVG de queso cheddar derretido con ondulaciones y caídas profundas bien marcadas
 const CHEDDAR_PATHS: Record<string, string> = {
@@ -77,7 +78,7 @@ const ROTATION_ANGLES: Record<number, number> = {
 
 export default function MenuPage() {
   const { cart, totalCartCount, handleAddToCart, handleUpdateQuantity, handleRemoveItem } = useCart()
-  const [mounted, setMounted] = useState(false)
+  const mounted = useMounted()
   const [cartOpen, setCartOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>('Todas')
   const [hoveredProduct, setHoveredProduct] = useState<Product | null>(null)
@@ -93,10 +94,6 @@ export default function MenuPage() {
   const indicatorRef = useRef<HTMLDivElement>(null)
   const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const animRef = useRef<Animation | null>(null)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   // Detección de scroll horizontal para los degradés de aviso en los filtros mobile
   useEffect(() => {
@@ -159,8 +156,8 @@ export default function MenuPage() {
     // Posición inicial: si ya había animación activa, tomamos coordenadas vivas del DOM
     let startLeft = fromButton ? fromButton.offsetLeft - 4 : toButton.offsetLeft - 4
     let startWidth = fromButton ? fromButton.offsetWidth + 8 : toButton.offsetWidth + 8
-    let startTop = fromButton ? fromButton.offsetTop - 2 : toButton.offsetTop - 2
-    let startHeight = fromButton ? fromButton.offsetHeight + 8 : toButton.offsetHeight + 8
+    const startTop = fromButton ? fromButton.offsetTop - 2 : toButton.offsetTop - 2
+    const startHeight = fromButton ? fromButton.offsetHeight + 8 : toButton.offsetHeight + 8
 
     if (animRef.current) {
       const containerRect = container.getBoundingClientRect()
