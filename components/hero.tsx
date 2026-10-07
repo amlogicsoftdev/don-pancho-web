@@ -13,6 +13,9 @@ const TAG = 'Hamburguesas y panchos'
  * cada renglón de la bajada, el botón encaja sus dos bloques y la hamburguesa cae girada
  * (las entradas están en app/globals.css y corren sin JavaScript).
  *
+ * No tiene fondo propio: el papel naranja es del escenario (.intro-stage), que comparte
+ * con la mitad de la hamburguesa de la sección de elección: de ese lado no hay corte.
+ *
  * Después de la entrada, dos movimientos mantienen viva la pantalla:
  * - la hamburguesa sigue apenas al mouse, en sentido contrario;
  * - al scrollear, el texto se va quedando atrás y se apaga mientras la hamburguesa viaja.
@@ -95,16 +98,12 @@ export function Hero() {
       id="inicio"
       className="
         relative
+        z-10
         h-svh
         min-h-150
         md:min-h-170
         max-h-250
         overflow-hidden
-        bg-pancho-orange
-        bg-[url('/images/fondo-papel.webp')]
-        bg-cover
-        bg-center
-        md:bg-[url('/images/fondo-papel-h.webp')]
       "
     >
       {/* =========================================================
@@ -234,7 +233,7 @@ export function Hero() {
             absolute
             bottom-4
             left-1/2
-            aspect-718/442
+            aspect-771/524
             w-[min(88%,46svh)]
             -translate-x-1/2
 
@@ -248,8 +247,8 @@ export function Hero() {
         >
           <div data-hero-parallax className="burger-art animate-float relative h-full w-full">
             <Image
-              src="/images/hamburguesa-recortada.webp"
-              alt="Hamburguesa de Don Pancho & Burger con cheddar, panceta, tomate y lechuga"
+              src="/images/hero-eleccion-hamburguesa.webp"
+              alt="Hamburguesa de Don Pancho & Burger con cheddar fundido, cebolla y salsa"
               fill
               priority
               sizes="(max-width: 768px) 88vw, 640px"

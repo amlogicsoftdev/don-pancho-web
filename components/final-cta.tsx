@@ -26,7 +26,7 @@ export function FinalCTA({ hasItems, onOpenCart }: FinalCTAProps) {
   return (
     <section
       id="contacto"
-      className="relative w-full overflow-hidden bg-pancho-orange bg-[url('/images/fondo-papel-h.webp')] bg-cover bg-center text-pancho-black"
+      className="relative w-full overflow-hidden bg-pancho-orange bg-[url('/images/fondo-cta-naranja.webp')] bg-cover bg-center text-pancho-black"
     >
       {/* Franja de papel naranja, de bordes rectos */}
       <div className="w-full">

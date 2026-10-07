@@ -2,7 +2,7 @@ import React from 'react'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 
-type Variant = 'ink' | 'orange' | 'paper'
+type Variant = 'ink' | 'orange'
 type Size = 'sm' | 'md' | 'lg'
 
 interface ContentProps {
@@ -12,7 +12,7 @@ interface ContentProps {
 }
 
 interface StyleProps {
-  /** `ink` (negro) para papel naranja o rojo; `paper` para papel crema; `orange` para fondo oscuro. */
+  /** `ink` (negro) para papel naranja, rojo o crema; `orange` para fondo oscuro. */
   variant?: Variant
   size?: Size
   /** Ocupa todo el ancho de su contenedor. */
@@ -36,7 +36,7 @@ type LinkProps = ContentProps &
 export function panchoButtonClass({ variant = 'ink', size = 'md', block = false, className = '' }: StyleProps = {}) {
   return [
     'btn-pancho',
-    variant === 'orange' ? 'btn-pancho--orange' : variant === 'paper' ? 'btn-pancho--paper' : '',
+    variant === 'orange' ? 'btn-pancho--orange' : '',
     size === 'sm' ? 'btn-pancho--sm' : size === 'lg' ? 'btn-pancho--lg' : '',
     block ? 'btn-pancho--block' : '',
     className,

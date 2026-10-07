@@ -52,7 +52,7 @@ export function Footer() {
   let letterIndex = -1
 
   return (
-    <footer className="relative overflow-hidden bg-pancho-red-deep bg-[url('/images/fondo-papel-bordo.webp')] bg-cover bg-center text-pancho-cream">
+    <footer className="relative overflow-hidden bg-pancho-red-deep bg-[url('/images/fondo-footer-bordo.webp')] bg-cover bg-center text-pancho-cream">
       <div className="max-w-360 mx-auto px-4 sm:px-6 lg:px-8">
         {/* Columnas */}
         <div className="grid grid-cols-2 gap-x-6 gap-y-10 py-12 text-sm sm:py-16 md:grid-cols-4">
