@@ -62,6 +62,12 @@ export default async function SeguimientoPage({ params }: { params: Promise<{ to
           {pedido.nombreCliente && <p className="mt-4 text-neutral-300">¡Hola {pedido.nombreCliente}!</p>}
           <h1 className={`mt-1 text-6xl ${cancelado ? 'text-pancho-red' : 'text-white'}`}>{texto.titulo}</h1>
           <p className="mt-3 text-neutral-300">{texto.detalle}</p>
+          {enCurso && pedido.estado !== 'pendiente' && pedido.entregaEstimada && (
+            <p className="mt-4 inline-block bg-pancho-orange px-3 py-1.5 font-bold text-pancho-black">
+              {pedido.modalidad === 'delivery' ? 'Llega' : 'Listo para retirar'} aprox. a las{' '}
+              {formatearHora(pedido.entregaEstimada)}
+            </p>
+          )}
         </section>
 
         {/* Pasos del pedido */}
