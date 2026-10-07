@@ -25,7 +25,13 @@ export interface PedidoSeguimiento {
   creadoEn: Date
   /** Hora aproximada de entrega (o de retiro) que se le informó al confirmar. */
   entregaEstimada: Date | null
-  items: { nombre: string; cantidad: number; precioUnitario: number; aclaraciones: string | null }[]
+  items: {
+    nombre: string
+    cantidad: number
+    precioUnitario: number
+    aclaraciones: string | null
+    descuentoPorcentaje: number
+  }[]
   /** Cuándo entró el pedido a cada estado. */
   historial: { estado: EstadoPedido; creadoEn: Date }[]
 }
@@ -60,6 +66,7 @@ export async function obtenerPedidoPorToken(token: string): Promise<PedidoSeguim
         cantidad: schema.pedidoItems.cantidad,
         precioUnitario: schema.pedidoItems.precioUnitario,
         aclaraciones: schema.pedidoItems.aclaraciones,
+        descuentoPorcentaje: schema.pedidoItems.descuentoPorcentaje,
       })
       .from(schema.pedidoItems)
       .where(eq(schema.pedidoItems.pedidoId, pedido.id))

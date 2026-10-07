@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { registrarVentaMostrador } from '@/lib/orders/actions'
-import { formatearNumero, formatearPrecio } from '@/lib/orders/estados'
+import { descuentoDeLinea, esPorcentajeValido, formatearNumero, formatearPrecio } from '@/lib/orders/estados'
 import { CuadroConfirmar } from '../pedidos/cuadro-confirmar'
 
 interface Categoria {
@@ -31,7 +31,8 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [direccion, setDireccion] = useState('')
-  const [descuento, setDescuento] = useState('')
+  // Descuento % de cada producto de la venta (por id de producto)
+  const [descuentos, setDescuentos] = useState<Record<number, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [registrada, setRegistrada] = useState<Registrada | null>(null)
   // Cuadro de confirmación: tiempo de entrega, impresión y aviso por WhatsApp
@@ -43,9 +44,13 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
   const lineas = productos.filter((p) => (cantidades[p.id] ?? 0) > 0)
   const subtotal = lineas.reduce((suma, p) => suma + p.precio * cantidades[p.id], 0)
   // Mismo cálculo que el servidor (lib/orders/create.ts); el que vale es el del servidor
-  const porcentaje = Number(descuento) || 0
-  const descuentoValido = Number.isInteger(porcentaje) && porcentaje >= 0 && porcentaje <= 100
-  const descuentoMonto = descuentoValido ? Math.round((subtotal * porcentaje) / 100) : 0
+  const porcentajeDe = (id: number) => Number(descuentos[id]) || 0
+  const porcentajeValido = (id: number) => esPorcentajeValido(porcentajeDe(id))
+  const descuentosValidos = lineas.every((p) => porcentajeValido(p.id))
+  const descuentoMonto = lineas.reduce(
+    (suma, p) => suma + (porcentajeValido(p.id) ? descuentoDeLinea(p.precio, cantidades[p.id], porcentajeDe(p.id)) : 0),
+    0,
+  )
   const total = subtotal - descuentoMonto
 
   function cambiar(id: number, delta: number) {
@@ -60,7 +65,7 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
     setNombre('')
     setTelefono('')
     setDireccion('')
-    setDescuento('')
+    setDescuentos({})
     setMetodoPago('efectivo')
     setModalidad('retiro')
     setError(null)
@@ -69,7 +74,7 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
   /** Revisa lo básico antes de abrir el cuadro (el servidor vuelve a validar todo). */
   function abrirConfirmacion() {
     setError(null)
-    if (!descuentoValido) return setError('El descuento debe ser un número entero entre 0 y 100.')
+    if (!descuentosValidos) return setError('El descuento debe ser un número entero entre 0 y 100.')
     if (modalidad === 'delivery' && !direccion.trim()) return setError('Para delivery, cargá la dirección de entrega.')
     setConfirmando(true)
   }
@@ -82,8 +87,11 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
         clienteNombre: nombre,
         clienteTelefono: telefono,
         direccion: modalidad === 'delivery' ? direccion : null,
-        items: lineas.map((p) => ({ productoId: p.id, cantidad: cantidades[p.id] })),
-        descuentoPorcentaje: porcentaje,
+        items: lineas.map((p) => ({
+          productoId: p.id,
+          cantidad: cantidades[p.id],
+          descuentoPorcentaje: porcentajeDe(p.id),
+        })),
         tiempoEstimadoMin: minutos,
       },
       true,
@@ -170,13 +178,30 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
         {lineas.length === 0 ? (
           <p className="pn-muted text-sm font-semibold">Todavía no agregaste productos.</p>
         ) : (
-          <ul className="space-y-1.5 text-sm font-semibold tabular-nums">
+          <ul className="space-y-3 text-sm font-semibold tabular-nums">
             {lineas.map((p) => (
-              <li key={p.id} className="flex justify-between gap-3">
-                <span>
-                  <strong className="font-extrabold">{cantidades[p.id]}x</strong> {p.nombre}
-                </span>
-                <span>{formatearPrecio(p.precio * cantidades[p.id])}</span>
+              <li key={p.id}>
+                <div className="flex justify-between gap-3">
+                  <span>
+                    <strong className="font-extrabold">{cantidades[p.id]}x</strong> {p.nombre}
+                  </span>
+                  <span>{formatearPrecio(p.precio * cantidades[p.id])}</span>
+                </div>
+                <label className="mt-1 flex items-center justify-between gap-3">
+                  <span className="pn-muted text-xs">Descuento %</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={descuentos[p.id] ?? ''}
+                    onChange={(e) => setDescuentos((actual) => ({ ...actual, [p.id]: e.target.value }))}
+                    placeholder="0"
+                    aria-label={`Descuento % de ${p.nombre}`}
+                    className="pn-field w-20"
+                  />
+                </label>
               </li>
             ))}
           </ul>
@@ -189,7 +214,7 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
               <dd>{formatearPrecio(subtotal)}</dd>
             </div>
             <div className="flex justify-between gap-3">
-              <dt className="pn-muted">Descuento ({porcentaje}%)</dt>
+              <dt className="pn-muted">Descuento</dt>
               <dd>-{formatearPrecio(descuentoMonto)}</dd>
             </div>
           </dl>
@@ -262,21 +287,6 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
             onChange={(e) => setTelefono(e.target.value)}
             maxLength={30}
             placeholder="Ej.: 3442 66-8413"
-            className="pn-field"
-          />
-        </label>
-
-        <label className="block">
-          <span className="pn-label">Descuento % (opcional)</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={100}
-            step={1}
-            value={descuento}
-            onChange={(e) => setDescuento(e.target.value)}
-            placeholder="0"
             className="pn-field"
           />
         </label>

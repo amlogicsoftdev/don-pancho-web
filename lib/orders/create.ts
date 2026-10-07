@@ -2,6 +2,7 @@ import 'server-only'
 import { randomBytes } from 'node:crypto'
 import { and, count, eq, gte, inArray } from 'drizzle-orm'
 import { db, schema } from '@/lib/db'
+import { descuentoDeLinea } from './estados'
 import type { ItemPedidoEntrada, PedidoEntrada, VentaMostradorEntrada } from './validate'
 
 // Pedidos seguidos desde un mismo teléfono: protección básica contra pedidos repetidos o falsos.
@@ -33,7 +34,7 @@ export interface PedidoCreado {
  * Toma los precios de la base (solo productos activos de categorías activas) y calcula
  * subtotal, descuento y total. Del navegador solo se usan ids y cantidades.
  */
-async function calcularLineas(items: ItemPedidoEntrada[], descuentoPorcentaje: number) {
+async function calcularLineas(items: ItemPedidoEntrada[]) {
   const ids = [...new Set(items.map((i) => i.productoId))]
   const productos = await db
     .select({
@@ -63,13 +64,18 @@ async function calcularLineas(items: ItemPedidoEntrada[], descuentoPorcentaje: n
       precioUnitario: producto.precio,
       cantidad: item.cantidad,
       aclaraciones: item.aclaraciones,
+      descuentoPorcentaje: item.descuentoPorcentaje,
     }
   })
 
   const subtotal = lineas.reduce((suma, l) => suma + l.precioUnitario * l.cantidad, 0)
-  // El descuento se decide en cada pedido (mostrador o detalle del pedido), nunca en el navegador del cliente
-  const descuentoMonto = Math.round((subtotal * descuentoPorcentaje) / 100)
-  return { lineas, subtotal, descuentoPorcentaje, descuentoMonto, total: subtotal - descuentoMonto }
+  // El descuento va por línea y lo carga el local (mostrador o detalle del pedido): en los pedidos
+  // de la web todas las líneas llegan en 0, nunca se toma del navegador del cliente.
+  const descuentoMonto = lineas.reduce(
+    (suma, l) => suma + descuentoDeLinea(l.precioUnitario, l.cantidad, l.descuentoPorcentaje),
+    0,
+  )
+  return { lineas, subtotal, descuentoMonto, total: subtotal - descuentoMonto }
 }
 
 /**
@@ -110,7 +116,7 @@ export async function crearPedidoWeb(entrada: PedidoEntrada, ipHash: string | nu
   }
 
   // Los pedidos de la web entran sin descuento: si corresponde, lo aplica el local desde el panel
-  const { lineas, subtotal, descuentoPorcentaje, descuentoMonto, total } = await calcularLineas(entrada.items, 0)
+  const { lineas, subtotal, descuentoMonto, total } = await calcularLineas(entrada.items)
   const token = randomBytes(24).toString('base64url')
 
   const { id, numero } = await db.transaction(async (tx) => {
@@ -128,7 +134,6 @@ export async function crearPedidoWeb(entrada: PedidoEntrada, ipHash: string | nu
         referencia: entrada.referencia,
         notas: entrada.notas,
         subtotal,
-        descuentoPorcentaje,
         descuentoMonto,
         total,
         ipHash,
@@ -154,11 +159,9 @@ export async function crearPedidoWeb(entrada: PedidoEntrada, ipHash: string | nu
  * y al cierre de caja.
  */
 export async function crearVentaMostrador(entrada: VentaMostradorEntrada, usuarioId: string): Promise<PedidoCreado> {
-  // En el mostrador el descuento se carga junto con la venta (se cobra en el momento)
-  const { lineas, subtotal, descuentoPorcentaje, descuentoMonto, total } = await calcularLineas(
-    entrada.items,
-    entrada.descuentoPorcentaje,
-  )
+  // En el mostrador el descuento se carga en cada línea junto con la venta (se cobra en el momento)
+  const { lineas, subtotal, descuentoMonto, total } = await calcularLineas(entrada.items)
+  const hayDescuento = descuentoMonto > 0
   const token = randomBytes(24).toString('base64url')
   const ahora = new Date()
 
@@ -182,10 +185,9 @@ export async function crearVentaMostrador(entrada: VentaMostradorEntrada, usuari
         tiempoEstimadoMin: entrada.tiempoEstimadoMin,
         entregaEstimada: new Date(ahora.getTime() + entrada.tiempoEstimadoMin * 60_000),
         subtotal,
-        descuentoPorcentaje,
         descuentoMonto,
-        descuentoAplicadoPor: descuentoPorcentaje > 0 ? usuarioId : null,
-        descuentoAplicadoEn: descuentoPorcentaje > 0 ? new Date() : null,
+        descuentoAplicadoPor: hayDescuento ? usuarioId : null,
+        descuentoAplicadoEn: hayDescuento ? new Date() : null,
         total,
         creadoPor: usuarioId,
       })

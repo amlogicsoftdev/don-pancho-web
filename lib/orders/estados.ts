@@ -122,3 +122,13 @@ export function formatearHora(fecha: Date): string {
 export function formatearSoloFecha(fecha: Date): string {
   return new Intl.DateTimeFormat('es-AR', { timeZone: ZONA, day: '2-digit', month: '2-digit', year: 'numeric' }).format(fecha)
 }
+
+/** Monto que se descuenta de una línea (precio × cantidad × porcentaje), en pesos enteros. */
+export function descuentoDeLinea(precioUnitario: number, cantidad: number, porcentaje: number): number {
+  return Math.round((precioUnitario * cantidad * porcentaje) / 100)
+}
+
+/** Porcentaje de descuento válido: entero entre 0 y 100. */
+export function esPorcentajeValido(valor: unknown): valor is number {
+  return typeof valor === 'number' && Number.isInteger(valor) && valor >= 0 && valor <= 100
+}

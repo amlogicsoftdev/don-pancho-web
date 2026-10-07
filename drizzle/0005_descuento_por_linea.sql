@@ -1,0 +1,1 @@
+ALTER TABLE "pedido_items" ADD COLUMN "descuento_porcentaje" integer DEFAULT 0 NOT NULL;
