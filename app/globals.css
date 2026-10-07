@@ -436,14 +436,19 @@ html:has(.page-menu) {
   outline-offset: 3px;
 }
 
-/* El texto va dos veces, una arriba de la otra: la de arriba (con el relleno)
-   empieza recortada y se descubre al pasar el mouse */
+/* El texto va dos veces, una arriba de la otra: la de arriba (con el color del relleno)
+   empieza recortada y se descubre al pasar el mouse. El fondo es uno solo, del bloque: mitad
+   relleno y mitad base, y se desliza al mismo ritmo que el recorte. (Con dos fondos encimados,
+   en los bordes se asomaba una línea del de abajo y el bloque parecía más chico que el
+   cuadrado de la flecha.) */
 .btn-pancho__label {
   position: relative;
   display: grid;
   flex: 1 1 auto;
   overflow: hidden;
   border-radius: 2px 0 0 2px;
+  background: linear-gradient(90deg, var(--btn-fill) 50%, var(--btn-bg) 50%) 100% 0 / 200% 100% no-repeat;
+  transition: background-position 450ms var(--ease-out);
 }
 
 .btn-pancho__face {
@@ -473,15 +478,9 @@ html:has(.page-menu) {
 }
 
 .btn-pancho__face--fill {
-  background: var(--btn-fill);
   color: var(--btn-fill-fg);
   clip-path: inset(0 100% 0 0);
   transition: clip-path 450ms var(--ease-out);
-}
-
-/* La cara de abajo cambia de color al instante al salir el mouse (ver el hover) */
-.btn-pancho__face:not(.btn-pancho__face--fill) {
-  transition: background-color 0s;
 }
 
 .btn-pancho__chip {
@@ -494,8 +493,8 @@ html:has(.page-menu) {
   background: var(--btn-chip-bg);
   color: var(--btn-chip-fg);
   transition:
-    background-color 300ms var(--ease-out),
-    color 300ms var(--ease-out);
+    background-color 450ms var(--ease-out),
+    color 450ms var(--ease-out);
 }
 
 .btn-pancho__arrow {
@@ -517,16 +516,12 @@ html:has(.page-menu) {
 /* Estado «encendido»: con el mouse encima, o cuando lo enciende su contenedor
    (la mitad elegida de la sección hamburguesa / pancho) */
 @media (hover: hover) and (pointer: fine) {
-  .btn-pancho:hover .btn-pancho__face--fill {
-    clip-path: inset(0 0 0 0);
+  .btn-pancho:hover .btn-pancho__label {
+    background-position: 0 0;
   }
 
-  /* Cuando el relleno terminó de barrer, la cara de abajo también toma su color: si no, en
-     los bordes se asoma una línea del color de abajo y el bloque del texto parece no estar a
-     la misma altura que el cuadrado de la flecha */
-  .btn-pancho:hover .btn-pancho__face:not(.btn-pancho__face--fill) {
-    background: var(--btn-fill);
-    transition-delay: 450ms;
+  .btn-pancho:hover .btn-pancho__face--fill {
+    clip-path: inset(0 0 0 0);
   }
 
   .btn-pancho:hover .btn-pancho__chip {
@@ -939,9 +934,8 @@ html:has(.page-menu) {
   clip-path: inset(0 0 0 0);
 }
 
-.versus-side:is(:hover, :focus-visible) .btn-pancho__face:not(.btn-pancho__face--fill) {
-  background: var(--btn-fill);
-  transition-delay: 450ms;
+.versus-side:is(:hover, :focus-visible) .btn-pancho__label {
+  background-position: 0 0;
 }
 
 .versus-side:is(:hover, :focus-visible) .btn-pancho__chip {
