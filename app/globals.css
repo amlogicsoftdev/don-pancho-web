@@ -436,14 +436,19 @@ html:has(.page-menu) {
   outline-offset: 3px;
 }
 
-/* El texto va dos veces, una arriba de la otra: la de arriba (con el relleno)
-   empieza recortada y se descubre al pasar el mouse */
+/* El texto va dos veces, una arriba de la otra: la de arriba (con el color del relleno)
+   empieza recortada y se descubre al pasar el mouse. El fondo es uno solo, del bloque: mitad
+   relleno y mitad base, y se desliza al mismo ritmo que el recorte. (Con dos fondos encimados,
+   en los bordes se asomaba una línea del de abajo y el bloque parecía más chico que el
+   cuadrado de la flecha.) */
 .btn-pancho__label {
   position: relative;
   display: grid;
   flex: 1 1 auto;
   overflow: hidden;
   border-radius: 2px 0 0 2px;
+  background: linear-gradient(90deg, var(--btn-fill) 50%, var(--btn-bg) 50%) 100% 0 / 200% 100% no-repeat;
+  transition: background-position 450ms var(--ease-out);
 }
 
 .btn-pancho__face {
@@ -453,7 +458,6 @@ html:has(.page-menu) {
   justify-content: center;
   gap: 0.625rem;
   padding: 0 1.25rem;
-  background: var(--btn-bg);
   color: var(--btn-fg);
   white-space: nowrap;
 }
@@ -473,7 +477,6 @@ html:has(.page-menu) {
 }
 
 .btn-pancho__face--fill {
-  background: var(--btn-fill);
   color: var(--btn-fill-fg);
   clip-path: inset(0 100% 0 0);
   transition: clip-path 450ms var(--ease-out);
@@ -489,8 +492,8 @@ html:has(.page-menu) {
   background: var(--btn-chip-bg);
   color: var(--btn-chip-fg);
   transition:
-    background-color 300ms var(--ease-out),
-    color 300ms var(--ease-out);
+    background-color 450ms var(--ease-out),
+    color 450ms var(--ease-out);
 }
 
 .btn-pancho__arrow {
@@ -512,6 +515,10 @@ html:has(.page-menu) {
 /* Estado «encendido»: con el mouse encima, o cuando lo enciende su contenedor
    (la mitad elegida de la sección hamburguesa / pancho) */
 @media (hover: hover) and (pointer: fine) {
+  .btn-pancho:hover .btn-pancho__label {
+    background-position: 0 0;
+  }
+
   .btn-pancho:hover .btn-pancho__face--fill {
     clip-path: inset(0 0 0 0);
   }
@@ -926,6 +933,10 @@ html:has(.page-menu) {
   clip-path: inset(0 0 0 0);
 }
 
+.versus-side:is(:hover, :focus-visible) .btn-pancho__label {
+  background-position: 0 0;
+}
+
 .versus-side:is(:hover, :focus-visible) .btn-pancho__chip {
   background: var(--btn-chip-hover-bg);
   color: var(--btn-chip-hover-fg);
@@ -1317,6 +1328,350 @@ html:has(.page-menu) {
 .menu-row {
   animation: dpRowIn 0.55s var(--ease-out) both;
   animation-delay: calc(var(--row-base, 0ms) + min(var(--i, 0), 9) * 45ms);
+}
+
+/* Polaroid que sigue al mouse (components/foto-flotante.tsx). Entra con un pequeño rebote,
+   sale con un fundido y, al pasar de un plato a otro, la foto cambia sin que desaparezca. */
+.foto-flotante {
+  position: relative;
+  width: 11.25rem;
+  padding: 0.5rem 0.5rem 1.875rem;
+  background: #f4efe6;
+  box-shadow: 0 20px 40px -10px rgb(0 0 0 / 0.55);
+  opacity: 0;
+  transform: translate3d(0, 10px, 0) scale(0.86);
+  transform-origin: 30% 90%;
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out;
+}
+
+.foto-flotante[data-visible='true'] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.22s ease-out,
+    transform 0.42s var(--ease-pop);
+}
+
+@starting-style {
+  .foto-flotante[data-visible='true'] {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.86);
+  }
+}
+
+@keyframes dpFotoCambio {
+  from {
+    opacity: 0.25;
+    scale: 1.06;
+  }
+}
+
+.foto-flotante__foto {
+  animation: dpFotoCambio 0.32s var(--ease-out);
+}
+
+/* Filtros de la carta: arriba, una línea de puntos como el corte de un ticket, que los
+   separa de la barra sin sombra (el mismo negro suave de las líneas punteadas de la lista) */
+.menu-filtros {
+  padding-top: 0.625rem;
+}
+
+.menu-filtros::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0.1875rem;
+  height: 0.25rem;
+  background: radial-gradient(circle, rgb(13 13 13 / 0.45) 1.15px, transparent 1.6px) center / 0.5rem 0.25rem repeat-x;
+  pointer-events: none;
+}
+
+/* --- Cantidad (components/control-cantidad.tsx) ---
+   Un solo control: cerrado es el cuadrado con el +; al agregar se estira hasta −  n  +, con
+   el + siempre en el mismo lugar. Medidas por dentro del borde: − 36 px, número 40, + 40. */
+.cantidad {
+  position: relative;
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  overflow: hidden;
+  border: 2px solid var(--color-pancho-black);
+  background-color: rgb(255 255 255 / 0);
+  color: var(--color-pancho-black);
+  transition:
+    width 0.5s var(--ease-pop),
+    background-color 0.3s ease-out;
+}
+
+.cantidad[data-abierto='true'] {
+  width: 7.5rem;
+  background-color: var(--color-pancho-white);
+  /* al abrir se estira con un rebote suave; al cerrarse, sin rebote (regla de abajo) */
+  transition:
+    width 0.55s var(--ease-pop),
+    background-color 0.3s ease-out;
+}
+
+.cantidad:not([data-abierto='true']) {
+  transition:
+    width 0.38s var(--ease-out),
+    background-color 0.3s ease-out;
+}
+
+.cantidad__mas,
+.cantidad__menos {
+  position: absolute;
+  top: 0;
+  display: grid;
+  place-items: center;
+  height: 100%;
+  cursor: pointer;
+  transition: background-color 0.2s ease-out, color 0.2s ease-out;
+}
+
+.cantidad__mas {
+  right: 0;
+  width: 2.5rem;
+}
+
+.cantidad__menos {
+  left: 0;
+  width: 2.25rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+/* El − y el número entran desde atrás del +, un poquito después de que empieza a estirarse */
+.cantidad__menos,
+.cantidad__numero {
+  opacity: 0;
+  translate: 1.25rem 0;
+  transition:
+    opacity 0.18s ease-out,
+    translate 0.3s var(--ease-out),
+    background-color 0.2s ease-out,
+    color 0.2s ease-out;
+}
+
+.cantidad[data-abierto='true'] :is(.cantidad__menos, .cantidad__numero) {
+  opacity: 1;
+  translate: 0 0;
+  transition:
+    opacity 0.3s ease-out 0.08s,
+    translate 0.5s var(--ease-out) 0.04s,
+    background-color 0.2s ease-out,
+    color 0.2s ease-out;
+}
+
+.cantidad__numero {
+  position: absolute;
+  top: 0;
+  left: 2.25rem;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 100%;
+  overflow: hidden;
+  border-inline: 2px solid var(--color-pancho-black);
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+/* Cada número nuevo entra desde abajo al sumar y desde arriba al restar */
+@keyframes dpDigitoSube {
+  from {
+    opacity: 0;
+    translate: 0 85%;
+  }
+}
+
+@keyframes dpDigitoBaja {
+  from {
+    opacity: 0;
+    translate: 0 -85%;
+  }
+}
+
+.cantidad__digito {
+  animation: dpDigitoSube 0.36s var(--ease-out);
+}
+
+.cantidad__digito[data-sube='false'] {
+  animation-name: dpDigitoBaja;
+}
+
+/* El + da un giro corto al abrir: confirma que se agregó */
+@keyframes dpMasGiro {
+  from {
+    rotate: -90deg;
+    scale: 0.7;
+  }
+}
+
+.cantidad[data-abierto='true'] .cantidad__mas svg {
+  animation: dpMasGiro 0.5s var(--ease-pop);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cantidad:not([data-abierto='true']) .cantidad__mas:hover {
+    background: var(--color-pancho-orange);
+  }
+
+  .cantidad[data-abierto='true'] :is(.cantidad__mas, .cantidad__menos):hover {
+    background: var(--color-pancho-black);
+    color: var(--color-pancho-white);
+  }
+}
+
+.cantidad :is(.cantidad__mas, .cantidad__menos):focus-visible {
+  outline: 2px solid var(--color-pancho-black);
+  outline-offset: -4px;
+}
+
+/* Texto del botón grande (favorita y combos) al cambiar la cantidad */
+@keyframes dpCantidadTexto {
+  from {
+    opacity: 0;
+    translate: 0 60%;
+  }
+}
+
+.cantidad-texto {
+  animation: dpCantidadTexto 0.36s var(--ease-out);
+}
+
+/* --- Cartel del pedido (components/barra-pedido.tsx) ---
+   Sale desde abajo como un ticket de la comandera, con un rebote suave; al vaciarse el
+   pedido vuelve a bajar, más rápido. */
+.barra-pedido {
+  translate: 0 0;
+  opacity: 1;
+  transition:
+    translate 0.6s var(--ease-pop),
+    opacity 0.25s ease-out;
+}
+
+.barra-pedido:not([data-visible='true']) {
+  translate: 0 140%;
+  opacity: 0;
+  transition:
+    translate 0.35s cubic-bezier(0.4, 0, 1, 1),
+    opacity 0.25s ease-in 0.1s;
+}
+
+/* También al cargar la carta con un pedido ya armado */
+@starting-style {
+  .barra-pedido[data-visible='true'] {
+    translate: 0 140%;
+    opacity: 0;
+  }
+}
+
+/* Cada vez que se agrega algo: el cartel da un saltito y el cuadro de la cantidad se infla.
+   Hay dos animaciones iguales (a / b) para que se repita en cada suma. */
+@keyframes dpPedidoSaltoA {
+  30% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes dpPedidoSaltoB {
+  30% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes dpPedidoInflaA {
+  35% {
+    scale: 1.18;
+  }
+}
+
+@keyframes dpPedidoInflaB {
+  35% {
+    scale: 1.18;
+  }
+}
+
+@keyframes dpPedidoFlechaA {
+  35% {
+    translate: 5px 0;
+  }
+}
+
+@keyframes dpPedidoFlechaB {
+  35% {
+    translate: 5px 0;
+  }
+}
+
+.barra-pedido__boton[data-pulso='a'] {
+  animation: dpPedidoSaltoA 0.5s var(--ease-out);
+}
+
+.barra-pedido__boton[data-pulso='b'] {
+  animation: dpPedidoSaltoB 0.5s var(--ease-out);
+}
+
+.barra-pedido__boton[data-pulso='a'] .barra-pedido__cantidad {
+  animation: dpPedidoInflaA 0.55s var(--ease-pop);
+}
+
+.barra-pedido__boton[data-pulso='b'] .barra-pedido__cantidad {
+  animation: dpPedidoInflaB 0.55s var(--ease-pop);
+}
+
+.barra-pedido__boton[data-pulso='a'] .barra-pedido__flecha svg {
+  animation: dpPedidoFlechaA 0.55s var(--ease-out);
+}
+
+.barra-pedido__boton[data-pulso='b'] .barra-pedido__flecha svg {
+  animation: dpPedidoFlechaB 0.55s var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barra-pedido,
+  .barra-pedido:not([data-visible='true']) {
+    translate: 0 0;
+    transition: opacity 0.2s ease-out;
+  }
+
+  .barra-pedido__boton[data-pulso],
+  .barra-pedido__boton[data-pulso] :is(.barra-pedido__cantidad, .barra-pedido__flecha svg) {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cantidad,
+  .cantidad[data-abierto='true'],
+  .cantidad:not([data-abierto='true']) {
+    transition: background-color 0.2s ease-out;
+  }
+
+  .cantidad__menos,
+  .cantidad__numero,
+  .cantidad[data-abierto='true'] :is(.cantidad__menos, .cantidad__numero) {
+    translate: none;
+  }
+
+  .cantidad__digito,
+  .cantidad[data-abierto='true'] .cantidad__mas svg,
+  .cantidad-texto {
+    animation: dpFade 0.2s ease-out;
+  }
+}
+
+/* Foto de cada plato en pantallas táctiles (sin mouse no hay foto que siga al puntero) */
+.foto-plato {
+  rotate: -3deg;
+  border: 2px solid var(--color-pancho-black);
+  background: var(--color-pancho-white);
+  padding: 3px;
+  box-shadow: 3px 3px 0 var(--color-pancho-black);
 }
 
 /* =========================================================

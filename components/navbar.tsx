@@ -124,6 +124,9 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
   // en papel crema; en los dos casos el texto y los controles van en negro.
   // La carta es oscura: ahí la barra sigue oscura.
   const isHome = pathname === '/' || pathname === '/menu'
+  // En la carta, debajo de la barra quedan fijos los filtros: sin sombra ni borde entre los dos,
+  // así se ven como un solo bloque (el borde negro de abajo lo ponen los filtros)
+  const isMenu = pathname === '/menu'
   const solid = isScrolled || mobileMenuOpen
 
   const handleLinkClick = (e: React.MouseEvent, link: (typeof navLinks)[number]) => {
@@ -153,7 +156,9 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
       className={`nav-in fixed top-0 left-0 right-0 z-50 transition-[background-color,border-color,padding,box-shadow] duration-300 ${
         isHome
           ? solid
-            ? 'bg-pancho-paper/90 backdrop-blur-md border-b border-black/10 py-2 shadow-[0_10px_30px_-18px_rgb(0_0_0/0.45)]'
+            ? isMenu
+              ? 'bg-pancho-paper/95 backdrop-blur-sm border-b border-transparent py-2'
+              : 'bg-pancho-paper/90 backdrop-blur-md border-b border-black/10 py-2 shadow-[0_10px_30px_-18px_rgb(0_0_0/0.45)]'
             : 'bg-transparent border-b border-transparent py-2.5 sm:py-3'
           : solid
             ? 'bg-pancho-black/95 backdrop-blur-md border-b border-neutral-800/80 py-2 shadow-xl shadow-black/40'

@@ -198,7 +198,7 @@ export function CartDrawer({
       {/* Panel lateral del carrito */}
       <aside
         aria-label="Tu pedido"
-        className={`cart-panel fixed top-0 right-0 z-60 flex h-full w-full max-w-md transform-gpu flex-col border-l-2 border-pancho-black bg-pancho-paper bg-[url('/images/fondo-secciones-crema.webp')] bg-cover bg-top text-pancho-black shadow-2xl transition-transform duration-400 ease-(--ease-drawer) will-change-transform ${
+        className={`cart-panel fixed top-0 right-0 z-60 flex h-full w-full max-w-md transform-gpu flex-col border-l border-pancho-black/20 bg-pancho-paper bg-[url('/images/fondo-secciones-crema.webp')] bg-cover bg-top text-pancho-black shadow-2xl transition-transform duration-400 ease-(--ease-drawer) will-change-transform ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         style={{
@@ -207,7 +207,7 @@ export function CartDrawer({
         }}
       >
         {/* Cabecera del carrito */}
-        <div className="flex items-start justify-between border-b-2 border-pancho-black p-5 sm:p-6">
+        <div className="flex items-start justify-between border-b border-pancho-black/20 p-5 sm:p-6">
           <div>
             <span className="inline-block -rotate-3 bg-pancho-red px-2 py-1 font-sans text-xs font-extrabold uppercase leading-none tracking-[0.04em] text-white shadow-[3px_3px_0_var(--color-pancho-black)]">
               Tu carrito
@@ -289,7 +289,7 @@ export function CartDrawer({
               {/* Detalle del pedido */}
               <div className="mb-3 flex items-center gap-3">
                 <span className={`${labelClass} shrink-0`}>Detalle del pedido</span>
-                <div className="flex-1 border-b-2 border-pancho-black" />
+                <div className="flex-1 border-b border-pancho-black/20" />
               </div>
 
               <div className="mb-8 divide-y divide-pancho-black/20">
@@ -531,7 +531,7 @@ export function CartDrawer({
         {/* Pie del carrito */}
         {items.length > 0 && !confirmation && (
           <div
-            className={`space-y-4 border-t-2 border-pancho-black bg-pancho-paper/95 p-5 backdrop-blur-sm sm:p-6 ${
+            className={`space-y-4 border-t border-pancho-black/20 bg-pancho-paper/95 p-5 backdrop-blur-sm sm:p-6 ${
               isInputFocused ? 'hidden sm:block' : 'block'
             }`}
           >
