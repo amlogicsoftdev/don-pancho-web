@@ -151,7 +151,7 @@ export function AboutSection() {
                     className="object-cover object-[50%_85%]"
                   />
                 </div>
-                <figcaption className="about-photo__tag about-photo__tag--dark">Don Pancho &amp; Burger</figcaption>
+                <figcaption className="about-photo__tag about-photo__tag--dark">Hecha al momento</figcaption>
               </div>
             </figure>
 
@@ -169,7 +169,7 @@ export function AboutSection() {
                     className="object-cover object-[50%_80%]"
                   />
                 </div>
-                <figcaption className="about-photo__tag about-photo__tag--red">Hamburguesas y panchos</figcaption>
+                <figcaption className="about-photo__tag about-photo__tag--red">Cheddar y panceta</figcaption>
               </div>
             </figure>
 

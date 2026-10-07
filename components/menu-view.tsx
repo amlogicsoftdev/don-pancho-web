@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, Check, Plus } from 'lucide-react'
+import { ArrowLeft, Plus } from 'lucide-react'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { CartDrawer } from '@/components/cart-drawer'
@@ -13,6 +13,9 @@ import { TODAS } from '@/lib/menu/categoria'
 import { useCart } from '@/lib/cart'
 import { useMounted } from '@/hooks/use-mounted'
 import { SplitLines } from '@/components/split-lines'
+import { FotoFlotante } from '@/components/foto-flotante'
+import { ControlCantidad } from '@/components/control-cantidad'
+import { BarraPedido } from '@/components/barra-pedido'
 
 interface MenuViewProps {
   /** Categorías activas, en orden (vienen de la base). */
@@ -48,17 +51,19 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   const [navHeight, setNavHeight] = useState(88)
   const [cartOpen, setCartOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>(initialCategory)
-  const [hoveredProduct, setHoveredProduct] = useState<Product | null>(null)
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
-  const [justAddedId, setJustAddedId] = useState<number | null>(null)
+  // Plato que señala el mouse y su fila (la foto se pega a la fila)
+  const [hovered, setHovered] = useState<{ product: Product; fila: HTMLElement } | null>(null)
+  const ocultarFoto = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const nav = document.querySelector('header')
     if (!nav) return
     const measure = () => setNavHeight(nav.offsetHeight)
     measure()
+    // Al scrollear la barra cambia su relleno, no su contenido: hay que mirar la caja entera
+    // (border-box); si no, el cambio no se avisa y queda un hueco arriba de los filtros
     const observer = new ResizeObserver(measure)
-    observer.observe(nav)
+    observer.observe(nav, { box: 'border-box' })
     return () => observer.disconnect()
   }, [])
 
@@ -84,7 +89,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   const handleCategoryClick = (category: CategoryFilter) => {
     if (category === activeCategory) return
     setActiveCategory(category)
-    setHoveredProduct(null)
+    setHovered(null)
     // La URL acompaña al filtro, así el enlace se puede compartir y «atrás» vuelve a la misma categoría
     window.history.replaceState(
       null,
@@ -93,74 +98,32 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     )
   }
 
-  const handleAddProduct = (product: Product) => {
-    handleAddToCart(product)
-    setJustAddedId(product.id)
-    setTimeout(() => setJustAddedId(null), 900)
-  }
-
-  // La foto se abre hacia el lado del plato: a la derecha si el plato está en la columna derecha,
-  // a la izquierda si está en la izquierda (así no tapa el resto de la carta).
-  const PHOTO_WIDTH = 180
-  const PHOTO_GAP = 28
-  const photoOnLeft = mounted && mousePos.x < window.innerWidth / 2
-  const photoLeft = photoOnLeft
-    ? Math.max(8, mousePos.x - PHOTO_GAP - PHOTO_WIDTH)
-    : Math.min(mousePos.x + PHOTO_GAP, (mounted ? window.innerWidth : 0) - PHOTO_WIDTH - 8)
-
+  // Solo cambia al entrar o salir de un plato: mover el mouse no vuelve a dibujar la carta.
+  // Al salir se espera un momento, así al pasar a la fila de al lado la foto se desliza en vez
+  // de apagarse y volver a aparecer.
   const hoverProps = (product: Product) => ({
-    onMouseEnter: (e: React.MouseEvent) => {
-      setHoveredProduct(product)
-      setMousePos({ x: e.clientX, y: e.clientY })
+    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
+      if (ocultarFoto.current) clearTimeout(ocultarFoto.current)
+      setHovered({ product, fila: e.currentTarget })
     },
-    onMouseMove: (e: React.MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY }),
-    onMouseLeave: () => setHoveredProduct(null),
+    onMouseLeave: () => {
+      if (ocultarFoto.current) clearTimeout(ocultarFoto.current)
+      ocultarFoto.current = setTimeout(
+        () => setHovered((actual) => (actual?.product.id === product.id ? null : actual)),
+        120,
+      )
+    },
   })
 
-  /** Botón cuadrado de agregar; cuando el producto ya está en el pedido, pasa a −  n  + */
-  const renderAdd = (product: Product) => {
-    const quantity = quantityOf(product.id)
-    if (quantity === 0) {
-      const justAdded = justAddedId === product.id
-      return (
-        <button
-          type="button"
-          onClick={() => handleAddProduct(product)}
-          aria-label={`Agregar ${product.name} al pedido`}
-          className={`flex size-11 cursor-pointer items-center justify-center border-2 transition-colors duration-200 ${
-            justAdded
-              ? 'border-pancho-orange bg-pancho-orange text-pancho-black'
-              : 'border-pancho-black bg-transparent text-pancho-black hover:bg-pancho-orange'
-          }`}
-        >
-          {justAdded ? <Check className="size-4.5 stroke-3" /> : <Plus className="size-4.5 stroke-3" />}
-        </button>
-      )
-    }
-    return (
-      <div className="flex h-11 items-stretch border-2 border-pancho-black bg-white text-pancho-black">
-        <button
-          type="button"
-          onClick={() => handleUpdateQuantity(product.id, -1)}
-          aria-label={`Quitar uno de ${product.name}`}
-          className="w-9 cursor-pointer text-xl font-extrabold transition-colors hover:bg-pancho-black hover:text-white"
-        >
-          −
-        </button>
-        <span className="box-border flex min-w-8 items-center justify-center border-x-2 border-pancho-black bg-white px-1 font-heading text-lg">
-          {quantity}
-        </span>
-        <button
-          type="button"
-          onClick={() => handleUpdateQuantity(product.id, 1)}
-          aria-label={`Agregar otro ${product.name}`}
-          className="w-9 cursor-pointer text-xl font-extrabold transition-colors hover:bg-pancho-black hover:text-white"
-        >
-          +
-        </button>
-      </div>
-    )
-  }
+  /** Botón cuadrado de agregar: cuando el producto ya está en el pedido se estira a −  n  + */
+  const renderAdd = (product: Product) => (
+    <ControlCantidad
+      nombre={product.name}
+      cantidad={quantityOf(product.id)}
+      onAgregar={() => handleAddToCart(product)}
+      onCambiar={(delta) => handleUpdateQuantity(product.id, delta)}
+    />
+  )
 
   /** Botón grande con dos bloques (texto + cruz), el de la favorita y el de los combos */
   const renderBigAdd = (product: Product, tone: 'orange' | 'black') => {
@@ -168,7 +131,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     return (
       <button
         type="button"
-        onClick={() => handleAddProduct(product)}
+        onClick={() => handleAddToCart(product)}
         className={`inline-flex cursor-pointer items-stretch transition-transform duration-200 ${
           tone === 'black'
             ? 'shadow-[6px_6px_0_#fff] hover:-translate-x-0.5 hover:-translate-y-0.5'
@@ -176,11 +139,12 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
         }`}
       >
         <span
-          className={`px-5.5 py-4 text-[13px] font-extrabold uppercase tracking-[0.08em] ${
-            'bg-pancho-black text-white'
-          }`}
+          className="overflow-hidden bg-pancho-black px-5.5 py-4 text-[13px] font-extrabold uppercase tracking-[0.08em] text-white"
         >
-          {quantity > 0 ? `En tu pedido · ${quantity}` : 'Agregar al pedido'}
+          {/* La key hace que el texto nuevo entre deslizándose, como el número del + */}
+          <span key={quantity} className="cantidad-texto block">
+            {quantity > 0 ? `En tu pedido · ${quantity}` : 'Agregar al pedido'}
+          </span>
         </span>
         <span
           className={`flex w-13.5 items-center justify-center ${
@@ -229,7 +193,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
         {/* Categorías: quedan fijas debajo del encabezado al scrollear */}
         <div
           style={{ top: navHeight }}
-          className="sticky z-20 mt-6 border-b-2 border-pancho-black bg-pancho-paper/95 backdrop-blur-sm sm:mt-10"
+          className="menu-filtros sticky z-20 mt-6 border-b border-pancho-black/20 bg-pancho-paper/95 backdrop-blur-sm sm:mt-10"
         >
           <div
             role="tablist"
@@ -319,8 +283,15 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                     key={product.id}
                     {...hoverProps(product)}
                     style={{ '--i': index + 1 } as React.CSSProperties}
-                    className="menu-row grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4.5 gap-y-1.5 border-b border-pancho-black/20 py-5"
+                    className="menu-row grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4.5 gap-y-1.5 border-b border-pancho-black/20 py-5 [@media(hover:none)]:grid-cols-[minmax(0,1fr)_auto] [@media(hover:none)]:items-start [@media(hover:none)]:gap-x-4"
                   >
+                    {/* Sin mouse no hay foto que siga al puntero: va grande a la derecha de cada
+                        plato, y el precio con el + pasa abajo de la descripción */}
+                    <div className="foto-plato col-start-2 row-span-3 row-start-1 mt-1 hidden self-center [@media(hover:none)]:block">
+                      <div className="relative size-26 overflow-hidden bg-neutral-900">
+                        <Image src={product.image} alt="" fill sizes="104px" className="object-cover" />
+                      </div>
+                    </div>
                     <div className="flex min-w-0 items-baseline gap-2.5">
                       <h3 className="font-heading text-[clamp(22px,2vw,26px)] leading-[1.05]">{product.name}</h3>
                       {product.badge && (
@@ -330,7 +301,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                       )}
                       <span className="min-w-4 flex-1 -translate-y-1.25 border-b-2 border-dotted border-pancho-black/35" />
                     </div>
-                    <div className="row-span-2 flex items-center gap-3.5">
+                    <div className="row-span-2 flex items-center gap-3.5 [@media(hover:none)]:order-last [@media(hover:none)]:row-span-1 [@media(hover:none)]:mt-1.5">
                       <span className="font-heading text-[26px] leading-none text-pancho-red-deep">
                         {formatPrice(product.price)}
                       </span>
@@ -364,6 +335,12 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                 </span>
                 <h2 className="font-heading text-[clamp(40px,5vw,68px)] leading-[0.92]">{combo.name}</h2>
                 <p className="max-w-[40ch] text-[15px] font-bold leading-normal">{combo.description}</p>
+                {/* Sin mouse: la foto del combo a todo el ancho, debajo de la información */}
+                <div className="foto-plato mt-2 hidden w-full rotate-[-1.5deg]! [@media(hover:none)]:block">
+                  <div className="relative aspect-4/3 w-full overflow-hidden bg-neutral-900">
+                    <Image src={combo.image} alt="" fill sizes="(max-width: 640px) 100vw, 50vw" className="object-cover" />
+                  </div>
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-5">
                 <span className="font-heading text-[clamp(48px,5.5vw,72px)] leading-none">
@@ -376,44 +353,11 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
         </main>
       </div>
 
-      {/* Foto que sigue al mouse sobre cada plato (solo con mouse) */}
-      {mounted && hoveredProduct && (
-        <div
-          aria-hidden="true"
-          className={`pointer-events-none fixed z-40 hidden w-45 bg-[#f4efe6] p-2 pb-7.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.7)] [@media(hover:hover)]:block ${photoOnLeft ? 'rotate-4' : '-rotate-4'}`}
-          style={{ left: photoLeft, top: mousePos.y - 110 }}
-        >
-          <div className="absolute -top-2.5 left-1/2 -ml-8 h-5 w-16 rotate-3 bg-[rgba(230,215,185,0.9)]" />
-          <div className="relative aspect-square w-full overflow-hidden bg-neutral-900">
-            <Image src={hoveredProduct.image} alt="" fill sizes="180px" className="object-cover" />
-          </div>
-          <span className="absolute inset-x-0 bottom-2 text-center font-heading text-[13px] uppercase leading-none text-pancho-black">
-            {hoveredProduct.name}
-          </span>
-        </div>
-      )}
+      {/* Foto pegada al plato que señala el mouse (solo con mouse) */}
+      {mounted && <FotoFlotante producto={hovered?.product ?? null} ancla={hovered?.fila ?? null} />}
 
-      {/* Barra con el pedido: abre el carrito */}
-      {mounted && totalCartCount > 0 && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-3 sm:px-6 sm:pb-6">
-          <button
-            type="button"
-            onClick={() => setCartOpen(true)}
-            className="pointer-events-auto mx-auto flex w-full max-w-180 cursor-pointer items-stretch border-2 border-pancho-black bg-white text-left text-pancho-black shadow-[6px_6px_0_var(--color-pancho-black)] transition-transform duration-200 hover:-translate-x-0.5 hover:-translate-y-0.5"
-          >
-            <span className="flex min-w-14 items-center justify-center bg-pancho-red-deep px-4 font-heading text-[22px] text-white">
-              {totalCartCount}
-            </span>
-            <span className="flex flex-1 items-center justify-between gap-3 px-5 py-3.5">
-              <span className="text-[13px] font-extrabold uppercase tracking-[0.08em]">Tu pedido</span>
-              <span className="font-heading text-2xl leading-none text-pancho-red-deep">{formatPrice(cartTotal)}</span>
-            </span>
-            <span className="flex w-14.5 items-center justify-center bg-pancho-black text-white">
-              <ArrowRight className="size-5 stroke-[2.5]" />
-            </span>
-          </button>
-        </div>
-      )}
+      {/* Cartel con el pedido: abre el carrito */}
+      {mounted && <BarraPedido cantidad={totalCartCount} total={cartTotal} onAbrir={() => setCartOpen(true)} />}
 
       {/* Pie de página */}
       <Footer />
