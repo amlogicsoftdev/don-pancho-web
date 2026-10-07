@@ -479,6 +479,11 @@ html:has(.page-menu) {
   transition: clip-path 450ms var(--ease-out);
 }
 
+/* La cara de abajo cambia de color al instante al salir el mouse (ver el hover) */
+.btn-pancho__face:not(.btn-pancho__face--fill) {
+  transition: background-color 0s;
+}
+
 .btn-pancho__chip {
   display: grid;
   flex: none;
@@ -514,6 +519,14 @@ html:has(.page-menu) {
 @media (hover: hover) and (pointer: fine) {
   .btn-pancho:hover .btn-pancho__face--fill {
     clip-path: inset(0 0 0 0);
+  }
+
+  /* Cuando el relleno terminó de barrer, la cara de abajo también toma su color: si no, en
+     los bordes se asoma una línea del color de abajo y el bloque del texto parece no estar a
+     la misma altura que el cuadrado de la flecha */
+  .btn-pancho:hover .btn-pancho__face:not(.btn-pancho__face--fill) {
+    background: var(--btn-fill);
+    transition-delay: 450ms;
   }
 
   .btn-pancho:hover .btn-pancho__chip {
@@ -924,6 +937,11 @@ html:has(.page-menu) {
 /* El botón de la mitad elegida queda «encendido» */
 .versus-side:is(:hover, :focus-visible) .btn-pancho__face--fill {
   clip-path: inset(0 0 0 0);
+}
+
+.versus-side:is(:hover, :focus-visible) .btn-pancho__face:not(.btn-pancho__face--fill) {
+  background: var(--btn-fill);
+  transition-delay: 450ms;
 }
 
 .versus-side:is(:hover, :focus-visible) .btn-pancho__chip {
