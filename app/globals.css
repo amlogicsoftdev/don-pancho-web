@@ -1538,6 +1538,50 @@ html:has(.panel) {
     letter-spacing: 0;
   }
 
+  /* --- Bloque plegable de la lista de pedidos (Pendientes, En preparación…) --- */
+
+  .pn-bloque__titulo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    cursor: pointer;
+    list-style: none;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-pancho-black);
+    user-select: none;
+  }
+
+  /* Sin el triángulo propio del navegador: la flecha va a la derecha */
+  .pn-bloque__titulo::-webkit-details-marker {
+    display: none;
+  }
+
+  .pn-bloque__titulo:focus-visible {
+    outline: 2px solid var(--color-pancho-black);
+    outline-offset: 4px;
+  }
+
+  .pn-bloque__flecha {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 2px solid var(--color-pancho-black);
+    background: var(--color-pancho-white);
+    transition:
+      background-color 0.15s ease-out,
+      color 0.15s ease-out;
+  }
+
+  /* Solo con mouse: en el celular el hover queda pegado después de tocar */
+  @media (hover: hover) {
+    .pn-bloque__titulo:hover .pn-bloque__flecha {
+      background: var(--color-pancho-black);
+      color: var(--color-pancho-white);
+    }
+  }
+
   /* --- Textos --- */
 
   /* Rótulo chico en mayúsculas: arriba de un título o de un dato */
@@ -1649,6 +1693,15 @@ html:has(.panel) {
     color: var(--color-pancho-black);
     outline: none;
     transition: box-shadow 0.15s ease-out;
+  }
+
+  /* Campo de fecha: el calendario se abre con el ícono propio (CampoFecha), no con el del navegador */
+  .pn-field--fecha::-webkit-calendar-picker-indicator {
+    display: none;
+  }
+
+  .pn-field--fecha {
+    cursor: pointer;
   }
 
   textarea.pn-field {
@@ -1778,6 +1831,12 @@ html:has(.panel) {
 
   .pn-tag[data-estado='en_preparacion'] {
     background: var(--color-pancho-yellow);
+  }
+
+  .pn-tag[data-estado='listo'] {
+    border-color: var(--color-pancho-red-deep);
+    background: var(--color-pancho-red-deep);
+    color: var(--color-pancho-white);
   }
 
   .pn-tag[data-estado='en_camino'] {
@@ -1930,6 +1989,23 @@ html:has(.panel) {
     background: var(--color-pancho-orange);
     box-shadow: 3px 3px 0 var(--color-pancho-black);
     color: var(--color-pancho-black);
+  }
+
+  /* --- Cuadro modal (confirmar o rechazar un pedido) --- */
+
+  .pn-dialog {
+    width: min(100% - 2rem, 30rem);
+    margin: auto;
+    border: 2px solid var(--color-pancho-black);
+    border-radius: 2px;
+    background: var(--color-pancho-white);
+    padding: 1.5rem;
+    color: var(--color-pancho-black);
+    box-shadow: 6px 6px 0 var(--color-pancho-black);
+  }
+
+  .pn-dialog::backdrop {
+    background: rgb(13 13 13 / 0.55);
   }
 
   /* Cada paso es un botón: tocarlo mueve el pedido a ese estado (con confirmación) */

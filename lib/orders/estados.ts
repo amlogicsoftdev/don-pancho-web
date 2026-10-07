@@ -1,12 +1,13 @@
 // Estados del pedido, transiciones permitidas y formatos de presentación.
 // Las transiciones se validan en el servidor (actions.ts); este archivo no toca la base.
 
-export type EstadoPedido = 'pendiente' | 'en_preparacion' | 'en_camino' | 'entregado' | 'cancelado'
+export type EstadoPedido = 'pendiente' | 'en_preparacion' | 'listo' | 'en_camino' | 'entregado' | 'cancelado'
 export type ModalidadPedido = 'delivery' | 'retiro'
 
 export const ETIQUETA_ESTADO: Record<EstadoPedido, string> = {
   pendiente: 'Pendiente',
   en_preparacion: 'En preparación',
+  listo: 'Listo para retirar',
   en_camino: 'En camino',
   entregado: 'Entregado',
   cancelado: 'Cancelado',
@@ -22,17 +23,20 @@ export const ETIQUETA_PAGO = {
   transferencia: 'Transferencia',
 } as const
 
-export const ESTADOS_ACTIVOS: readonly EstadoPedido[] = ['pendiente', 'en_preparacion', 'en_camino']
+export const ESTADOS_ACTIVOS: readonly EstadoPedido[] = ['pendiente', 'en_preparacion', 'listo', 'en_camino']
 
-/** Pasos que recorre un pedido según la modalidad (el retiro no pasa por "en camino"). */
+/**
+ * Pasos que recorre un pedido según la modalidad: el delivery sale "en camino"; el retiro
+ * queda "listo para retirar" hasta que lo pasan a buscar.
+ */
 export function pasosDelPedido(modalidad: ModalidadPedido): EstadoPedido[] {
   return modalidad === 'delivery'
     ? ['pendiente', 'en_preparacion', 'en_camino', 'entregado']
-    : ['pendiente', 'en_preparacion', 'entregado']
+    : ['pendiente', 'en_preparacion', 'listo', 'entregado']
 }
 
 /**
- * Flujo normal: pendiente → en_preparacion → en_camino (solo delivery) → entregado.
+ * Flujo normal: pendiente → en_preparacion → en_camino (delivery) o listo (retiro) → entregado.
  * Devuelve el próximo estado, o null si el pedido ya terminó.
  */
 export function siguienteEstado(estado: EstadoPedido, modalidad: ModalidadPedido): EstadoPedido | null {
@@ -40,13 +44,32 @@ export function siguienteEstado(estado: EstadoPedido, modalidad: ModalidadPedido
     case 'pendiente':
       return 'en_preparacion'
     case 'en_preparacion':
-      return modalidad === 'delivery' ? 'en_camino' : 'entregado'
+      return modalidad === 'delivery' ? 'en_camino' : 'listo'
+    case 'listo':
     case 'en_camino':
       return 'entregado'
     default:
       return null
   }
 }
+
+/** Tiempos de entrega que se pueden elegir al confirmar, en minutos. */
+export const TIEMPOS_ENTREGA = [10, 20, 30, 40, 50, 60, 75, 90, 120, 150, 180] as const
+
+/** 50 → "50 min", 60 → "1 h", 90 → "1 h 30 min". */
+export function etiquetaTiempo(minutos: number): string {
+  const horas = Math.floor(minutos / 60)
+  const resto = minutos % 60
+  if (horas === 0) return `${resto} min`
+  return resto === 0 ? `${horas} h` : `${horas} h ${resto} min`
+}
+
+/** Motivos rápidos para rechazar un pedido (se puede escribir otro). */
+export const MOTIVOS_RECHAZO = [
+  'Fuera de la zona de entrega',
+  'Sin stock de algún producto',
+  'El local está cerrado',
+] as const
 
 /** Un pedido se puede cancelar mientras no esté entregado ni cancelado. */
 export function sePuedeCancelar(estado: EstadoPedido): boolean {
@@ -61,6 +84,8 @@ export function etiquetaAvance(estado: EstadoPedido, modalidad: ModalidadPedido)
       return 'Confirmar y pasar a preparación'
     case 'en_camino':
       return 'Marcar en camino'
+    case 'listo':
+      return 'Marcar listo para retirar'
     case 'entregado':
       return modalidad === 'delivery' ? 'Marcar entregado' : 'Marcar retirado'
     default:

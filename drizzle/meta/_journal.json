@@ -22,6 +22,20 @@
       "when": 1791387349238,
       "tag": "0002_descuento_por_pedido",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791390049816,
+      "tag": "0003_confirmar_pedido",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791393614839,
+      "tag": "0004_estado_listo",
+      "breakpoints": true
     }
   ]
 }

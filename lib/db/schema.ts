@@ -21,6 +21,8 @@ export const origenEnum = pgEnum('origen_pedido', ['web', 'mostrador'])
 export const estadoEnum = pgEnum('estado_pedido', [
   'pendiente',
   'en_preparacion',
+  // Solo retiro: ya se puede pasar a buscar
+  'listo',
   'en_camino',
   'entregado',
   'cancelado',
@@ -152,6 +154,11 @@ export const pedidos = pgTable(
     descuentoAplicadoPor: text('descuento_aplicado_por').references(() => usuarios.id),
     descuentoAplicadoEn: fecha('descuento_aplicado_en'),
     total: integer('total').notNull(),
+    // Tiempo de entrega que el local le informa al cliente al confirmar, y la hora que resulta.
+    tiempoEstimadoMin: integer('tiempo_estimado_min'),
+    entregaEstimada: fecha('entrega_estimada'),
+    // Veces que se imprimieron las comandas: desde la segunda sale la marca REIMPRESIÓN.
+    comandasImpresas: integer('comandas_impresas').notNull().default(0),
     creadoEn: fecha('creado_en').notNull().defaultNow(),
     actualizadoEn: fecha('actualizado_en').notNull().defaultNow(),
     borradoEn: fecha('borrado_en'),

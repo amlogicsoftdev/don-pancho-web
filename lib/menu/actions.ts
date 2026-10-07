@@ -213,35 +213,27 @@ export async function moverProducto(id: unknown, direccion: unknown): Promise<Re
 
 // --- Ajustes del local ---
 
-/**
- * Descuento por pedido (0–100 %), hora de corte del día de caja (0–23) y datos de la cuenta para
- * transferencias (alias, CBU, titular y banco; todos opcionales).
- */
-export async function guardarAjustes(entrada: unknown): Promise<ResultadoAccion> {
+// --- Ajustes del local: cada hoja de la pantalla se guarda por separado ---
+
+/** Guarda claves de `configuracion` (inserta o reemplaza) en una sola transacción. */
+async function guardarClaves(pares: readonly (readonly [string, string])[]) {
+  await db.transaction(async (tx) => {
+    for (const [clave, valor] of pares) {
+      await tx
+        .insert(schema.configuracion)
+        .values({ clave, valor })
+        .onConflictDoUpdate({ target: schema.configuracion.clave, set: { valor } })
+    }
+  })
+  revalidatePath('/admin/ajustes')
+}
+
+/** Nombre, WhatsApp, dirección, horario y redes: los ve el cliente en todo el sitio. */
+export async function guardarDatosLocal(entrada: unknown): Promise<ResultadoAccion> {
   await requerirDueno()
-  if (typeof entrada !== 'object' || entrada === null) return { ok: false, error: 'Los ajustes no son válidos.' }
+  if (typeof entrada !== 'object' || entrada === null) return { ok: false, error: 'Los datos no son válidos.' }
   const d = entrada as Record<string, unknown>
 
-  // El descuento no es un ajuste general: se carga en cada pedido (lib/orders/actions.ts)
-  const corte = d.corteHora
-  if (typeof corte !== 'number' || !Number.isInteger(corte) || corte < 0 || corte > 23) {
-    return { ok: false, error: 'La hora de corte debe ser un número entero entre 0 y 23.' }
-  }
-
-  const alias = texto(d.alias ?? '', 20)
-  const cbu = texto(d.cbu ?? '', 22)
-  const titular = texto(d.titular ?? '', 80)
-  const banco = texto(d.banco ?? '', 60)
-  if (alias === null || (alias !== '' && !/^[a-zA-Z0-9.-]{6,20}$/.test(alias))) {
-    return { ok: false, error: 'El alias debe tener entre 6 y 20 caracteres: letras, números, puntos o guiones.' }
-  }
-  if (cbu === null || (cbu !== '' && !/^\d{22}$/.test(cbu))) {
-    return { ok: false, error: 'El CBU o CVU debe tener exactamente 22 números.' }
-  }
-  if (titular === null) return { ok: false, error: 'El nombre del titular es demasiado largo (máximo 80 caracteres).' }
-  if (banco === null) return { ok: false, error: 'El nombre del banco es demasiado largo (máximo 60 caracteres).' }
-
-  // Datos públicos del local (los ve el cliente en el sitio)
   const nombre = texto(d.nombre ?? '', 60)
   const whatsappCrudo = texto(d.whatsapp ?? '', 30)
   const direccion = texto(d.direccion ?? '', 120)
@@ -260,32 +252,58 @@ export async function guardarAjustes(entrada: unknown): Promise<ResultadoAccion>
     }
   }
 
-  await db.transaction(async (tx) => {
-    // Un dato de transferencia vacío se guarda como texto vacío: el sitio lo trata como "no cargado".
-    for (const [clave, valor] of [
-      ['corte_dia_hora', String(corte)],
-      [CLAVES_TRANSFERENCIA.alias, alias],
-      [CLAVES_TRANSFERENCIA.cbu, cbu],
-      [CLAVES_TRANSFERENCIA.titular, titular],
-      [CLAVES_TRANSFERENCIA.banco, banco],
-      [CLAVES_LOCAL.nombre, nombre],
-      [CLAVES_LOCAL.whatsapp, whatsapp],
-      [CLAVES_LOCAL.direccion, direccion],
-      [CLAVES_LOCAL.horario, horario],
-      [CLAVES_LOCAL.instagram, redes.instagram ?? ''],
-      [CLAVES_LOCAL.facebook, redes.facebook ?? ''],
-      [CLAVES_LOCAL.tiktok, redes.tiktok ?? ''],
-    ] as const) {
-      await tx
-        .insert(schema.configuracion)
-        .values({ clave, valor })
-        .onConflictDoUpdate({ target: schema.configuracion.clave, set: { valor } })
-    }
-  })
-  revalidatePath('/admin/ajustes')
-  revalidatePath('/admin/caja')
-  revalidatePath('/admin/pedidos', 'layout')
-  // Nombre, WhatsApp, dirección y redes se muestran en todo el sitio
+  await guardarClaves([
+    [CLAVES_LOCAL.nombre, nombre],
+    [CLAVES_LOCAL.whatsapp, whatsapp],
+    [CLAVES_LOCAL.direccion, direccion],
+    [CLAVES_LOCAL.horario, horario],
+    [CLAVES_LOCAL.instagram, redes.instagram ?? ''],
+    [CLAVES_LOCAL.facebook, redes.facebook ?? ''],
+    [CLAVES_LOCAL.tiktok, redes.tiktok ?? ''],
+  ])
+  // Se muestran en todo el sitio (pie, carrito, seguimiento) y en mensajes y comandas
   revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+/** Cuenta para transferencias (alias, CBU, titular y banco; todos opcionales). */
+export async function guardarCuentaTransferencia(entrada: unknown): Promise<ResultadoAccion> {
+  await requerirDueno()
+  if (typeof entrada !== 'object' || entrada === null) return { ok: false, error: 'Los datos no son válidos.' }
+  const d = entrada as Record<string, unknown>
+
+  const alias = texto(d.alias ?? '', 20)
+  const cbu = texto(d.cbu ?? '', 22)
+  const titular = texto(d.titular ?? '', 80)
+  const banco = texto(d.banco ?? '', 60)
+  if (alias === null || (alias !== '' && !/^[a-zA-Z0-9.-]{6,20}$/.test(alias))) {
+    return { ok: false, error: 'El alias debe tener entre 6 y 20 caracteres: letras, números, puntos o guiones.' }
+  }
+  if (cbu === null || (cbu !== '' && !/^\d{22}$/.test(cbu))) {
+    return { ok: false, error: 'El CBU o CVU debe tener exactamente 22 números.' }
+  }
+  if (titular === null) return { ok: false, error: 'El nombre del titular es demasiado largo (máximo 80 caracteres).' }
+  if (banco === null) return { ok: false, error: 'El nombre del banco es demasiado largo (máximo 60 caracteres).' }
+
+  // Un dato vacío se guarda como texto vacío: el sitio lo trata como "no cargado"
+  await guardarClaves([
+    [CLAVES_TRANSFERENCIA.alias, alias],
+    [CLAVES_TRANSFERENCIA.cbu, cbu],
+    [CLAVES_TRANSFERENCIA.titular, titular],
+    [CLAVES_TRANSFERENCIA.banco, banco],
+  ])
+  revalidatePath('/admin/pedidos', 'layout')
+  return { ok: true }
+}
+
+/** Hora a la que empieza el día de caja (0–23): define el día en la caja y en los reportes. */
+export async function guardarCorteCaja(corte: number): Promise<ResultadoAccion> {
+  await requerirDueno()
+  if (typeof corte !== 'number' || !Number.isInteger(corte) || corte < 0 || corte > 23) {
+    return { ok: false, error: 'La hora de corte debe ser un número entero entre 0 y 23.' }
+  }
+  await guardarClaves([['corte_dia_hora', String(corte)]])
+  revalidatePath('/admin/caja')
+  revalidatePath('/admin/ventas')
   return { ok: true }
 }

@@ -11,7 +11,7 @@ const SECCIONES = [
   { href: '/admin/ventas', titulo: 'Ventas', soloDueno: true },
   { href: '/admin/menu', titulo: 'Menú', soloDueno: true },
   { href: '/admin/gastos', titulo: 'Gastos', soloDueno: true },
-  { href: '/admin/anulaciones', titulo: 'Anulaciones', soloDueno: true },
+  { href: '/admin/anulaciones', titulo: 'Cancelados', soloDueno: true },
   { href: '/admin/ajustes', titulo: 'Ajustes', soloDueno: true },
 ]
 

@@ -1,4 +1,11 @@
-import { ETIQUETA_MODALIDAD, ETIQUETA_PAGO, formatearNumero, formatearPrecio } from '@/lib/orders/estados'
+import {
+  ETIQUETA_MODALIDAD,
+  ETIQUETA_PAGO,
+  etiquetaTiempo,
+  formatearHora,
+  formatearNumero,
+  formatearPrecio,
+} from '@/lib/orders/estados'
 import type { ModalidadPedido } from '@/lib/orders/estados'
 import type { DatosTransferencia } from '@/lib/pagos/transferencia'
 
@@ -32,6 +39,15 @@ export interface DatosMensaje {
   linkSeguimiento?: string
   /** Cuenta del local: se agrega al mensaje solo si el pago es por transferencia. */
   datosTransferencia?: DatosTransferencia | null
+  /** Tiempo de entrega informado al confirmar, y la hora que resulta. */
+  tiempoEstimadoMin?: number | null
+  entregaEstimada?: Date | null
+}
+
+/** "Juan Pérez" → "Juan". Las ventas de mostrador sin nombre no llevan saludo con nombre. */
+function saludo(nombre: string): string {
+  const primero = nombre.trim().split(/\s+/)[0]
+  return primero && primero !== 'Mostrador' ? `¡Hola ${primero}!` : '¡Hola!'
 }
 
 /** Líneas con los datos de la cuenta para transferir, o ninguna si no hay datos cargados. */
@@ -55,19 +71,42 @@ export function mensajeConfirmacion(pedido: DatosMensaje, nombreLocal: string): 
       ? `🛵 ${ETIQUETA_MODALIDAD.delivery}${pedido.direccion ? ` a ${pedido.direccion}` : ''}`
       : `🏪 ${ETIQUETA_MODALIDAD.retiro}`
 
+  const tiempo =
+    pedido.tiempoEstimadoMin && pedido.entregaEstimada
+      ? `⏱ Tiempo estimado: ${etiquetaTiempo(pedido.tiempoEstimadoMin)} (${
+          pedido.modalidad === 'delivery' ? 'llega' : 'listo para retirar'
+        } aprox. a las ${formatearHora(pedido.entregaEstimada)})`
+      : null
+
   return [
-    `¡Hola ${pedido.clienteNombre}! Te escribimos de ${nombreLocal} 🍔`,
+    `${saludo(pedido.clienteNombre)} Te escribimos de ${nombreLocal} 🍔`,
     `Confirmamos tu pedido N° ${formatearNumero(pedido.numero)}:`,
     '',
     ...lineas,
     '',
     entrega,
+    ...(tiempo ? [tiempo] : []),
     `💳 Pago: ${ETIQUETA_PAGO[pedido.metodoPago]}`,
     ...(pedido.metodoPago === 'transferencia' ? lineasTransferencia(pedido.datosTransferencia) : []),
     `💰 Total: ${formatearPrecio(pedido.total)}`,
     '',
-    '¡Ya lo estamos preparando! Gracias por elegirnos.',
+    `¡Ya lo estamos preparando! Gracias por tu compra. ${nombreLocal}`,
     ...(pedido.linkSeguimiento ? ['', `📍 Seguí tu pedido acá: ${pedido.linkSeguimiento}`] : []),
+  ].join('\n')
+}
+
+/** Aviso al cliente cuando el local no puede tomar el pedido. */
+export function mensajeRechazo(
+  pedido: { numero: number; clienteNombre: string },
+  motivo: string,
+  nombreLocal: string,
+): string {
+  return [
+    `${saludo(pedido.clienteNombre)} Te escribimos de ${nombreLocal}.`,
+    `Lamentablemente no podemos tomar tu pedido N° ${formatearNumero(pedido.numero)}.`,
+    `Motivo: ${motivo}.`,
+    '',
+    'Disculpá las molestias. Cualquier duda, escribinos por acá.',
   ].join('\n')
 }
 

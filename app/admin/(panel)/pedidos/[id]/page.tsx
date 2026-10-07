@@ -1,4 +1,4 @@
-import { ArrowLeft, MapPin, Printer, StickyNote } from 'lucide-react'
+import { ArrowLeft, Clock, MapPin, StickyNote } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { IconoWhatsApp } from '@/components/icono-whatsapp'
@@ -10,18 +10,25 @@ import {
   ETIQUETA_MODALIDAD,
   ETIQUETA_PAGO,
   etiquetaAvance,
+  etiquetaTiempo,
   formatearFechaHora,
+  formatearHora,
   formatearNumero,
   formatearPrecio,
   pasosDelPedido,
   sePuedeCancelar,
 } from '@/lib/orders/estados'
-import { leerNombreLocal, obtenerPedido } from '@/lib/orders/queries'
-import { linkWhatsApp, mensajeConfirmacion } from '@/lib/whatsapp'
-import { urlDelSitio } from '@/lib/url-sitio'
-import { leerDatosTransferencia } from '@/lib/pagos/transferencia'
+import { linkConfirmacion } from '@/lib/orders/mensajes'
+import { obtenerPedido } from '@/lib/orders/queries'
 import { InsigniaEstado } from '../insignia-estado'
-import { AnularPedido, BotonAvanzar, DescuentoPedido, PagoConfirmado, PasosPedido } from './acciones-pedido'
+import {
+  AccionesEstado,
+  AnularPedido,
+  BotonImprimirComandas,
+  DescuentoPedido,
+  PagoConfirmado,
+  PasosPedido,
+} from './acciones-pedido'
 
 /**
  * Detalle de un pedido. Cada acción vive al lado de lo que cambia, en vez de estar todas juntas:
@@ -41,32 +48,10 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
   if (!datos) notFound()
   const { pedido, items, historial, cancelacion, descuentoAplicadoPor } = datos
 
-  const [nombreLocal, sitio, datosTransferencia] = await Promise.all([
-    leerNombreLocal(),
-    urlDelSitio(),
-    pedido.metodoPago === 'transferencia' ? leerDatosTransferencia() : null,
-  ])
-  const enlaceWhatsApp = linkWhatsApp(
-    pedido.clienteTelefono,
-    mensajeConfirmacion(
-      {
-        numero: pedido.numero,
-        clienteNombre: pedido.clienteNombre,
-        modalidad: pedido.modalidad,
-        metodoPago: pedido.metodoPago,
-        direccion: pedido.direccion,
-        total: pedido.total,
-        items,
-        linkSeguimiento: `${sitio}/pedido/${pedido.tokenSeguimiento}`,
-        datosTransferencia,
-      },
-      nombreLocal,
-    ),
-  )
-
   const esMostrador = pedido.origen === 'mostrador'
   const cancelado = pedido.estado === 'cancelado'
-  const mostrarWhatsApp = !cancelado && !esMostrador
+  // Reenviar la confirmación: solo de un pedido ya confirmado (el pendiente se confirma con el cuadro)
+  const enlaceWhatsApp = !cancelado && pedido.estado !== 'pendiente' ? await linkConfirmacion(pedido) : null
   const esTransferencia = pedido.metodoPago === 'transferencia'
   const avance = etiquetaAvance(pedido.estado, pedido.modalidad)
   // El descuento se puede cambiar mientras el pedido está en curso y no se confirmó el pago
@@ -118,13 +103,22 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
               cancelado={cancelado}
             />
 
+            {pedido.tiempoEstimadoMin && pedido.entregaEstimada && !cancelado && (
+              <p className="mt-5 flex items-center gap-2 text-sm font-bold">
+                <Clock className="size-4" aria-hidden="true" />
+                Tiempo informado: {etiquetaTiempo(pedido.tiempoEstimadoMin)} · {pedido.modalidad === 'delivery' ? 'llega' : 'listo'}{' '}
+                aprox. a las {formatearHora(pedido.entregaEstimada)}
+              </p>
+            )}
+
             <div className="mt-6 border-t-2 border-dotted border-pancho-black/25 pt-5">
-              {avance ? (
-                <>
-                  <p className="pn-eyebrow mb-3">Siguiente paso</p>
-                  <BotonAvanzar pedidoId={pedido.id} etiqueta={avance} />
-                </>
-              ) : (
+              <AccionesEstado
+                pedidoId={pedido.id}
+                numero={pedido.numero}
+                estado={pedido.estado}
+                etiquetaAvance={avance}
+              />
+              {!avance && pedido.estado !== 'pendiente' && (
                 <p className="pn-muted text-sm font-semibold">
                   {cancelado ? 'El pedido está cancelado: no quedan pasos.' : 'El pedido ya está entregado: no quedan pasos.'}
                 </p>
@@ -138,14 +132,12 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
               <h2 className="text-2xl leading-none">
                 Productos <span className="pn-muted">({cantidadProductos})</span>
               </h2>
-              <Link
-                href={`/admin/pedidos/${pedido.id}/comandas`}
-                target="_blank"
-                className={buttonVariants({ variant: 'outline', size: 'sm' })}
-              >
-                <Printer />
-                Imprimir comandas
-              </Link>
+              <div className="flex flex-wrap items-center gap-3">
+                <Link href={`/admin/pedidos/${pedido.id}/comandas`} className="pn-link text-sm font-semibold">
+                  Ver comandas
+                </Link>
+                <BotonImprimirComandas pedidoId={pedido.id} />
+              </div>
             </div>
 
             <ul className="pn-rows mt-4">
@@ -212,7 +204,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
               </p>
             )}
 
-            {mostrarWhatsApp && (
+            {enlaceWhatsApp && (
               <div className="mt-5 border-t-2 border-dotted border-pancho-black/25 pt-5">
                 <a
                   href={enlaceWhatsApp}
@@ -221,9 +213,11 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
                   className={buttonVariants({ variant: 'outline', className: 'w-full' })}
                 >
                   <IconoWhatsApp className="size-4" />
-                  Confirmar por WhatsApp
+                  Reenviar por WhatsApp
                 </a>
-                <p className="pn-muted mt-2 text-xs font-medium">Abre WhatsApp con el mensaje de confirmación ya escrito.</p>
+                <p className="pn-muted mt-2 text-xs font-medium">
+                  Vuelve a abrir WhatsApp con el mensaje de confirmación ya escrito, con el tiempo informado.
+                </p>
               </div>
             )}
           </div>
