@@ -1575,6 +1575,49 @@ html:has(.panel) {
     }
   }
 
+  /* --- Manija para ordenar arrastrando (menú: categorías y productos) --- */
+
+  .pn-asa {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--color-pancho-black);
+    cursor: grab;
+    /* Con el dedo, arrastrar desde la manija mueve el elemento en vez de desplazar la página */
+    touch-action: none;
+    transition: background-color 0.15s ease-out;
+  }
+
+  .pn-asa:focus-visible {
+    outline: 2px solid var(--color-pancho-black);
+    outline-offset: 2px;
+  }
+
+  .pn-asa:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+
+  @media (hover: hover) {
+    .pn-asa:not(:disabled):hover {
+      background: rgb(13 13 13 / 0.08);
+    }
+  }
+
+  /* El elemento que se arrastra queda por encima de los demás y sigue al puntero, apenas
+     resaltado (sin sombra) */
+  .pn-ordenable[data-arrastrando='true'] {
+    position: relative;
+    z-index: 20;
+    background: color-mix(in srgb, var(--color-pancho-paper) 60%, var(--color-pancho-white));
+    cursor: grabbing;
+  }
+
+  .pn-ordenable[data-arrastrando='true'] .pn-asa {
+    cursor: grabbing;
+  }
+
   /* --- Bloque plegable de la lista de pedidos (Pendientes, En preparación…) --- */
 
   .pn-bloque__titulo {

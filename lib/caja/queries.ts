@@ -13,7 +13,8 @@ const esVenta = and(isNull(schema.pedidos.borradoEn), ne(schema.pedidos.estado, 
 /**
  * Venta cobrada: la plata ya está en el local. Una transferencia, cuando se confirmó que llegó;
  * el efectivo, cuando se entregó el pedido (se cobra al entregar). Las ventas de mostrador se
- * registran cobradas (pago_confirmado). Ventas y caja solo suman lo cobrado.
+ * registran cobradas (pago_confirmado), salvo el delivery en efectivo, que sigue la regla del
+ * efectivo. Ventas y caja solo suman lo cobrado.
  */
 const cobrado = sql`(${schema.pedidos.pagoConfirmado} or (${schema.pedidos.metodoPago} = 'efectivo' and ${schema.pedidos.estado} = 'entregado'))`
 const esCobrada = and(esVenta, cobrado)
