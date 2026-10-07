@@ -154,10 +154,14 @@ export const pedidos = pgTable(
     borradoEn: fecha('borrado_en'),
     // Solo en ventas de mostrador.
     creadoPor: text('creado_por').references(() => usuarios.id),
+    // Solo en pedidos web: huella de la IP (hash con secreto, nunca la IP real) para el
+    // límite de pedidos por conexión. Null si no se pudo leer la IP.
+    ipHash: text('ip_hash'),
   },
   (t) => [
     index('pedidos_estado_idx').on(t.estado),
     index('pedidos_creado_en_idx').on(t.creadoEn),
+    index('pedidos_ip_hash_idx').on(t.ipHash, t.creadoEn),
   ],
 )
 

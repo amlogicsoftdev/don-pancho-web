@@ -66,7 +66,7 @@ export function BenefitsSection() {
                     {/* Línea de corte, como en una comanda */}
                     <span aria-hidden="true" className="mt-auto mb-3 w-full border-t-2 border-dashed border-black/20 pt-0 sm:mb-4" />
 
-                    <span className="text-[11px] font-bold uppercase leading-snug tracking-[0.1em] text-pancho-black/65">
+                    <span className="text-[11px] font-bold uppercase leading-snug tracking-widest text-pancho-black/65">
                       {item.pill}
                     </span>
                   </div>

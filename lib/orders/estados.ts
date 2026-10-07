@@ -69,7 +69,7 @@ export const formatearPrecio = (valor: number) =>
 
 const ZONA = 'America/Argentina/Buenos_Aires'
 
-/** Fecha y hora en horario de Buenos Aires: "05/10/2026 21:14". */
+/** Fecha y hora en horario de Buenos Aires */
 export function formatearFechaHora(fecha: Date): string {
   const f = new Intl.DateTimeFormat('es-AR', {
     timeZone: ZONA,

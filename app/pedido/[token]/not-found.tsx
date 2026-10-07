@@ -1,8 +1,9 @@
 import { Logo } from '@/components/logo'
 import { PanchoButton } from '@/components/pancho-button'
-import { SITE_CONFIG } from '@/lib/data'
+import { leerDatosLocal } from '@/lib/local/queries'
 
-export default function PedidoNoEncontrado() {
+export default async function PedidoNoEncontrado() {
+  const local = await leerDatosLocal()
   return (
     <main className="min-h-screen bg-pancho-black px-4 py-10 text-pancho-cream">
       <div className="mx-auto flex max-w-xl flex-col items-center gap-6 text-center">
@@ -12,7 +13,7 @@ export default function PedidoNoEncontrado() {
           Revisá que el link esté completo. Si el problema sigue, escribinos por WhatsApp y te ayudamos.
         </p>
         <div className="flex flex-wrap justify-center gap-3">
-          <PanchoButton href={`https://wa.me/${SITE_CONFIG.whatsappNumber}`} target="_blank" rel="noopener noreferrer" variant="orange">
+          <PanchoButton href={`https://wa.me/${local.whatsapp}`} target="_blank" rel="noopener noreferrer" variant="orange">
             Escribinos
           </PanchoButton>
           <PanchoButton href="/menu" variant="orange">

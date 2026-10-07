@@ -1,3 +1,4 @@
+import 'server-only'
 import { inArray } from 'drizzle-orm'
 import { db, schema } from '@/lib/db'
 

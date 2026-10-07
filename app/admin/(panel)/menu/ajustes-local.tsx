@@ -3,6 +3,7 @@
 import { useState, useTransition, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { guardarAjustes } from '@/lib/menu/actions'
+import type { DatosLocal } from '@/lib/local/datos'
 
 const CAMPO_ANCHO = 'h-9 w-full rounded-lg border border-white/15 bg-pancho-black px-2 outline-none focus:border-pancho-orange'
 const CAMPO = 'h-9 w-28 rounded-lg border border-white/15 bg-pancho-black px-2 outline-none focus:border-pancho-orange'
@@ -11,9 +12,10 @@ interface Props {
   descuentoPorcentaje: number
   corteHora: number
   transferencia: { alias: string; cbu: string; titular: string; banco: string }
+  local: DatosLocal
 }
 
-export function AjustesLocal({ descuentoPorcentaje, corteHora, transferencia }: Props) {
+export function AjustesLocal({ descuentoPorcentaje, corteHora, transferencia, local }: Props) {
   const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null)
   const [enCurso, iniciar] = useTransition()
 
@@ -29,6 +31,13 @@ export function AjustesLocal({ descuentoPorcentaje, corteHora, transferencia }: 
         cbu: datos.get('cbu'),
         titular: datos.get('titular'),
         banco: datos.get('banco'),
+        nombre: datos.get('nombre'),
+        whatsapp: datos.get('whatsapp'),
+        direccion: datos.get('direccion'),
+        horario: datos.get('horario'),
+        instagram: datos.get('instagram'),
+        facebook: datos.get('facebook'),
+        tiktok: datos.get('tiktok'),
       })
       setMensaje(resultado.ok ? { ok: true, texto: 'Ajustes guardados.' } : { ok: false, texto: resultado.error })
     })
@@ -47,6 +56,44 @@ export function AjustesLocal({ descuentoPorcentaje, corteHora, transferencia }: 
           <input name="corte" type="number" min={0} max={23} step={1} defaultValue={corteHora} className={CAMPO} />
         </label>
       </div>
+
+      <fieldset className="space-y-3 border-t border-white/10 pt-3">
+        <legend className="text-sm font-semibold">Datos del local</legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-sm">
+            <span className="mb-1 block text-pancho-muted">Nombre</span>
+            <input name="nombre" required maxLength={60} defaultValue={local.nombre} className={CAMPO_ANCHO} />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-pancho-muted">WhatsApp del local (celular con código de área)</span>
+            <input name="whatsapp" required inputMode="tel" maxLength={30} defaultValue={local.whatsapp} placeholder="Ej.: 3442 66-8413" className={CAMPO_ANCHO} />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-pancho-muted">Dirección</span>
+            <input name="direccion" required maxLength={120} defaultValue={local.direccion} className={CAMPO_ANCHO} />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-pancho-muted">Horario de atención</span>
+            <input name="horario" required maxLength={80} defaultValue={local.horario} placeholder="Ej.: Mar a Dom · 19:00 a 00:30" className={CAMPO_ANCHO} />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-pancho-muted">Instagram (link)</span>
+            <input name="instagram" type="url" maxLength={200} defaultValue={local.instagram} placeholder="https://instagram.com/..." className={CAMPO_ANCHO} />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-pancho-muted">Facebook (link)</span>
+            <input name="facebook" type="url" maxLength={200} defaultValue={local.facebook} placeholder="https://facebook.com/..." className={CAMPO_ANCHO} />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-pancho-muted">TikTok (link)</span>
+            <input name="tiktok" type="url" maxLength={200} defaultValue={local.tiktok} placeholder="https://tiktok.com/@..." className={CAMPO_ANCHO} />
+          </label>
+        </div>
+        <p className="text-xs text-pancho-muted">
+          Se muestran en el sitio (pie de página, Nosotros, carrito y seguimiento). Los pedidos y las consultas llegan a este
+          WhatsApp. Si el local no tiene alguna red, dejá el link vacío y no se muestra.
+        </p>
+      </fieldset>
 
       <fieldset className="space-y-3 border-t border-white/10 pt-3">
         <legend className="text-sm font-semibold">Cuenta para transferencias</legend>

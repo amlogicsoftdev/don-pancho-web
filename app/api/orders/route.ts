@@ -1,4 +1,5 @@
 import { crearPedidoWeb, ErrorPedido } from '@/lib/orders/create'
+import { huellaIp } from '@/lib/orders/huella-ip'
 import { validarPedido } from '@/lib/orders/validate'
 
 // Recibe el pedido de la web y lo guarda como "pendiente".
@@ -22,7 +23,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const creado = await crearPedidoWeb(validado.pedido)
+    // IP del cliente: en Vercel la pone la plataforma (el primer valor de x-forwarded-for)
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip')
+    const creado = await crearPedidoWeb(validado.pedido, huellaIp(ip))
     return Response.json(creado, { status: 201 })
   } catch (error) {
     if (error instanceof ErrorPedido) {

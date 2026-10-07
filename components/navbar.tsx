@@ -193,7 +193,7 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
 
             {/* Subrayado deslizante: negro sobre el naranja, rojo sobre el papel crema, naranja sobre el fondo oscuro */}
             <span
-              className={`absolute bottom-0 h-0.5 transition-[left,width,opacity,background-color] duration-300 ease-(--ease-out) pointer-events-none ${
+              className={`absolute bottom-0 h-0.5 transition-[left,width,opacity,background-color] duration-300 ease-out pointer-events-none ${
                 isHome ? (solid ? 'bg-pancho-red-deep' : 'bg-pancho-black') : 'bg-pancho-orange'
               }`}
               style={{
@@ -208,7 +208,7 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
           <div className="flex items-center gap-4">
             <button
               onClick={onOpenCart}
-              className={`relative p-2.5 rounded-full border text-white transition-[transform,border-color,background-color] duration-200 ease-(--ease-out) active:scale-[0.97] group cursor-pointer ${
+              className={`relative p-2.5 rounded-full border text-white transition-[transform,border-color,background-color] duration-200 ease-out active:scale-[0.97] group cursor-pointer ${
                 isHome
                   ? 'border-pancho-black bg-pancho-black'
                   : 'border-neutral-700 bg-neutral-900/60 hover:border-pancho-orange'

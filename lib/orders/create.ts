@@ -1,3 +1,4 @@
+import 'server-only'
 import { randomBytes } from 'node:crypto'
 import { and, count, eq, gte, inArray } from 'drizzle-orm'
 import { db, schema } from '@/lib/db'
@@ -6,6 +7,11 @@ import type { ItemPedidoEntrada, PedidoEntrada, VentaMostradorEntrada } from './
 // Pedidos seguidos desde un mismo teléfono: protección básica contra pedidos repetidos o falsos.
 const VENTANA_MINUTOS = 10
 const MAX_PEDIDOS_POR_VENTANA = 3
+
+// Pedidos desde una misma conexión (IP): frena a quien cambia de teléfono en cada pedido.
+// Es más alto que el de teléfono porque varias personas pueden compartir la misma red.
+const VENTANA_IP_MINUTOS = 60
+const MAX_PEDIDOS_POR_IP = 10
 
 export class ErrorPedido extends Error {
   constructor(
@@ -80,7 +86,24 @@ async function calcularLineas(items: ItemPedidoEntrada[]) {
  * Guarda un pedido de la web como "pendiente". Los precios y el total se toman de la base:
  * del navegador solo llegan ids de producto y cantidades.
  */
-export async function crearPedidoWeb(entrada: PedidoEntrada): Promise<PedidoCreado> {
+export async function crearPedidoWeb(entrada: PedidoEntrada, ipHash: string | null = null): Promise<PedidoCreado> {
+  if (ipHash) {
+    const desdeIp = new Date(Date.now() - VENTANA_IP_MINUTOS * 60_000)
+    const [{ desdeEstaIp }] = await db
+      .select({ desdeEstaIp: count() })
+      .from(schema.pedidos)
+      .where(
+        and(
+          eq(schema.pedidos.ipHash, ipHash),
+          eq(schema.pedidos.origen, 'web'),
+          gte(schema.pedidos.creadoEn, desdeIp),
+        ),
+      )
+    if (desdeEstaIp >= MAX_PEDIDOS_POR_IP) {
+      throw new ErrorPedido('Se hicieron muchos pedidos desde esta conexión. Probá más tarde o escribinos por WhatsApp.', 429)
+    }
+  }
+
   const desde = new Date(Date.now() - VENTANA_MINUTOS * 60_000)
   const [{ recientes }] = await db
     .select({ recientes: count() })
@@ -117,6 +140,7 @@ export async function crearPedidoWeb(entrada: PedidoEntrada): Promise<PedidoCrea
         descuentoPorcentaje,
         descuentoMonto,
         total,
+        ipHash,
       })
       .returning({ id: schema.pedidos.id, numero: schema.pedidos.numero })
 
