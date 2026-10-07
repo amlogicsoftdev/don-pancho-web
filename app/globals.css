@@ -1932,6 +1932,23 @@ html:has(.panel) {
     color: var(--color-pancho-black);
   }
 
+  /* --- Cuadro modal (confirmar o rechazar un pedido) --- */
+
+  .pn-dialog {
+    width: min(100% - 2rem, 30rem);
+    margin: auto;
+    border: 2px solid var(--color-pancho-black);
+    border-radius: 2px;
+    background: var(--color-pancho-white);
+    padding: 1.5rem;
+    color: var(--color-pancho-black);
+    box-shadow: 6px 6px 0 var(--color-pancho-black);
+  }
+
+  .pn-dialog::backdrop {
+    background: rgb(13 13 13 / 0.55);
+  }
+
   /* Cada paso es un botón: tocarlo mueve el pedido a ese estado (con confirmación) */
   .pn-step__btn {
     display: flex;

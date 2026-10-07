@@ -5,6 +5,7 @@ import { requerirUsuario } from '@/lib/auth/guards'
 import {
   ETIQUETA_MODALIDAD,
   ETIQUETA_PAGO,
+  etiquetaTiempo,
   formatearHora,
   formatearNumero,
   formatearPrecio,
@@ -37,6 +38,8 @@ export default async function ComandasPage({ params }: { params: Promise<{ id: s
   const { pedido, items } = datos
   const nombreLocal = await leerNombreLocal()
   const esDelivery = pedido.modalidad === 'delivery'
+  // Ya se imprimió antes: esta vez sale marcada (el contador sube después de imprimir)
+  const reimpresion = pedido.comandasImpresas > 0
 
   const lineaDoble = <hr className="my-2 border-t-2 border-dashed border-black" />
 
@@ -54,55 +57,44 @@ export default async function ComandasPage({ params }: { params: Promise<{ id: s
           <Encabezado
             titulo="Comandas"
             rotulo={`Pedido N° ${formatearNumero(pedido.numero)}`}
-            descripcion="Se imprimen dos comandas: la de cocina y la del cliente. En el diálogo elegí la impresora térmica y el papel de 80 mm."
+            descripcion="Se imprimen dos comandas: primero la del cliente y después la de cocina. En el diálogo elegí la impresora térmica y el papel de 80 mm."
           >
-            <BotonImprimir />
+            <BotonImprimir pedidoId={pedido.id} />
           </Encabezado>
+          {reimpresion && (
+            <p className="pn-alert pn-alert--warn mt-4">
+              Ya se imprimió {pedido.comandasImpresas === 1 ? 'una vez' : `${pedido.comandasImpresas} veces`}: sale marcada como
+              REIMPRESIÓN.
+            </p>
+          )}
         </div>
       </div>
 
       <div className="mt-8 flex flex-wrap items-start justify-center gap-8 print:mt-0 print:block">
-        {/* Comanda de cocina */}
+        {/* Primera comanda: la del cliente (va con el pedido) */}
         <article className="comanda w-[72mm] bg-white p-3 font-mono text-[13px] leading-tight text-black shadow-xl">
-          <p className="text-center text-lg font-bold">COCINA</p>
-          <p className="text-center text-xl font-bold">N° {formatearNumero(pedido.numero)}</p>
-          {lineaDoble}
-          <p>
-            Hora: <strong>{formatearHora(pedido.creadoEn)}</strong>
-          </p>
-          <p className="text-base font-bold uppercase">{ETIQUETA_MODALIDAD[pedido.modalidad]}</p>
-          {lineaDoble}
-          <ul className="space-y-1.5">
-            {items.map((item) => (
-              <li key={item.id}>
-                <p className="text-base font-bold">
-                  {item.cantidad} x {item.nombre}
-                </p>
-                {item.aclaraciones && <p className="pl-3">** {item.aclaraciones}</p>}
-              </li>
-            ))}
-          </ul>
-          {pedido.notas && (
-            <>
-              {lineaDoble}
-              <p>Notas: {pedido.notas}</p>
-            </>
-          )}
-        </article>
-
-        {/* Comanda del cliente */}
-        <article className="comanda w-[72mm] bg-white p-3 font-mono text-[13px] leading-tight text-black shadow-xl">
+          {reimpresion && <p className="mb-1 text-center font-bold">*** REIMPRESIÓN ***</p>}
           <p className="text-center text-lg font-bold">{nombreLocal}</p>
+          <p className="text-center font-bold">¡GRACIAS POR TU COMPRA!</p>
           <p className="text-center text-xl font-bold">N° {formatearNumero(pedido.numero)}</p>
           {lineaDoble}
           <p>
             Fecha: {formatearSoloFecha(pedido.creadoEn)} {formatearHora(pedido.creadoEn)}
           </p>
+          <p>
+            Cliente: <strong>{pedido.clienteNombre}</strong>
+          </p>
+          {pedido.clienteTelefono && <p>Tel.: {pedido.clienteTelefono}</p>}
           <p className="font-bold uppercase">{ETIQUETA_MODALIDAD[pedido.modalidad]}</p>
           {esDelivery && pedido.direccion && (
             <p>
-              Entrega: {pedido.direccion}
+              Dirección: {pedido.direccion}
               {pedido.referencia ? ` (${pedido.referencia})` : ''}
+            </p>
+          )}
+          {pedido.tiempoEstimadoMin && pedido.entregaEstimada && (
+            <p>
+              Tiempo estimado: {etiquetaTiempo(pedido.tiempoEstimadoMin)} (aprox. {formatearHora(pedido.entregaEstimada)})
             </p>
           )}
           {lineaDoble}
@@ -137,8 +129,35 @@ export default async function ComandasPage({ params }: { params: Promise<{ id: s
             <span>{formatearPrecio(pedido.total)}</span>
           </p>
           <p>Pago: {ETIQUETA_PAGO[pedido.metodoPago]}</p>
+        </article>
+
+        {/* Segunda comanda: la de cocina */}
+        <article className="comanda w-[72mm] bg-white p-3 font-mono text-[13px] leading-tight text-black shadow-xl">
+          {reimpresion && <p className="mb-1 text-center font-bold">*** REIMPRESIÓN ***</p>}
+          <p className="text-center text-2xl font-bold uppercase">{esDelivery ? 'DELIVERY' : 'RETIRO'}</p>
+          <p className="text-center text-xl font-bold">N° {formatearNumero(pedido.numero)}</p>
           {lineaDoble}
-          <p className="text-center">¡Gracias por tu pedido!</p>
+          <p>
+            Fecha: {formatearSoloFecha(pedido.creadoEn)} {formatearHora(pedido.creadoEn)}
+          </p>
+          <p className="text-base font-bold">{pedido.clienteNombre}</p>
+          {lineaDoble}
+          <ul className="space-y-1.5">
+            {items.map((item) => (
+              <li key={item.id}>
+                <p className="text-base font-bold">
+                  {item.cantidad} x {item.nombre}
+                </p>
+                {item.aclaraciones && <p className="pl-3">** {item.aclaraciones}</p>}
+              </li>
+            ))}
+          </ul>
+          {pedido.notas && (
+            <>
+              {lineaDoble}
+              <p>Notas: {pedido.notas}</p>
+            </>
+          )}
         </article>
       </div>
     </section>
