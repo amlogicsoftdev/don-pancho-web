@@ -120,9 +120,11 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
     }
   }, [pathname])
 
-  // Arriba de todo en el inicio, la barra queda transparente sobre el papel naranja:
-  // ahí el texto y los controles van en negro. En cualquier otro caso el fondo es oscuro.
-  const onOrange = pathname === '/' && !isScrolled && !mobileMenuOpen
+  // El inicio es claro: la barra va transparente sobre el papel naranja y, al scrollear,
+  // en papel crema; en los dos casos el texto y los controles van en negro.
+  // La carta es oscura: ahí la barra sigue oscura.
+  const isHome = pathname === '/'
+  const solid = isScrolled || mobileMenuOpen
 
   const handleLinkClick = (e: React.MouseEvent, link: (typeof navLinks)[number]) => {
     if (link.key === 'menu') {
@@ -149,10 +151,12 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
   return (
     <header
       className={`nav-in fixed top-0 left-0 right-0 z-50 transition-[background-color,border-color,padding,box-shadow] duration-300 ${
-        isScrolled || mobileMenuOpen
-          ? 'bg-pancho-black/95 backdrop-blur-md border-b border-neutral-800/80 py-2 shadow-xl shadow-black/40'
-          : onOrange
-            ? 'bg-transparent py-2.5 sm:py-3'
+        isHome
+          ? solid
+            ? 'bg-pancho-paper/90 backdrop-blur-md border-b border-black/10 py-2 shadow-[0_10px_30px_-18px_rgb(0_0_0/0.45)]'
+            : 'bg-transparent border-b border-transparent py-2.5 sm:py-3'
+          : solid
+            ? 'bg-pancho-black/95 backdrop-blur-md border-b border-neutral-800/80 py-2 shadow-xl shadow-black/40'
             : 'bg-linear-to-b from-pancho-black/90 via-pancho-black/50 to-transparent py-2.5 sm:py-3'
       }`}
     >
@@ -174,21 +178,23 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
                 }}
                 onClick={(e) => handleLinkClick(e, link)}
                 className={`relative py-1 transition-colors duration-200 cursor-pointer ${
-                  onOrange
-                    ? 'text-pancho-black'
+                  isHome
+                    ? solid
+                      ? 'text-pancho-black hover:text-pancho-red-deep'
+                      : 'text-pancho-black'
                     : isLinkActive(link.key)
                       ? 'text-white'
-                      : 'text-[#DEDED9] hover:text-pancho-orange'
+                      : 'text-neutral-200 hover:text-pancho-orange'
                 }`}
               >
                 {link.label}
               </Link>
             ))}
 
-            {/* Subrayado deslizante: negro sobre el naranja, naranja sobre el fondo oscuro */}
+            {/* Subrayado deslizante: negro sobre el naranja, rojo sobre el papel crema, naranja sobre el fondo oscuro */}
             <span
               className={`absolute bottom-0 h-0.5 transition-[left,width,opacity,background-color] duration-300 ease-(--ease-out) pointer-events-none ${
-                onOrange ? 'bg-pancho-black' : 'bg-pancho-orange'
+                isHome ? (solid ? 'bg-pancho-red-deep' : 'bg-pancho-black') : 'bg-pancho-orange'
               }`}
               style={{
                 left: `${indicatorStyle.left}px`,
@@ -203,7 +209,7 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
             <button
               onClick={onOpenCart}
               className={`relative p-2.5 rounded-full border text-white transition-[transform,border-color,background-color] duration-200 ease-(--ease-out) active:scale-[0.97] group cursor-pointer ${
-                onOrange
+                isHome
                   ? 'border-pancho-black bg-pancho-black'
                   : 'border-neutral-700 bg-neutral-900/60 hover:border-pancho-orange'
               }`}
@@ -212,7 +218,7 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
               <ShoppingCart className="w-5 h-5 transition-transform group-hover:rotate-6 text-white" />
               <span
                 className={`absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 font-sans font-extrabold text-xs rounded-full flex items-center justify-center transition-transform ${
-                  onOrange ? 'bg-white text-pancho-red-deep' : 'bg-pancho-orange text-pancho-black'
+                  isHome ? 'bg-white text-pancho-red-deep ring-2 ring-pancho-black' : 'bg-pancho-orange text-pancho-black'
                 } ${cartBadgeAnimate ? 'scale-125' : 'scale-100'}`}
               >
                 {cartCount}
@@ -223,7 +229,7 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className={`md:hidden p-2 rounded-lg transition-colors cursor-pointer ${
-                onOrange
+                isHome
                   ? 'text-pancho-black hover:bg-black/10'
                   : 'text-neutral-300 hover:text-white hover:bg-neutral-800'
               }`}
@@ -237,7 +243,11 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
 
       {/* Menú desplegable para mobile */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-pancho-black/95 backdrop-blur-md px-6 py-5 shadow-2xl transition-all animate-in fade-in slide-in-from-top-4 duration-200">
+        <div
+          className={`md:hidden px-6 py-5 animate-in fade-in slide-in-from-top-4 duration-200 ${
+            isHome ? '' : 'bg-pancho-black/95 backdrop-blur-md shadow-2xl'
+          }`}
+        >
           <nav className="flex flex-col gap-4 text-base font-bold uppercase tracking-[0.06em]">
             {navLinks.map((link) => (
               <Link
@@ -247,10 +257,10 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
                   handleLinkClick(e, link)
                   setMobileMenuOpen(false)
                 }}
-                className={`py-2 border-b border-neutral-800/60 last:border-b-0 transition-colors cursor-pointer ${
-                  isLinkActive(link.key)
-                    ? 'text-pancho-orange'
-                    : 'text-neutral-200 hover:text-pancho-orange'
+                className={`py-2 border-b last:border-b-0 transition-colors cursor-pointer ${
+                  isHome
+                    ? `border-black/10 ${isLinkActive(link.key) ? 'text-pancho-red-deep' : 'text-pancho-black hover:text-pancho-red-deep'}`
+                    : `border-neutral-800/60 ${isLinkActive(link.key) ? 'text-pancho-orange' : 'text-neutral-200 hover:text-pancho-orange'}`
                 }`}
               >
                 {link.label}

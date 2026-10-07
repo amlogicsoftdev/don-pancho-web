@@ -123,16 +123,16 @@ export function VersusSection() {
 
       {/* =========================================================
           TÍTULO — dos etiquetas giradas sobre el corte, como en el flyer.
-          Se pegan de izquierda a derecha cuando la sección entra en pantalla.
+          Se pegan de un golpe cuando la sección entra en pantalla.
       ========================================================= */}
       <div className="pointer-events-none absolute inset-x-0 top-20 z-30 flex flex-col items-center px-4 sm:top-24">
-        <span className="rv-wipe -rotate-5 bg-pancho-black px-2 py-1 font-sans text-sm font-extrabold uppercase leading-[1.1] tracking-[0.06em] text-white sm:text-lg">
+        <span className="rv-slap -rotate-5 bg-pancho-black px-2 py-1 font-sans text-sm font-extrabold uppercase leading-[1.1] tracking-[0.06em] text-white sm:text-lg">
           Elegí uno
         </span>
         <h2
           id="elegir-titulo"
-          style={{ '--d': '120ms' } as React.CSSProperties}
-          className="rv-wipe -rotate-5 mt-1 whitespace-nowrap bg-white px-3 py-1 text-center text-[26px] leading-none text-pancho-red-deep sm:px-4 sm:text-5xl lg:text-6xl"
+          style={{ '--d': '140ms' } as React.CSSProperties}
+          className="rv-slap -rotate-5 mt-1 whitespace-nowrap bg-white px-3 py-1 text-center text-[26px] leading-none text-pancho-red-deep sm:px-4 sm:text-5xl lg:text-6xl"
         >
           ¿Hamburguesa o pancho?
         </h2>
