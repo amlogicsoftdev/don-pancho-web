@@ -18,11 +18,14 @@ export interface Category {
 export interface CartEntry {
   id: number
   quantity: number
+  /** Aclaración del cliente para este producto (sin cebolla, sin aderezo…). */
+  note?: string
 }
 
 /** Ítem del carrito ya resuelto contra el menú actual (nombre, precio e imagen al día). */
 export interface CartItem extends Product {
   quantity: number
+  note?: string
 }
 
 /** 'Todas' o el nombre de una categoría de la base. */
