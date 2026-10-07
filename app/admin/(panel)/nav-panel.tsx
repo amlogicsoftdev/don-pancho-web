@@ -12,6 +12,7 @@ const SECCIONES = [
   { href: '/admin/menu', titulo: 'Menú', soloDueno: true },
   { href: '/admin/gastos', titulo: 'Gastos', soloDueno: true },
   { href: '/admin/anulaciones', titulo: 'Anulaciones', soloDueno: true },
+  { href: '/admin/ajustes', titulo: 'Ajustes', soloDueno: true },
 ]
 
 interface Props {
