@@ -25,6 +25,12 @@ interface BurgerTravelerProps {
  *
  * `onArrive` se llama una sola vez, cuando la hamburguesa llega a la sección de elección
  * (o enseguida, si no va a viajar): es la señal para que esa sección muestre su contenido.
+ *
+ * Si el navegador sabe animar con el scroll (`animation-timeline: scroll()`: Chrome, Edge,
+ * Safari nuevo), el viaje lo hace el navegador en el mismo paso que el scroll: acá solo se miden
+ * los dos huecos y se pasan como variables de CSS. Así en el celular la hamburguesa no queda un
+ * cuadro atrás del scroll (eso la hacía ver trabada). Si no, la mueve este componente en cada
+ * cuadro, como antes.
  */
 export function BurgerTraveler({ onArrive }: BurgerTravelerProps) {
   const travelerRef = useRef<HTMLDivElement>(null)
@@ -42,6 +48,8 @@ export function BurgerTraveler({ onArrive }: BurgerTravelerProps) {
       return
     }
 
+    const conCss = CSS.supports('animation-timeline: scroll()')
+
     // Posición y tamaño de cada hueco, relativos al contenedor
     let from = { x: 0, y: 0, w: 0, h: 0 }
     let to = { x: 0, y: 0, w: 0, h: 0 }
@@ -50,6 +58,9 @@ export function BurgerTraveler({ onArrive }: BurgerTravelerProps) {
     let active = false
     let arrived = false
     let rafId: number | null = null
+    // Ancho con el que se midió: en el celular, al scrollear se esconde la barra de direcciones y
+    // cambia el alto de la pantalla; eso no mueve los huecos, así que no hace falta volver a medir
+    let anchoMedido = 0
 
     const measure = () => {
       const stageRect = stage.getBoundingClientRect()
@@ -69,14 +80,26 @@ export function BurgerTraveler({ onArrive }: BurgerTravelerProps) {
         h: versusRect.height,
       }
 
-      // Llega cuando la sección de elección ya ocupa casi toda la pantalla
+      // Llega cuando la sección de elección ya ocupa casi toda la pantalla. Se usa el alto que no
+      // cambia con la barra de direcciones del celular (si no, el viaje se recalcula a mitad de camino)
       const versusSection = versusSlot.closest('section')
       const sectionTop =
         (versusSection ?? versusSlot).getBoundingClientRect().top + window.scrollY
-      endScroll = Math.max(1, sectionTop - window.innerHeight * 0.12)
+      endScroll = Math.max(1, sectionTop - document.documentElement.clientHeight * 0.12)
+      anchoMedido = window.innerWidth
 
       traveler.style.width = `${from.w}px`
       traveler.style.height = `${from.h}px`
+
+      if (conCss) {
+        // El viaje lo anima el CSS (.intro-stage[data-viaje='css'] en globals.css)
+        traveler.style.setProperty('--viaje-x0', `${from.x}px`)
+        traveler.style.setProperty('--viaje-y0', `${from.y}px`)
+        traveler.style.setProperty('--viaje-x1', `${to.x}px`)
+        traveler.style.setProperty('--viaje-y1', `${to.y}px`)
+        traveler.style.setProperty('--viaje-escala', String(from.w > 0 ? to.w / from.w : 1))
+        traveler.style.setProperty('--viaje-fin', `${endScroll}px`)
+      }
     }
 
     const update = () => {
@@ -90,6 +113,8 @@ export function BurgerTraveler({ onArrive }: BurgerTravelerProps) {
         arrived = true
         onArrive?.()
       }
+      // Con CSS no hay nada más que hacer: la posición la pone el navegador
+      if (conCss) return
       // Arranque y llegada suaves
       const eased = progress * progress * (3 - 2 * progress)
 
@@ -117,6 +142,7 @@ export function BurgerTraveler({ onArrive }: BurgerTravelerProps) {
       active = true
       measure()
       update()
+      if (conCss) stage.dataset.viaje = 'css'
       stage.dataset.travel = 'on'
     }
 
@@ -124,6 +150,11 @@ export function BurgerTraveler({ onArrive }: BurgerTravelerProps) {
       if (!active) return
       measure()
       requestUpdate()
+    }
+
+    // La ventana: solo si cambió el ancho (el alto cambia solo con la barra del celular)
+    const handleWindowResize = () => {
+      if (window.innerWidth !== anchoMedido) handleResize()
     }
 
     const handleScroll = () => {
@@ -153,8 +184,17 @@ export function BurgerTraveler({ onArrive }: BurgerTravelerProps) {
     if (window.scrollY > 0) activate()
 
     window.addEventListener('scroll', handleScroll, { passive: true })
-    window.addEventListener('resize', handleResize)
-    const resizeObserver = new ResizeObserver(handleResize)
+    window.addEventListener('resize', handleWindowResize)
+    // El contenedor: si cambia de tamaño (carga de imágenes, fuentes), se vuelve a medir
+    let anchoStage = 0
+    let altoStage = 0
+    const resizeObserver = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect
+      if (Math.abs(width - anchoStage) < 1 && Math.abs(height - altoStage) < 1) return
+      anchoStage = width
+      altoStage = height
+      handleResize()
+    })
     resizeObserver.observe(stage)
 
     return () => {
@@ -162,9 +202,10 @@ export function BurgerTraveler({ onArrive }: BurgerTravelerProps) {
       if (rafId !== null) cancelAnimationFrame(rafId)
       heroSlot.removeEventListener('animationend', handleEntranceEnd)
       window.removeEventListener('scroll', handleScroll)
-      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('resize', handleWindowResize)
       resizeObserver.disconnect()
       delete stage.dataset.travel
+      delete stage.dataset.viaje
     }
   }, [onArrive])
 
@@ -174,19 +215,22 @@ export function BurgerTraveler({ onArrive }: BurgerTravelerProps) {
       aria-hidden="true"
       // Tamaño inicial con la proporción del hueco del hero (la imagen con `fill` necesita alto);
       // measure() lo reemplaza por el tamaño exacto antes de mostrarla
-      className="burger-traveler pointer-events-none absolute left-0 top-0 z-20 aspect-771/524 w-[min(88vw,40rem)] origin-top-left will-change-transform"
+      className="burger-traveler pointer-events-none absolute left-0 top-0 z-20 aspect-771/524 w-[min(88vw,40rem)] origin-top-left will-change-[transform,translate,scale]"
     >
-      {/* Pose: crece o se achica cuando se elige una mitad en la sección de elección */}
-      <div className="burger-traveler-pose h-full w-full">
-        <div data-hero-parallax className="burger-art burger-traveler-art animate-float relative h-full w-full">
-          <Image
-            src="/images/hero-eleccion-hamburguesa.webp"
-            alt=""
-            fill
-            priority
-            sizes="(max-width: 640px) 88vw, 640px"
-            className="object-contain"
-          />
+      {/* Inclinación a mitad de camino (cuando el viaje lo anima el CSS) */}
+      <div className="burger-traveler-giro h-full w-full">
+        {/* Pose: crece o se achica cuando se elige una mitad en la sección de elección */}
+        <div className="burger-traveler-pose h-full w-full">
+          <div data-hero-parallax className="burger-art burger-traveler-art animate-float relative h-full w-full">
+            <Image
+              src="/images/hero-eleccion-hamburguesa.webp"
+              alt=""
+              fill
+              priority
+              sizes="(max-width: 640px) 88vw, 640px"
+              className="object-contain"
+            />
+          </div>
         </div>
       </div>
     </div>

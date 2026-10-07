@@ -792,6 +792,47 @@ html:has(.page-menu) {
   visibility: hidden;
 }
 
+/* Viaje animado por el navegador con el scroll (si lo soporta; si no, lo hace burger-traveler.tsx
+   en cada cuadro). Va en el mismo paso que el scroll, así en el celular no queda atrás. Las
+   posiciones de los dos huecos y el scroll de llegada los mide el componente y los pasa como
+   variables. El cubic-bezier imita el arranque y la llegada suaves del componente. */
+@keyframes dpViaje {
+  from {
+    translate: var(--viaje-x0) var(--viaje-y0);
+    scale: 1;
+  }
+  to {
+    translate: var(--viaje-x1) var(--viaje-y1);
+    scale: var(--viaje-escala);
+  }
+}
+
+/* Se inclina un poco a mitad de camino y llega derecha */
+@keyframes dpViajeGiro {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  50% {
+    rotate: -7deg;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .intro-stage[data-viaje='css'] .burger-traveler {
+    animation: dpViaje 1ms cubic-bezier(0.45, 0, 0.55, 1) both;
+    animation-timeline: scroll(root);
+    animation-range: 0px var(--viaje-fin);
+  }
+
+  .intro-stage[data-viaje='css'] .burger-traveler-giro {
+    transform-origin: 50% 50%;
+    animation: dpViajeGiro 1ms ease-in-out both;
+    animation-timeline: scroll(root);
+    animation-range: 0px var(--viaje-fin);
+  }
+}
+
 /* Pose de la hamburguesa que viaja cuando se elige una mitad (ver más abajo) */
 .burger-traveler-pose {
   transition:
