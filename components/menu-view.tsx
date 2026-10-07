@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Check } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Plus } from 'lucide-react'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { CartDrawer } from '@/components/cart-drawer'
@@ -14,47 +14,6 @@ import { useCart } from '@/lib/cart'
 import { useMounted } from '@/hooks/use-mounted'
 import { SplitLines } from '@/components/split-lines'
 
-// Partículas radiales suaves para la explosión al cambiar de filtro (sin líneas bruscas)
-const FILTER_EXPLOSION_PARTICLES = [
-  { x: 0, y: -28, size: 5, delay: 0 },
-  { x: 22, y: -20, size: 5, delay: 30 },
-  { x: 38, y: -8, size: 4, delay: 15 },
-  { x: 44, y: 0, size: 5, delay: 45 },
-  { x: 38, y: 8, size: 4, delay: 20 },
-  { x: 22, y: 20, size: 5, delay: 50 },
-  { x: 0, y: 28, size: 5, delay: 10 },
-  { x: -22, y: 20, size: 5, delay: 35 },
-  { x: -38, y: 8, size: 4, delay: 25 },
-  { x: -44, y: 0, size: 5, delay: 45 },
-  { x: -38, y: -8, size: 4, delay: 15 },
-  { x: -22, y: -20, size: 5, delay: 40 },
-  { x: 14, y: -30, size: 4, delay: 60 },
-  { x: -14, y: -30, size: 4, delay: 60 },
-  { x: 14, y: 30, size: 4, delay: 70 },
-  { x: -14, y: 30, size: 4, delay: 70 },
-]
-
-// Partículas amarillas con amplia dispersión radial al agregar al carrito
-const BURST_PARTICLES = [
-  { x: 0, y: -52, size: 6, delay: 0 },
-  { x: 38, y: -38, size: 7, delay: 15 },
-  { x: 55, y: 0, size: 6, delay: 0 },
-  { x: 38, y: 38, size: 7, delay: 25 },
-  { x: 0, y: 55, size: 6, delay: 0 },
-  { x: -38, y: 38, size: 7, delay: 15 },
-  { x: -55, y: 0, size: 6, delay: 0 },
-  { x: -38, y: -38, size: 7, delay: 25 },
-  { x: 22, y: -58, size: 5, delay: 35 },
-  { x: 58, y: -22, size: 5, delay: 20 },
-  { x: 58, y: 22, size: 5, delay: 30 },
-  { x: 22, y: 58, size: 5, delay: 35 },
-  { x: -22, y: 58, size: 5, delay: 20 },
-  { x: -58, y: -22, size: 5, delay: 30 },
-]
-
-// Ángulos de rotación orgánicos para las fotos: se reparten según la posición en la carta
-const ROTATION_ANGLES = [-2.8, 2.6, -1.8, 3.2, -3.0, 2.4, -2.2, 2.0]
-
 interface MenuViewProps {
   /** Categorías activas, en orden (vienen de la base). */
   categories: Category[]
@@ -64,6 +23,14 @@ interface MenuViewProps {
   initialCategory?: CategoryFilter
 }
 
+const esCombo = (categoria: string) => /combo/i.test(categoria)
+const esMasPedida = (product: Product) => /m[aá]s pedida/i.test(product.badge ?? '')
+
+/**
+ * Carta: título grande, categorías fijas arriba, la favorita de la casa, la lista a dos
+ * columnas con línea punteada, los combos en un bloque naranja y, abajo, la barra con el
+ * pedido. Los productos, precios y categorías vienen de la base; el carrito es el de siempre.
+ */
 export function MenuView({ categories, products, initialCategory = TODAS }: MenuViewProps) {
   const {
     cart,
@@ -78,156 +45,39 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   const [cartOpen, setCartOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>(initialCategory)
   const [hoveredProduct, setHoveredProduct] = useState<Product | null>(null)
-  const [activePhotoProduct, setActivePhotoProduct] = useState<Product | null>(products[0] ?? null)
-
-  const filterOptions: CategoryFilter[] = [TODAS, ...categories.map((c) => c.name)]
-  const rotationFor = (product: Product) =>
-    ROTATION_ANGLES[Math.max(0, products.indexOf(product)) % ROTATION_ANGLES.length]
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [justAddedId, setJustAddedId] = useState<number | null>(null)
 
-  const [canScrollLeft, setCanScrollLeft] = useState(false)
-  const [canScrollRight, setCanScrollRight] = useState(true)
+  const filterOptions: CategoryFilter[] = [TODAS, ...categories.map((c) => c.name)]
+  const quantityOf = (id: number) => cart.find((item) => item.id === id)?.quantity ?? 0
+  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-  const [explodingCategory, setExplodingCategory] = useState<CategoryFilter | null>(null)
-  // Las filas entran escalonadas: al abrir esperan al título; al cambiar de filtro, entran ya
-  const [rowsDelay, setRowsDelay] = useState(480)
-  const filterContainerRef = useRef<HTMLDivElement>(null)
-  const indicatorRef = useRef<HTMLDivElement>(null)
-  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
-  const animRef = useRef<Animation | null>(null)
-
-  // Detección de scroll horizontal para los degradés de aviso en los filtros mobile
-  useEffect(() => {
-    const el = filterContainerRef.current
-    if (!el) return
-
-    const updateScrollGradients = () => {
-      setCanScrollLeft(el.scrollLeft > 6)
-      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 6)
-    }
-
-    updateScrollGradients()
-    const timer = setTimeout(updateScrollGradients, 100)
-    el.addEventListener('scroll', updateScrollGradients, { passive: true })
-    window.addEventListener('resize', updateScrollGradients)
-
-    return () => {
-      clearTimeout(timer)
-      el.removeEventListener('scroll', updateScrollGradients)
-      window.removeEventListener('resize', updateScrollGradients)
-    }
-  }, [mounted])
-
-  // Sincronización de posición del indicador en carga inicial y redimensionamiento
-  useEffect(() => {
-    const updateIndicatorPosition = () => {
-      const btn = buttonRefs.current[activeCategory]
-      const indicator = indicatorRef.current
-      if (btn && indicator && !animRef.current) {
-        indicator.style.left = `${btn.offsetLeft - 4}px`
-        indicator.style.width = `${btn.offsetWidth + 8}px`
-        indicator.style.top = `${btn.offsetTop}px`
-        indicator.style.height = `${btn.offsetHeight}px`
-        indicator.style.transform = 'none'
-        indicator.style.opacity = '1'
-      }
-    }
-
-    updateIndicatorPosition()
-    window.addEventListener('resize', updateIndicatorPosition)
-    return () => window.removeEventListener('resize', updateIndicatorPosition)
-  }, [activeCategory, mounted])
+  const isAll = activeCategory === TODAS
+  const featured = isAll ? products.find(esMasPedida) : undefined
+  const comboProducts = products.filter(
+    (p) => esCombo(p.category) && (isAll || p.category === activeCategory),
+  )
+  const gridProducts = products.filter(
+    (p) =>
+      !esCombo(p.category) &&
+      p.id !== featured?.id &&
+      (isAll || p.category === activeCategory),
+  )
+  const countFor = (category: CategoryFilter) =>
+    category === TODAS ? products.length : products.filter((p) => p.category === category).length
+  const nothingToShow = !featured && gridProducts.length === 0 && comboProducts.length === 0
 
   const handleCategoryClick = (category: CategoryFilter) => {
     if (category === activeCategory) return
-    const fromCategory = activeCategory
-    const fromButton = buttonRefs.current[fromCategory]
-    const toButton = buttonRefs.current[category]
-    const indicator = indicatorRef.current
-    const container = filterContainerRef.current
-
     setActiveCategory(category)
-    setRowsDelay(0)
-
+    setHoveredProduct(null)
     // La URL acompaña al filtro, así el enlace se puede compartir y «atrás» vuelve a la misma categoría
     window.history.replaceState(
       null,
       '',
-      category === 'Todas' ? '/menu' : `/menu?categoria=${category.toLowerCase()}`
+      category === TODAS ? '/menu' : `/menu?categoria=${category.toLowerCase()}`,
     )
-
-    if (toButton) {
-      toButton.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
-    }
-
-    if (!toButton || !indicator || !container) return
-
-    // Posición inicial: si ya había animación activa, tomamos coordenadas vivas del DOM
-    let startLeft = fromButton ? fromButton.offsetLeft - 4 : toButton.offsetLeft - 4
-    let startWidth = fromButton ? fromButton.offsetWidth + 8 : toButton.offsetWidth + 8
-    const startTop = fromButton ? fromButton.offsetTop : toButton.offsetTop
-    const startHeight = fromButton ? fromButton.offsetHeight : toButton.offsetHeight
-
-    if (animRef.current) {
-      const containerRect = container.getBoundingClientRect()
-      const indicatorRect = indicator.getBoundingClientRect()
-      startLeft = indicatorRect.left - containerRect.left
-      startWidth = indicatorRect.width
-      animRef.current.cancel()
-    }
-
-    const targetLeft = toButton.offsetLeft - 4
-    const targetWidth = toButton.offsetWidth + 8
-    const targetTop = toButton.offsetTop
-    const targetHeight = toButton.offsetHeight
-
-    // Desplazamiento ultra suave, fluido y continuo sin compresiones bruscas
-    const anim = indicator.animate(
-      [
-        {
-          left: `${startLeft}px`,
-          width: `${startWidth}px`,
-          top: `${startTop}px`,
-          height: `${startHeight}px`,
-        },
-        {
-          left: `${targetLeft}px`,
-          width: `${targetWidth}px`,
-          top: `${targetTop}px`,
-          height: `${targetHeight}px`,
-        },
-      ],
-      {
-        duration: 380,
-        easing: 'cubic-bezier(0.25, 1, 0.35, 1)',
-        fill: 'forwards',
-      }
-    )
-
-    animRef.current = anim
-
-    // Disparo suave de las partículas en sintonía con el arribo fluido
-    const explosionTimer = setTimeout(() => {
-      setExplodingCategory(category)
-      setTimeout(() => setExplodingCategory(null), 600)
-    }, 180)
-
-    anim.onfinish = () => {
-      clearTimeout(explosionTimer)
-      indicator.style.left = `${targetLeft}px`
-      indicator.style.width = `${targetWidth}px`
-      indicator.style.top = `${targetTop}px`
-      indicator.style.height = `${targetHeight}px`
-      indicator.style.transform = 'none'
-      anim.cancel()
-      animRef.current = null
-    }
   }
-
-  const filteredProducts = activeCategory === TODAS
-    ? products
-    : products.filter((p) => p.category === activeCategory)
 
   const handleAddProduct = (product: Product) => {
     handleAddToCart(product)
@@ -235,426 +85,309 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     setTimeout(() => setJustAddedId(null), 900)
   }
 
+  const hoverProps = (product: Product) => ({
+    onMouseEnter: (e: React.MouseEvent) => {
+      setHoveredProduct(product)
+      setMousePos({ x: e.clientX, y: e.clientY })
+    },
+    onMouseMove: (e: React.MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY }),
+    onMouseLeave: () => setHoveredProduct(null),
+  })
+
+  /** Botón cuadrado de agregar; cuando el producto ya está en el pedido, pasa a −  n  + */
+  const renderAdd = (product: Product) => {
+    const quantity = quantityOf(product.id)
+    if (quantity === 0) {
+      const justAdded = justAddedId === product.id
+      return (
+        <button
+          type="button"
+          onClick={() => handleAddProduct(product)}
+          aria-label={`Agregar ${product.name} al pedido`}
+          className={`flex size-11 cursor-pointer items-center justify-center border-2 transition-colors duration-200 ${
+            justAdded
+              ? 'border-pancho-orange bg-pancho-orange text-pancho-black'
+              : 'border-pancho-black bg-transparent text-pancho-black hover:bg-pancho-orange'
+          }`}
+        >
+          {justAdded ? <Check className="size-4.5 stroke-3" /> : <Plus className="size-4.5 stroke-3" />}
+        </button>
+      )
+    }
+    return (
+      <div className="flex h-11 items-stretch bg-pancho-orange text-pancho-black">
+        <button
+          type="button"
+          onClick={() => handleUpdateQuantity(product.id, -1)}
+          aria-label={`Quitar uno de ${product.name}`}
+          className="w-9 cursor-pointer text-xl font-extrabold"
+        >
+          −
+        </button>
+        <span className="box-border flex min-w-7 items-center justify-center border-2 border-pancho-orange bg-pancho-black px-1 font-heading text-lg text-pancho-orange">
+          {quantity}
+        </span>
+        <button
+          type="button"
+          onClick={() => handleUpdateQuantity(product.id, 1)}
+          aria-label={`Agregar otro ${product.name}`}
+          className="w-9 cursor-pointer text-xl font-extrabold"
+        >
+          +
+        </button>
+      </div>
+    )
+  }
+
+  /** Botón grande con dos bloques (texto + cruz), el de la favorita y el de los combos */
+  const renderBigAdd = (product: Product, tone: 'orange' | 'black') => {
+    const quantity = quantityOf(product.id)
+    return (
+      <button
+        type="button"
+        onClick={() => handleAddProduct(product)}
+        className={`inline-flex cursor-pointer items-stretch transition-transform duration-200 ${
+          tone === 'black'
+            ? 'shadow-[6px_6px_0_#fff] hover:-translate-x-0.5 hover:-translate-y-0.5'
+            : 'hover:-translate-y-0.5'
+        }`}
+      >
+        <span
+          className={`px-5.5 py-4 text-[13px] font-extrabold uppercase tracking-[0.08em] ${
+            tone === 'black' ? 'bg-pancho-black text-white' : 'bg-pancho-orange text-pancho-black'
+          }`}
+        >
+          {quantity > 0 ? `En tu pedido · ${quantity}` : 'Agregar al pedido'}
+        </span>
+        <span
+          className={`flex w-13.5 items-center justify-center ${
+            tone === 'black' ? 'bg-white text-pancho-black' : 'bg-pancho-black text-white'
+          }`}
+        >
+          <Plus className="size-4.5 stroke-3" />
+        </span>
+      </button>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-pancho-black text-pancho-cream selection:bg-pancho-orange selection:text-pancho-black flex flex-col justify-between">
-      {/* Navbar con carrito sincronizado */}
+    <div className="page-menu flex min-h-screen flex-col justify-between bg-pancho-paper bg-[url('/images/fondo-secciones-crema.webp')] bg-cover bg-fixed bg-top text-pancho-black selection:bg-pancho-orange selection:text-pancho-black">
       <Navbar cartCount={totalCartCount} onOpenCart={() => setCartOpen(true)} />
 
-      <main className="pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full flex-1">
-        {/* Navegación superior */}
-        <div className="load-fade mb-6" style={{ '--d': '100ms' } as React.CSSProperties}>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-medium text-neutral-400 hover:text-pancho-orange transition-colors group"
-          >
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-            <span>Volver a la página principal</span>
-          </Link>
-        </div>
-
+      <div className="flex-1 pb-28">
         {/* Encabezado */}
-        <header className="text-center mb-10">
-          <h1
-            style={{ '--d': '150ms' } as React.CSSProperties}
-            className="load-chars text-6xl sm:text-8xl leading-[0.9] text-white"
-          >
-            <SplitLines lines={['Nuestro menú']} />
-          </h1>
-        </header>
-
-        {/* Selector de categorías: la activa lleva detrás una etiqueta recta naranja que se desliza */}
-        <div
-          className="load-up mb-12 flex items-center justify-center"
-          style={{ '--d': '320ms' } as React.CSSProperties}
-        >
-          <div className="relative w-full max-w-2xl">
-            {/* Degradé indicador izquierdo (avisa que hay más filtros a la izquierda al scrollear) */}
-            <div
-              aria-hidden="true"
-              className={`absolute left-0 top-0 bottom-0 w-8 sm:w-10 pointer-events-none z-20 transition-opacity duration-300 ${
-                canScrollLeft ? 'opacity-100' : 'opacity-0'
-              }`}
-              style={{
-                background: 'linear-gradient(to right, #0D0D0D 20%, rgba(13, 13, 13, 0) 100%)',
-              }}
-            />
-
-            {/* Degradé indicador derecho (avisa que hay más filtros a la derecha al scrollear) */}
-            <div
-              aria-hidden="true"
-              className={`absolute right-0 top-0 bottom-0 w-8 sm:w-10 pointer-events-none z-20 transition-opacity duration-300 ${
-                canScrollRight ? 'opacity-100' : 'opacity-0'
-              }`}
-              style={{
-                background: 'linear-gradient(to left, #0D0D0D 20%, rgba(13, 13, 13, 0) 100%)',
-              }}
-            />
-
-            <div
-              ref={filterContainerRef}
-              role="tablist"
-              aria-label="Categorías del menú"
-              className="relative flex items-center justify-start sm:justify-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-2 px-2 w-full"
+        <section className="mx-auto max-w-300 px-4 pt-28 sm:px-6 lg:px-10">
+          <div className="load-fade" style={{ '--d': '100ms' } as React.CSSProperties}>
+            <Link
+              href="/"
+              className="group inline-flex items-center gap-2 text-xs font-semibold text-pancho-black/70 transition-colors hover:text-pancho-red-deep"
             >
-              {/* Fondo de la categoría activa: etiqueta recta, sin radio */}
-              <div
-                ref={indicatorRef}
-                aria-hidden="true"
-                className="absolute pointer-events-none z-0 bg-pancho-orange transition-opacity duration-300"
-                style={{ opacity: 0 }}
-              />
+              <ArrowLeft className="size-3.5 transition-transform group-hover:-translate-x-1" />
+              <span>Volver a la página principal</span>
+            </Link>
+          </div>
 
-              {filterOptions.map((category) => {
-                const isActive = activeCategory === category
-                const isExploding = explodingCategory === category
-                return (
-                  <button
-                    key={category}
-                    ref={(el) => {
-                      buttonRefs.current[category] = el
-                    }}
-                    role="tab"
-                    aria-selected={isActive}
-                    onClick={() => handleCategoryClick(category)}
-                    className={`relative z-10 whitespace-nowrap px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-bold uppercase tracking-[0.06em] transition-colors duration-300 cursor-pointer ${
-                      isActive
-                        ? 'text-pancho-black'
-                        : 'text-neutral-400 hover:text-white'
+          <div className="mt-4 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+            <h1
+              style={{ '--d': '150ms' } as React.CSSProperties}
+              className="load-chars text-[clamp(56px,9vw,128px)] leading-[0.9] text-pancho-black"
+            >
+              <SplitLines lines={['Nuestro menú']} accentWords={['menú']} />
+            </h1>
+            <p
+              style={{ '--d': '260ms' } as React.CSSProperties}
+              className="load-up mb-2.5 max-w-[30ch] text-sm font-semibold leading-normal text-pancho-black/70"
+            >
+              Elegí lo que se te antoje y lo preparamos para vos.
+            </p>
+          </div>
+        </section>
+
+        {/* Categorías: quedan fijas debajo del encabezado al scrollear */}
+        <div className="sticky top-22 z-20 mt-6 border-b-2 border-pancho-black bg-pancho-paper/95 backdrop-blur-sm sm:mt-10">
+          <div
+            role="tablist"
+            aria-label="Categorías del menú"
+            className="mx-auto flex max-w-300 flex-wrap px-4 sm:px-6 lg:px-10"
+          >
+            {filterOptions.map((category) => {
+              const isActive = activeCategory === category
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => handleCategoryClick(category)}
+                  className={`flex flex-none cursor-pointer items-center gap-1.5 px-2.75 py-3.75 text-xs font-extrabold uppercase tracking-[0.06em] transition-colors duration-200 ${
+                    isActive ? 'bg-pancho-orange text-pancho-black' : 'text-pancho-black/70 hover:text-pancho-black'
+                  }`}
+                >
+                  <span>{category}</span>
+                  <span
+                    className={`px-1.25 py-0.5 text-[10px] font-bold ${
+                      isActive ? 'bg-pancho-black/18' : 'bg-pancho-black/10'
                     }`}
                   >
-                    {/* Explosión suave de partículas naranjas al activarse */}
-                    {isExploding && (
-                      <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-30">
-                        {FILTER_EXPLOSION_PARTICLES.map((p, i) => (
-                          <span
-                            key={i}
-                            className="absolute rounded-full bg-pancho-orange animate-particle"
-                            style={{
-                              width: `${p.size}px`,
-                              height: `${p.size}px`,
-                              '--tx': `${p.x}px`,
-                              '--ty': `${p.y}px`,
-                              animationDelay: `${p.delay}ms`,
-                            } as React.CSSProperties}
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                    <span className="relative z-10">{category}</span>
-                  </button>
-                )
-              })}
-            </div>
+                    {countFor(category)}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
-        {/* Layout Principal: Carta tradicional centrada sin columna fija */}
-        <div
+        <main
           key={activeCategory}
-          style={{ '--row-base': `${rowsDelay}ms` } as React.CSSProperties}
-          className="max-w-3xl mx-auto w-full divide-y divide-neutral-800/60 relative"
+          className="mx-auto flex max-w-300 flex-col gap-10 px-4 pt-7 sm:gap-16 sm:px-6 sm:pt-12 lg:px-10"
         >
-          {filteredProducts.length === 0 && (
-            <p className="py-16 text-center text-neutral-400">
-              Todavía no hay productos cargados en la carta.
-            </p>
-          )}
-          {filteredProducts.map((product, index) => {
-            const isHovered = hoveredProduct?.id === product.id
-            return (
-              <article
-                key={product.id}
-                onMouseEnter={(e) => {
-                  setHoveredProduct(product)
-                  setActivePhotoProduct(product)
-                  setMousePos({ x: e.clientX, y: e.clientY })
-                }}
-                onMouseMove={(e) => {
-                  setMousePos({ x: e.clientX, y: e.clientY })
-                }}
-                onMouseLeave={() => setHoveredProduct(null)}
-                style={{ '--i': index } as React.CSSProperties}
-                className="menu-row group py-4 px-2 sm:px-4 transition-colors duration-200 hover:bg-neutral-900/30 rounded-xl cursor-default"
-              >
-                {/* =========================================
-                    VISTA MOBILE (lg:hidden): Bento horizontal con foto
-                    ========================================= */}
-                <div className="flex items-center justify-between gap-3.5 lg:hidden">
-                  {/* Información a la izquierda */}
-                  <div className="flex-1 min-w-0 pr-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="font-heading text-xl text-white group-hover:text-pancho-orange transition-colors leading-tight">
-                        {product.name}
-                      </h2>
-                      {product.badge && (
-                        <span className="-rotate-2 text-[10px] font-sans font-extrabold uppercase px-1.5 py-0.5 bg-pancho-red-deep text-white tracking-[0.08em]">
-                          {product.badge}
-                        </span>
-                      )}
-                    </div>
-
-                    <p className="mt-1 text-xs text-neutral-400 line-clamp-2 leading-relaxed">
-                      {product.description}
-                    </p>
-
-                    <div className="mt-2.5 flex items-center justify-between">
-                      <span className="font-heading text-xl text-pancho-orange">
-                        {formatPrice(product.price)}
-                      </span>
-
-                      {/* Botón interactivo de agregar */}
-                      <div className="relative flex items-center justify-center">
-                        {justAddedId === product.id && (
-                          <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-30">
-                            {BURST_PARTICLES.map((p, i) => (
-                              <span
-                                key={i}
-                                className="absolute rounded-full bg-pancho-orange animate-particle"
-                                style={{
-                                  width: `${p.size}px`,
-                                  height: `${p.size}px`,
-                                  '--tx': `${p.x}px`,
-                                  '--ty': `${p.y}px`,
-                                  animationDelay: `${p.delay}ms`,
-                                } as React.CSSProperties}
-                              />
-                            ))}
-                            <span className="absolute -inset-1.5 rounded-full border-2 border-pancho-orange/80 animate-ping pointer-events-none" />
-                          </div>
-                        )}
-
-                        <button
-                          onClick={() => handleAddProduct(product)}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer shadow-md group/btn relative z-10 ${
-                            justAddedId === product.id
-                              ? 'bg-pancho-orange text-pancho-black scale-110'
-                              : 'bg-neutral-900 border border-neutral-700/80 text-neutral-300 hover:border-pancho-orange hover:bg-pancho-orange hover:text-pancho-black active:scale-95'
-                          }`}
-                          aria-label={`Agregar ${product.name} al carrito`}
-                        >
-                          {justAddedId === product.id ? (
-                            <Check className="w-4 h-4 stroke-3 animate-pop text-pancho-black" />
-                          ) : (
-                            <Plus className="w-4 h-4 stroke-2.5" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Foto a la derecha estilo Polaroid artesanal con cinta masking tape (idéntica a desktop) */}
-                  <div className="shrink-0 relative w-20 sm:w-24 pt-2.5">
-                    <div
-                      className="relative bg-pancho-card p-1.5 pb-2.5 rounded-xs shadow-[0_10px_25px_rgba(0,0,0,0.85)] border border-[#2E2E2E] transition-transform duration-300 group-hover:scale-105"
-                      style={{
-                        transform: `rotate(${rotationFor(product)}deg)`,
-                      }}
-                    >
-                      {/* Cinta masking tape realista con bordes rasgados a mano y textura crepé */}
-                      <div
-                        aria-hidden="true"
-                        className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-12 sm:w-14 h-4.5 z-20 pointer-events-none select-none"
-                        style={{
-                          filter: 'drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6))',
-                        }}
-                      >
-                        <div
-                          className="w-full h-full backdrop-blur-[1px] border-t border-white/40 border-b"
-                          style={{
-                            background: `repeating-linear-gradient(
-                              115deg,
-                              rgba(240, 232, 210, 0.9),
-                              rgba(240, 232, 210, 0.9) 2px,
-                              rgba(228, 217, 192, 0.9) 3px,
-                              rgba(240, 232, 210, 0.9) 5px
-                            )`,
-                            clipPath: `polygon(
-                              0% 15%, 3% 0%, 1% 25%, 4% 45%, 1% 65%, 4% 85%, 0% 100%,
-                              96% 100%, 100% 80%, 97% 60%, 100% 40%, 96% 20%, 99% 5%, 95% 0%
-                            )`,
-                            transform: 'rotate(-2deg)',
-                          }}
-                        />
-                      </div>
-
-                      {/* Contenedor de la foto */}
-                      <div className="relative aspect-square w-full bg-neutral-950 overflow-hidden rounded-xs border border-neutral-800/80">
-                        <Image
-                          src={product.image}
-                          alt={product.name}
-                          fill
-                          sizes="(max-width: 640px) 80px, 96px"
-                          className="object-cover"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* =========================================
-                    VISTA DESKTOP (hidden lg:block): Fila clásica con línea punteada
-                    ========================================= */}
-                <div className="hidden lg:block">
-                  <div className="flex items-baseline justify-between gap-4">
-                    {/* Nombre y etiqueta destacada */}
-                    <div className="flex items-center gap-2.5 shrink-0">
-                      <h2
-                        className={`font-heading text-3xl leading-[1.1] transition-colors ${
-                          isHovered ? 'text-pancho-orange' : 'text-white group-hover:text-pancho-orange'
-                        }`}
-                      >
-                        {product.name}
-                      </h2>
-                      {product.badge && (
-                        <span className="-rotate-2 text-xs font-sans font-extrabold uppercase px-2 py-0.5 bg-pancho-red-deep text-white tracking-[0.08em]">
-                          {product.badge}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Línea punteada tradicional */}
-                    <div
-                      className={`flex-1 mx-4 border-b-2 border-dotted self-baseline mb-1.5 transition-colors ${
-                        isHovered ? 'border-pancho-orange/60' : 'border-neutral-700/60 group-hover:border-pancho-orange/40'
-                      }`}
-                    />
-
-                    {/* Precio y Botón circular interactivo con explosión de partículas */}
-                    <div className="flex items-center gap-4 shrink-0">
-                      <span className="font-heading text-3xl leading-[1.1] text-pancho-orange">
-                        {formatPrice(product.price)}
-                      </span>
-
-                      <div className="relative flex items-center justify-center">
-                        {justAddedId === product.id && (
-                          <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-30">
-                            {BURST_PARTICLES.map((p, i) => (
-                              <span
-                                key={i}
-                                className="absolute rounded-full bg-pancho-orange animate-particle"
-                                style={{
-                                  width: `${p.size}px`,
-                                  height: `${p.size}px`,
-                                  '--tx': `${p.x}px`,
-                                  '--ty': `${p.y}px`,
-                                  animationDelay: `${p.delay}ms`,
-                                } as React.CSSProperties}
-                              />
-                            ))}
-                            <span className="absolute -inset-1.5 rounded-full border-2 border-pancho-orange/80 animate-ping pointer-events-none" />
-                          </div>
-                        )}
-
-                        <button
-                          onClick={() => handleAddProduct(product)}
-                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer shadow-md group/btn relative z-10 ${
-                            justAddedId === product.id
-                              ? 'bg-pancho-orange text-pancho-black scale-110'
-                              : 'bg-neutral-900 border border-neutral-700/80 text-neutral-300 hover:border-pancho-orange hover:bg-pancho-orange hover:text-pancho-black hover:scale-105 active:scale-95'
-                          }`}
-                          aria-label={`Agregar ${product.name} al carrito`}
-                        >
-                          {justAddedId === product.id ? (
-                            <Check className="w-5 h-5 stroke-3 animate-pop text-pancho-black" />
-                          ) : (
-                            <Plus className="w-5 h-5 stroke-2.5 transition-transform duration-200 group-hover/btn:rotate-90" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Descripción de los ingredientes */}
-                  <p className="mt-1 text-sm text-neutral-400 font-normal leading-relaxed max-w-xl pr-4">
-                    {product.description}
-                  </p>
-                </div>
-              </article>
-            )
-          })}
-        </div>
-
-        {/* =========================================================
-            Fotografía Flotante Dinámica con Rotación Suave (Desktop)
-        ========================================================= */}
-        {mounted && activePhotoProduct && (
-          <div
-            aria-hidden="true"
-            className="hidden lg:block pointer-events-none fixed top-0 left-0 z-50 select-none"
-            style={{
-              transform: `translate3d(${
-                mousePos.x > window.innerWidth - 300
-                  ? mousePos.x - 275
-                  : mousePos.x + 28
-              }px, ${Math.max(90, Math.min(window.innerHeight - 340, mousePos.y - 130))}px, 0)`,
-              transition: 'transform 120ms ease-out',
-              willChange: 'transform',
-            }}
-          >
-            <div
-              className="relative w-64 bg-pancho-card p-2.5 pb-3.5 rounded-xs shadow-[0_30px_70px_rgba(0,0,0,0.95)] border border-[#2E2E2E] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              style={{
-                opacity: hoveredProduct ? 1 : 0,
-                transform: hoveredProduct
-                  ? `translateY(0px) scale(1) rotate(${rotationFor(activePhotoProduct)}deg)`
-                  : 'translateY(24px) scale(0.75) rotate(-7deg)',
-              }}
+          {/* La favorita de la casa */}
+          {featured && (
+            <article
+              className="menu-row grid grid-cols-[repeat(auto-fit,minmax(min(100%,380px),1fr))] border-2 border-pancho-black bg-white shadow-[8px_8px_0_var(--color-pancho-black)]"
+              style={{ '--i': 0 } as React.CSSProperties}
             >
-              {/* Cinta masking tape realista con bordes rasgados a mano y textura crepé */}
-              <div
-                aria-hidden="true"
-                className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-24 h-7 z-20 pointer-events-none select-none"
-                style={{
-                  filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4))',
-                }}
-              >
-                <div
-                  className="w-full h-full backdrop-blur-[1px] border-t border-white/40 border-b"
-                  style={{
-                    background: `repeating-linear-gradient(
-                      115deg,
-                      rgba(240, 232, 210, 0.9),
-                      rgba(240, 232, 210, 0.9) 2px,
-                      rgba(228, 217, 192, 0.9) 3px,
-                      rgba(240, 232, 210, 0.9) 5px
-                    )`,
-                    clipPath: `polygon(
-                      0% 15%, 3% 0%, 1% 25%, 4% 45%, 1% 65%, 4% 85%, 0% 100%,
-                      96% 100%, 100% 80%, 97% 60%, 100% 40%, 96% 20%, 99% 5%, 95% 0%
-                    )`,
-                    transform: 'rotate(-2deg)',
-                  }}
-                />
-              </div>
-
-              {/* Contenedor de la foto con crossfade y micro-zoom suave */}
-              <div className="relative aspect-square w-full bg-neutral-950 overflow-hidden rounded-xs border border-neutral-800/80">
+              <div className="relative aspect-4/3 overflow-hidden bg-neutral-900">
                 <Image
-                  key={activePhotoProduct.id}
-                  src={activePhotoProduct.image}
-                  alt={activePhotoProduct.name}
+                  src={featured.image}
+                  alt={featured.name}
                   fill
-                  sizes="260px"
+                  sizes="(max-width: 768px) 100vw, 600px"
                   priority
-                  className="object-cover animate-menu-photo"
+                  className="object-cover"
                 />
+                <span className="absolute left-0 top-4.5 bg-pancho-red-deep px-3.5 py-2 text-xs font-extrabold uppercase tracking-widest text-white">
+                  ★ {featured.badge}
+                </span>
               </div>
+              <div className="flex flex-col justify-center gap-4.5 p-6 sm:p-12">
+                <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-pancho-red-deep">
+                  La favorita de la casa
+                </span>
+                <h2 className="font-heading text-[clamp(44px,5.5vw,76px)] leading-[0.92]">{featured.name}</h2>
+                <p className="max-w-[38ch] text-[15px] font-medium leading-relaxed text-pancho-black/80">
+                  {featured.description}
+                </p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-5">
+                  <span className="font-heading text-[clamp(36px,4vw,48px)] leading-none text-pancho-red-deep">
+                    {formatPrice(featured.price)}
+                  </span>
+                  {renderBigAdd(featured, 'orange')}
+                </div>
+              </div>
+            </article>
+          )}
 
-              {/* Nombre del plato con fade suave al cambiar */}
-              <div className="pt-2.5 text-center h-7 flex items-center justify-center">
-                <h4
-                  key={activePhotoProduct.id}
-                  className="font-heading text-lg text-white leading-none animate-menu-title"
-                >
-                  {activePhotoProduct.name}
-                </h4>
+          {/* Toda la carta, a dos columnas con línea punteada */}
+          {gridProducts.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              {isAll && (
+                <div className="mb-2 flex items-center gap-3.5">
+                  <span className="font-heading text-[28px] uppercase">Toda la carta</span>
+                  <span className="h-0.5 flex-1 bg-pancho-black" />
+                </div>
+              )}
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,460px),1fr))] gap-x-14">
+                {gridProducts.map((product, index) => (
+                  <div
+                    key={product.id}
+                    {...hoverProps(product)}
+                    style={{ '--i': index + 1 } as React.CSSProperties}
+                    className="menu-row grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4.5 gap-y-1.5 border-b border-pancho-black/20 py-5"
+                  >
+                    <div className="flex min-w-0 items-baseline gap-2.5">
+                      <h3 className="font-heading text-[clamp(22px,2vw,26px)] leading-[1.05]">{product.name}</h3>
+                      {product.badge && (
+                        <span className="flex-none -translate-y-0.75 bg-pancho-red-deep px-1.5 py-0.75 text-[9.5px] font-extrabold uppercase tracking-widest text-white">
+                          {product.badge}
+                        </span>
+                      )}
+                      <span className="min-w-4 flex-1 -translate-y-1.25 border-b-2 border-dotted border-pancho-black/35" />
+                    </div>
+                    <div className="row-span-2 flex items-center gap-3.5">
+                      <span className="font-heading text-[26px] leading-none text-pancho-red-deep">
+                        {formatPrice(product.price)}
+                      </span>
+                      {renderAdd(product)}
+                    </div>
+                    <p className="text-[13px] font-medium leading-relaxed text-pancho-black/70">{product.description}</p>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-      </main>
+          {nothingToShow && (
+            <div className="flex flex-col items-center gap-2.5 border-2 border-dashed border-pancho-black/30 px-6 py-12 text-center">
+              <span className="font-heading text-[32px] uppercase">Todavía no hay productos cargados</span>
+              <span className="text-sm text-pancho-black/70">Mirá el resto del menú mientras tanto.</span>
+            </div>
+          )}
+
+          {/* Combos: bloque naranja */}
+          {comboProducts.map((combo, index) => (
+            <article
+              key={combo.id}
+              {...hoverProps(combo)}
+              style={{ '--i': index + 2 } as React.CSSProperties}
+              className="menu-row relative grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] items-center gap-x-14 gap-y-6 overflow-hidden bg-pancho-orange p-7 text-pancho-black sm:p-12"
+            >
+              <div className="flex flex-col gap-3.5">
+                <span className="-rotate-2 self-start bg-pancho-black px-2.5 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-pancho-orange">
+                  Promo · Combo
+                </span>
+                <h2 className="font-heading text-[clamp(40px,5vw,68px)] leading-[0.92]">{combo.name}</h2>
+                <p className="max-w-[40ch] text-[15px] font-bold leading-normal">{combo.description}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-5">
+                <span className="font-heading text-[clamp(48px,5.5vw,72px)] leading-none">
+                  {formatPrice(combo.price)}
+                </span>
+                {renderBigAdd(combo, 'black')}
+              </div>
+            </article>
+          ))}
+        </main>
+      </div>
+
+      {/* Foto que sigue al mouse sobre cada plato (solo con mouse) */}
+      {mounted && hoveredProduct && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed z-40 hidden w-45 -rotate-4 bg-[#f4efe6] p-2 pb-7.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.7)] [@media(hover:hover)]:block"
+          style={{ left: mousePos.x + 28, top: mousePos.y - 110 }}
+        >
+          <div className="absolute -top-2.5 left-1/2 -ml-8 h-5 w-16 rotate-3 bg-[rgba(230,215,185,0.9)]" />
+          <div className="relative aspect-square w-full overflow-hidden bg-neutral-900">
+            <Image src={hoveredProduct.image} alt="" fill sizes="180px" className="object-cover" />
+          </div>
+          <span className="absolute inset-x-0 bottom-2 text-center font-heading text-[13px] uppercase leading-none text-pancho-black">
+            {hoveredProduct.name}
+          </span>
+        </div>
+      )}
+
+      {/* Barra con el pedido: abre el carrito */}
+      {mounted && totalCartCount > 0 && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-3 sm:px-6 sm:pb-6">
+          <button
+            type="button"
+            onClick={() => setCartOpen(true)}
+            className="pointer-events-auto mx-auto flex w-full max-w-180 cursor-pointer items-stretch border-2 border-pancho-black text-left text-pancho-black shadow-[0_18px_40px_-12px_rgba(0,0,0,0.8)]"
+          >
+            <span className="flex items-center border-2 border-pancho-orange bg-pancho-black px-4.5 font-heading text-[22px] text-pancho-orange">
+              {totalCartCount}
+            </span>
+            <span className="flex flex-1 items-center justify-between gap-3 bg-pancho-orange px-5 py-4">
+              <span className="text-[13px] font-extrabold uppercase tracking-[0.08em]">Tu pedido</span>
+              <span className="font-heading text-2xl leading-none">{formatPrice(cartTotal)}</span>
+            </span>
+            <span className="flex w-14.5 items-center justify-center bg-white">
+              <ArrowRight className="size-5 stroke-[2.5]" />
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Pie de página */}
       <Footer />
