@@ -5,7 +5,8 @@ import { registrarImpresion } from '@/lib/orders/actions'
 /**
  * Imprime las comandas de un pedido sin salir de la pantalla: carga la página de comandas en un
  * marco oculto y abre el diálogo de impresión ahí. (Al imprimir, esa página solo muestra los
- * tickets.) Después suma la impresión, para marcar las próximas como REIMPRESIÓN.
+ * tickets.) La promesa se resuelve cuando se cierra el diálogo, y suma la impresión para marcar
+ * las próximas como REIMPRESIÓN.
  */
 export function imprimirComandas(pedidoId: number): Promise<void> {
   return new Promise((resolver) => {
@@ -30,9 +31,9 @@ export function imprimirComandas(pedidoId: number): Promise<void> {
       if (!ventana) return terminar()
       ventana.addEventListener('afterprint', terminar, { once: true })
       ventana.focus()
+      // En Chrome y Edge print() espera hasta que se cierra el diálogo: al volver, ya terminó
       ventana.print()
-      // Si el navegador no avisa cuándo se cerró el diálogo, se da por terminado igual
-      setTimeout(terminar, 60_000)
+      terminar()
     }
 
     document.body.appendChild(marco)

@@ -33,6 +33,9 @@ export function CuadroConfirmar({ abierto, titulo, textoConfirmar, onConfirmar, 
   const [enCurso, setEnCurso] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hecho, setHecho] = useState<{ pedidoId: number; numero: number; linkWhatsApp: string | null } | null>(null)
+  // Mientras está abierto el diálogo de impresión, el cuadro no se cierra (ni con Escape)
+  const [imprimiendo, setImprimiendo] = useState(false)
+  const ocupado = enCurso || imprimiendo
 
   useEffect(() => {
     const dialogo = ref.current
@@ -45,7 +48,7 @@ export function CuadroConfirmar({ abierto, titulo, textoConfirmar, onConfirmar, 
   // evento "close" del cuadro avisa al resto. Así funciona aunque la página se haya refrescado
   // tras confirmar.
   function cerrar() {
-    if (enCurso) return
+    if (ocupado) return
     if (ref.current?.open) ref.current.close()
     else alCerrarse()
   }
@@ -57,19 +60,26 @@ export function CuadroConfirmar({ abierto, titulo, textoConfirmar, onConfirmar, 
     onCerrar()
   }
 
+  /** Imprime y recién al cerrarse el diálogo de impresión vuelve a habilitar el cuadro. */
+  async function imprimir(pedidoId: number) {
+    setImprimiendo(true)
+    try {
+      await imprimirComandas(pedidoId)
+    } finally {
+      setImprimiendo(false)
+    }
+  }
+
   async function confirmar() {
     if (minutos === null) return setError('Elegí el tiempo de entrega.')
     setError(null)
     setEnCurso(true)
     const resultado = await onConfirmar(minutos)
-    if (!resultado.ok) {
-      setEnCurso(false)
-      return setError(resultado.error)
-    }
-    setHecho(resultado)
     setEnCurso(false)
+    if (!resultado.ok) return setError(resultado.error)
+    setHecho(resultado)
     // Las comandas salen en el momento, sin salir de esta pantalla
-    void imprimirComandas(resultado.pedidoId)
+    await imprimir(resultado.pedidoId)
   }
 
   return (
@@ -78,12 +88,24 @@ export function CuadroConfirmar({ abierto, titulo, textoConfirmar, onConfirmar, 
       className="pn-dialog"
       aria-labelledby="cuadro-confirmar-titulo"
       onCancel={(e) => {
-        // Escape: mientras se confirma no se cierra
-        if (enCurso) e.preventDefault()
+        // Escape: no cierra mientras se confirma o se imprime (el Escape que cierra la vista
+        // previa de impresión no tiene que cerrar también este cuadro)
+        if (ocupado) e.preventDefault()
       }}
       onClose={alCerrarse}
     >
-      {hecho ? (
+      {hecho && imprimiendo ? (
+        <div className="space-y-3 py-4 text-center" role="status">
+          <Printer className="mx-auto size-10" aria-hidden="true" />
+          <h2 id="cuadro-confirmar-titulo" className="text-3xl leading-none">
+            Imprimiendo comandas…
+          </h2>
+          <p className="pn-muted text-sm font-semibold">
+            N° {formatearNumero(hecho.numero)} confirmado. Elegí la impresora en el diálogo; al cerrarlo, queda el botón
+            para avisarle al cliente.
+          </p>
+        </div>
+      ) : hecho ? (
         <div className="space-y-5">
           <div>
             <p className="pn-eyebrow">Listo</p>
@@ -110,7 +132,7 @@ export function CuadroConfirmar({ abierto, titulo, textoConfirmar, onConfirmar, 
           )}
 
           <div className="flex flex-wrap justify-between gap-2">
-            <Button variant="ghost" size="sm" onClick={() => void imprimirComandas(hecho.pedidoId)}>
+            <Button variant="ghost" size="sm" onClick={() => void imprimir(hecho.pedidoId)}>
               <Printer /> Volver a imprimir
             </Button>
             <button type="button" className={buttonVariants({ variant: 'default', size: 'sm' })} onClick={cerrar}>
