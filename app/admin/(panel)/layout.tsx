@@ -1,64 +1,51 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { requerirUsuario } from '@/lib/auth/guards'
 import { contarPedidosActivos } from '@/lib/orders/queries'
-import { AvisoPedidos } from './aviso-pedidos'
 import { LogoutButton } from './logout-button'
+import { NavPanel } from './nav-panel'
 
 export const metadata: Metadata = {
   title: 'Panel de administración',
   robots: { index: false, follow: false },
 }
 
-const ENLACE = 'rounded-lg px-3 py-1.5 text-sm font-semibold hover:bg-white/5'
-
 // Todo lo que cuelga de este layout exige sesión. Cada página que sea solo del dueño
 // además llama a requerirDueno(): el layout no protege a las páginas por sí solo, y ocultar
 // un enlace acá es solo comodidad.
+//
+// La estética del panel (papel crema, hojas blancas, botones) está en app/globals.css,
+// bajo «Panel de administración».
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   const usuario = await requerirUsuario()
   const { pendientes } = await contarPedidosActivos()
   const esDueno = usuario.rol === 'dueno'
 
   return (
-    <div className="min-h-dvh">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-pancho-surface px-4 py-3 print:hidden">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span className="font-display text-xl text-pancho-orange">Panel</span>
-          <nav className="flex flex-wrap items-center gap-1" aria-label="Secciones del panel">
-            <AvisoPedidos pendientesIniciales={pendientes} />
-            <Link href="/admin/mostrador" className={ENLACE}>
-              Mostrador
-            </Link>
-            <Link href="/admin/caja" className={ENLACE}>
-              Caja
-            </Link>
-            {esDueno && (
-              <>
-                <Link href="/admin/ventas" className={ENLACE}>
-                  Ventas
-                </Link>
-                <Link href="/admin/menu" className={ENLACE}>
-                  Menú
-                </Link>
-                <Link href="/admin/gastos" className={ENLACE}>
-                  Gastos
-                </Link>
-                <Link href="/admin/anulaciones" className={ENLACE}>
-                  Anulaciones
-                </Link>
-              </>
-            )}
-          </nav>
-        </div>
-        <div className="flex items-center gap-3 text-sm">
-          <span className="text-pancho-muted">
-            {usuario.nombre} · {esDueno ? 'Dueño' : 'Empleado'}
-          </span>
-          <LogoutButton />
+    <div className="panel">
+      {/* Barra fija: marca, secciones y usuario. En pantallas chicas las secciones pasan
+          a un segundo renglón que se desliza de costado. */}
+      <header className="pn-bar print:hidden">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 px-4 sm:px-6">
+          <Link href="/admin" className="flex items-center gap-2.5 py-2" aria-label="Panel: ir a los pedidos">
+            <Image src="/images/logo-don-pancho.webp" alt="" width={512} height={512} className="size-10" />
+            <span className="font-display text-2xl leading-none">Panel</span>
+          </Link>
+
+          <div className="ml-auto flex items-center gap-3 lg:order-3">
+            <p className="text-right text-xs leading-tight">
+              <strong className="block font-bold">{usuario.nombre}</strong>
+              <span className="pn-muted">{esDueno ? 'Dueño' : 'Empleado'}</span>
+            </p>
+            <LogoutButton />
+          </div>
+
+          <NavPanel esDueno={esDueno} pendientesIniciales={pendientes} />
         </div>
       </header>
-      <main className="p-4 print:p-0">{children}</main>
+
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10 print:max-w-none print:p-0">{children}</main>
     </div>
   )
 }

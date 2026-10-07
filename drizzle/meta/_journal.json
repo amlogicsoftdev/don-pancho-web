@@ -15,6 +15,13 @@
       "when": 1791380794868,
       "tag": "0001_limite_pedidos_ip",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791387349238,
+      "tag": "0002_descuento_por_pedido",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { requerirDueno } from '@/lib/auth/guards'
 import { listarAnulaciones } from '@/lib/caja/queries'
 import { formatearHora, formatearNumero, formatearSoloFecha } from '@/lib/orders/estados'
+import { Encabezado } from '../encabezado'
 
 export default async function AnulacionesPage() {
   await requerirDueno()
@@ -8,37 +9,37 @@ export default async function AnulacionesPage() {
 
   return (
     <section className="mx-auto max-w-4xl">
-      <h1 className="mb-1 text-3xl">Cancelados y borrados</h1>
-      <p className="mb-4 text-sm text-pancho-muted">
-        Registro de todos los pedidos cancelados o borrados, con el motivo y quién lo hizo.
-      </p>
+      <Encabezado
+        titulo="Cancelados y borrados"
+        descripcion="Registro de todos los pedidos cancelados o borrados, con el motivo y quién lo hizo."
+      />
 
       {anulaciones.length === 0 ? (
-        <p className="rounded-xl border border-white/10 bg-pancho-surface p-6 text-center text-pancho-muted">
-          Todavía no hay pedidos cancelados ni borrados.
-        </p>
+        <p className="pn-card pn-muted mt-6 p-8 text-center font-semibold">Todavía no hay pedidos cancelados ni borrados.</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/10 bg-pancho-surface">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/10 text-pancho-muted">
+        <div className="pn-card mt-6 overflow-x-auto">
+          <table className="pn-table">
+            <thead>
               <tr>
-                <th className="p-3">N°</th>
-                <th className="p-3">Acción</th>
-                <th className="p-3">Motivo</th>
-                <th className="p-3">Fecha</th>
-                <th className="p-3">Hora</th>
-                <th className="p-3">Usuario</th>
+                <th>N°</th>
+                <th>Acción</th>
+                <th>Motivo</th>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Usuario</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10">
+            <tbody>
               {anulaciones.map((a) => (
                 <tr key={a.id}>
-                  <td className="p-3 font-semibold">{formatearNumero(a.numeroPedido)}</td>
-                  <td className="p-3">{a.accion === 'cancelado' ? 'Cancelado' : 'Borrado'}</td>
-                  <td className="p-3">{a.motivo}</td>
-                  <td className="p-3">{formatearSoloFecha(a.creadoEn)}</td>
-                  <td className="p-3">{formatearHora(a.creadoEn)}</td>
-                  <td className="p-3">{a.usuario}</td>
+                  <td className="font-heading text-xl leading-none text-pancho-red-deep">{formatearNumero(a.numeroPedido)}</td>
+                  <td>
+                    <span className="pn-tag">{a.accion === 'cancelado' ? 'Cancelado' : 'Borrado'}</span>
+                  </td>
+                  <td className="font-bold">{a.motivo}</td>
+                  <td>{formatearSoloFecha(a.creadoEn)}</td>
+                  <td>{formatearHora(a.creadoEn)}</td>
+                  <td>{a.usuario}</td>
                 </tr>
               ))}
             </tbody>

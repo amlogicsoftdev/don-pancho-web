@@ -222,11 +222,8 @@ export async function guardarAjustes(entrada: unknown): Promise<ResultadoAccion>
   if (typeof entrada !== 'object' || entrada === null) return { ok: false, error: 'Los ajustes no son válidos.' }
   const d = entrada as Record<string, unknown>
 
-  const descuento = d.descuentoPorcentaje
+  // El descuento no es un ajuste general: se carga en cada pedido (lib/orders/actions.ts)
   const corte = d.corteHora
-  if (typeof descuento !== 'number' || !Number.isInteger(descuento) || descuento < 0 || descuento > 100) {
-    return { ok: false, error: 'El descuento debe ser un número entero entre 0 y 100.' }
-  }
   if (typeof corte !== 'number' || !Number.isInteger(corte) || corte < 0 || corte > 23) {
     return { ok: false, error: 'La hora de corte debe ser un número entero entre 0 y 23.' }
   }
@@ -266,7 +263,6 @@ export async function guardarAjustes(entrada: unknown): Promise<ResultadoAccion>
   await db.transaction(async (tx) => {
     // Un dato de transferencia vacío se guarda como texto vacío: el sitio lo trata como "no cargado".
     for (const [clave, valor] of [
-      ['descuento_porcentaje', String(descuento)],
       ['corte_dia_hora', String(corte)],
       [CLAVES_TRANSFERENCIA.alias, alias],
       [CLAVES_TRANSFERENCIA.cbu, cbu],
@@ -286,7 +282,7 @@ export async function guardarAjustes(entrada: unknown): Promise<ResultadoAccion>
         .onConflictDoUpdate({ target: schema.configuracion.clave, set: { valor } })
     }
   })
-  refrescar()
+  revalidatePath('/admin/ajustes')
   revalidatePath('/admin/caja')
   revalidatePath('/admin/pedidos', 'layout')
   // Nombre, WhatsApp, dirección y redes se muestran en todo el sitio

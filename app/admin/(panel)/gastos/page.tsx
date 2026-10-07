@@ -1,7 +1,9 @@
+import { Button } from '@/components/ui/button'
 import { requerirDueno } from '@/lib/auth/guards'
 import { diaOperativo, esDiaValido, leerCorteHora, mostrarDia } from '@/lib/caja/dia'
 import { listarGastos } from '@/lib/caja/queries'
 import { ETIQUETA_PAGO, formatearPrecio } from '@/lib/orders/estados'
+import { Encabezado } from '../encabezado'
 import { FormularioGasto } from './formulario-gasto'
 
 export default async function GastosPage({ searchParams }: { searchParams: Promise<{ desde?: string; hasta?: string }> }) {
@@ -15,64 +17,68 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const total = gastos.reduce((suma, g) => suma + g.monto, 0)
 
   return (
-    <section className="mx-auto max-w-4xl space-y-6">
-      <h1 className="text-3xl">Gastos</h1>
+    <section className="mx-auto max-w-4xl">
+      <Encabezado titulo="Gastos" />
 
-      <FormularioGasto diaPorDefecto={hoy} />
+      <div className="mt-6 space-y-8">
+        <FormularioGasto diaPorDefecto={hoy} />
 
-      <form method="get" className="flex flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-pancho-surface p-4">
-        <label className="text-sm">
-          <span className="mb-1 block text-pancho-muted">Desde</span>
-          <input type="date" name="desde" defaultValue={desde} className="h-9 rounded-lg border border-white/15 bg-pancho-black px-2" />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-pancho-muted">Hasta</span>
-          <input type="date" name="hasta" defaultValue={hasta} className="h-9 rounded-lg border border-white/15 bg-pancho-black px-2" />
-        </label>
-        <button className="h-9 rounded-lg bg-pancho-orange px-4 text-sm font-bold text-pancho-black">Filtrar</button>
-      </form>
+        <div className="space-y-4">
+          {/* Período de la lista, con el total a la derecha */}
+          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+            <form method="get" className="flex flex-wrap items-end gap-3">
+              <label>
+                <span className="pn-label">Desde</span>
+                <input type="date" name="desde" defaultValue={desde} className="pn-field w-auto" />
+              </label>
+              <label>
+                <span className="pn-label">Hasta</span>
+                <input type="date" name="hasta" defaultValue={hasta} className="pn-field w-auto" />
+              </label>
+              <Button type="submit" variant="default">
+                Filtrar
+              </Button>
+            </form>
+            <p className="text-right">
+              <span className="pn-eyebrow block">
+                Total del {mostrarDia(desde)} al {mostrarDia(hasta)}
+              </span>
+              <strong className="font-display text-4xl leading-none font-normal tabular-nums">{formatearPrecio(total)}</strong>
+            </p>
+          </div>
 
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-lg">
-          {mostrarDia(desde)} al {mostrarDia(hasta)}
-        </h2>
-        <p>
-          Total: <strong className="font-display text-xl text-pancho-orange">{formatearPrecio(total)}</strong>
-        </p>
-      </div>
-
-      {gastos.length === 0 ? (
-        <p className="rounded-xl border border-white/10 bg-pancho-surface p-6 text-center text-pancho-muted">
-          No hay gastos en este período.
-        </p>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/10 bg-pancho-surface">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/10 text-pancho-muted">
-              <tr>
-                <th className="p-3">Fecha</th>
-                <th className="p-3">Descripción</th>
-                <th className="p-3">Categoría</th>
-                <th className="p-3">Pago</th>
-                <th className="p-3 text-right">Monto</th>
-                <th className="p-3">Cargó</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/10">
-              {gastos.map((g) => (
-                <tr key={g.id}>
-                  <td className="p-3">{mostrarDia(g.fecha)}</td>
-                  <td className="p-3">{g.descripcion}</td>
-                  <td className="p-3">{g.categoria}</td>
-                  <td className="p-3">{ETIQUETA_PAGO[g.metodoPago]}</td>
-                  <td className="p-3 text-right font-semibold">{formatearPrecio(g.monto)}</td>
-                  <td className="p-3">{g.usuario}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {gastos.length === 0 ? (
+            <p className="pn-card pn-muted p-8 text-center font-semibold">No hay gastos en este período.</p>
+          ) : (
+            <div className="pn-card overflow-x-auto">
+              <table className="pn-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Descripción</th>
+                    <th>Categoría</th>
+                    <th>Pago</th>
+                    <th className="text-right">Monto</th>
+                    <th>Cargó</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {gastos.map((g) => (
+                    <tr key={g.id}>
+                      <td>{mostrarDia(g.fecha)}</td>
+                      <td className="font-bold">{g.descripcion}</td>
+                      <td>{g.categoria}</td>
+                      <td>{ETIQUETA_PAGO[g.metodoPago]}</td>
+                      <td className="text-right font-extrabold">{formatearPrecio(g.monto)}</td>
+                      <td>{g.usuario}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </section>
   )
 }

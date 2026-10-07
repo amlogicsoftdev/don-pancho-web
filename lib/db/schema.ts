@@ -148,6 +148,9 @@ export const pedidos = pgTable(
     subtotal: integer('subtotal').notNull(),
     descuentoPorcentaje: integer('descuento_porcentaje').notNull().default(0),
     descuentoMonto: integer('descuento_monto').notNull().default(0),
+    // Quién aplicó el descuento y cuándo (el descuento se carga en cada pedido, desde el panel).
+    descuentoAplicadoPor: text('descuento_aplicado_por').references(() => usuarios.id),
+    descuentoAplicadoEn: fecha('descuento_aplicado_en'),
     total: integer('total').notNull(),
     creadoEn: fecha('creado_en').notNull().defaultNow(),
     actualizadoEn: fecha('actualizado_en').notNull().defaultNow(),
