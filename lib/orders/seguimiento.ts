@@ -84,12 +84,8 @@ export async function obtenerPedidoPorToken(token: string): Promise<PedidoSeguim
   }
 }
 
-/** Pasos que ve el cliente, según la modalidad (el retiro no pasa por "en camino"). */
-export function pasosDelPedido(modalidad: ModalidadPedido): EstadoPedido[] {
-  return modalidad === 'delivery'
-    ? ['pendiente', 'en_preparacion', 'en_camino', 'entregado']
-    : ['pendiente', 'en_preparacion', 'entregado']
-}
+// Los pasos son los mismos que ve el panel (lib/orders/estados.ts)
+export { pasosDelPedido } from './estados'
 
 /** Cómo se le explica cada estado al cliente (el panel usa las etiquetas de estados.ts). */
 export function textoParaCliente(

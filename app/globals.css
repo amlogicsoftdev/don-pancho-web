@@ -1914,6 +1914,49 @@ html:has(.panel) {
     color: var(--color-pancho-black);
   }
 
+  /* Cada paso es un botón: tocarlo mueve el pedido a ese estado (con confirmación) */
+  .pn-step__btn {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.25rem 0.25rem;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .pn-step__btn:disabled {
+    cursor: default;
+  }
+
+  .pn-step__btn .pn-step__num {
+    transition:
+      translate 0.15s var(--ease-out),
+      box-shadow 0.15s var(--ease-out);
+  }
+
+  .pn-step__btn:not(:disabled):hover .pn-step__num,
+  .pn-step__btn[data-elegido] .pn-step__num {
+    translate: -2px -2px;
+    border-color: var(--color-pancho-black);
+    box-shadow: 4px 4px 0 var(--color-pancho-black);
+  }
+
+  .pn-step__btn[data-elegido] .pn-step__name {
+    color: var(--color-pancho-black);
+    text-decoration: underline 2px;
+    text-underline-offset: 3px;
+  }
+
+  .pn-step__btn:focus-visible {
+    outline: 2px solid var(--color-pancho-black);
+    outline-offset: 4px;
+  }
+
   .pn-step:is([data-paso='hecho'], [data-paso='actual']) .pn-step__name {
     color: var(--color-pancho-black);
   }

@@ -27,21 +27,20 @@ export async function listarCategorias() {
   return db.select().from(schema.categorias).orderBy(asc(schema.categorias.orden), asc(schema.categorias.id))
 }
 
-/** Ajustes editables: descuento, hora de corte, cuenta para transferir y datos públicos del local. */
+/** Ajustes editables: hora de corte, cuenta para transferir y datos públicos del local. */
 export async function leerAjustes() {
   // Los datos del local se muestran como los ve hoy el cliente (con los valores por defecto aplicados)
   const local = await leerDatosLocal()
   const filas = await db
     .select()
     .from(schema.configuracion)
-    .where(inArray(schema.configuracion.clave, ['descuento_porcentaje', 'corte_dia_hora', ...Object.values(CLAVES_TRANSFERENCIA)]))
+    .where(inArray(schema.configuracion.clave, ['corte_dia_hora', ...Object.values(CLAVES_TRANSFERENCIA)]))
   const numero = (clave: string, porDefecto: number) => {
     const n = Number(filas.find((f) => f.clave === clave)?.valor)
     return Number.isInteger(n) ? n : porDefecto
   }
   const texto = (clave: string) => filas.find((f) => f.clave === clave)?.valor ?? ''
   return {
-    descuentoPorcentaje: numero('descuento_porcentaje', 0),
     corteHora: numero('corte_dia_hora', 6),
     transferencia: {
       alias: texto(CLAVES_TRANSFERENCIA.alias),

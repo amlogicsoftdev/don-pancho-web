@@ -77,7 +77,21 @@ export async function obtenerPedido(id: number) {
       .limit(1),
   ])
 
-  return { pedido, items, historial, cancelacion: anulacion[0] ?? null }
+  // Quién aplicó el descuento (si hay)
+  const [descuentoDe] = pedido.descuentoAplicadoPor
+    ? await db
+        .select({ nombre: schema.usuarios.name })
+        .from(schema.usuarios)
+        .where(eq(schema.usuarios.id, pedido.descuentoAplicadoPor))
+    : []
+
+  return {
+    pedido,
+    items,
+    historial,
+    cancelacion: anulacion[0] ?? null,
+    descuentoAplicadoPor: descuentoDe?.nombre ?? null,
+  }
 }
 
 /** Nombre del local para los mensajes (configuración), con un valor por defecto. */

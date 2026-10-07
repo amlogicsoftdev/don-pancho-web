@@ -146,6 +146,8 @@ export interface VentaMostradorEntrada {
   clienteNombre: string | null
   notas: string | null
   items: ItemPedidoEntrada[]
+  /** Descuento de esta venta, en porcentaje entero (0 = sin descuento). */
+  descuentoPorcentaje: number
 }
 
 type ResultadoMostrador = { ok: true; venta: VentaMostradorEntrada } | { ok: false; error: string }
@@ -168,5 +170,19 @@ export function validarVentaMostrador(cuerpo: unknown): ResultadoMostrador {
   const resultadoItems = validarItems(dato.items)
   if (!resultadoItems.ok) return resultadoItems
 
-  return { ok: true, venta: { metodoPago: dato.metodoPago, clienteNombre: nombre, notas, items: resultadoItems.items } }
+  const descuento = dato.descuentoPorcentaje ?? 0
+  if (typeof descuento !== 'number' || !Number.isInteger(descuento) || descuento < 0 || descuento > 100) {
+    return { ok: false, error: 'El descuento debe ser un número entero entre 0 y 100.' }
+  }
+
+  return {
+    ok: true,
+    venta: {
+      metodoPago: dato.metodoPago,
+      clienteNombre: nombre,
+      notas,
+      items: resultadoItems.items,
+      descuentoPorcentaje: descuento,
+    },
+  }
 }

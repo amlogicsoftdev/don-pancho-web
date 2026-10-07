@@ -1,10 +1,11 @@
-import { ArrowLeft, Check, MapPin, Printer, StickyNote } from 'lucide-react'
+import { ArrowLeft, MapPin, Printer, StickyNote } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { IconoWhatsApp } from '@/components/icono-whatsapp'
 import { buttonVariants } from '@/components/ui/button'
 import { requerirUsuario } from '@/lib/auth/guards'
 import {
+  ESTADOS_ACTIVOS,
   ETIQUETA_ESTADO,
   ETIQUETA_MODALIDAD,
   ETIQUETA_PAGO,
@@ -12,19 +13,15 @@ import {
   formatearFechaHora,
   formatearNumero,
   formatearPrecio,
+  pasosDelPedido,
   sePuedeCancelar,
-  type EstadoPedido,
 } from '@/lib/orders/estados'
 import { leerNombreLocal, obtenerPedido } from '@/lib/orders/queries'
 import { linkWhatsApp, mensajeConfirmacion } from '@/lib/whatsapp'
 import { urlDelSitio } from '@/lib/url-sitio'
 import { leerDatosTransferencia } from '@/lib/pagos/transferencia'
 import { InsigniaEstado } from '../insignia-estado'
-import { AnularPedido, BotonAvanzar, PagoConfirmado } from './acciones-pedido'
-
-// Camino que recorre un pedido. El de retiro no pasa por «En camino».
-const PASOS_DELIVERY: EstadoPedido[] = ['pendiente', 'en_preparacion', 'en_camino', 'entregado']
-const PASOS_RETIRO: EstadoPedido[] = ['pendiente', 'en_preparacion', 'entregado']
+import { AnularPedido, BotonAvanzar, DescuentoPedido, PagoConfirmado, PasosPedido } from './acciones-pedido'
 
 /**
  * Detalle de un pedido. Cada acción vive al lado de lo que cambia, en vez de estar todas juntas:
@@ -42,7 +39,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
 
   const datos = await obtenerPedido(id)
   if (!datos) notFound()
-  const { pedido, items, historial, cancelacion } = datos
+  const { pedido, items, historial, cancelacion, descuentoAplicadoPor } = datos
 
   const [nombreLocal, sitio, datosTransferencia] = await Promise.all([
     leerNombreLocal(),
@@ -72,14 +69,8 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
   const mostrarWhatsApp = !cancelado && !esMostrador
   const esTransferencia = pedido.metodoPago === 'transferencia'
   const avance = etiquetaAvance(pedido.estado, pedido.modalidad)
-
-  const pasos = pedido.modalidad === 'delivery' ? PASOS_DELIVERY : PASOS_RETIRO
-  const pasoActual = pasos.indexOf(pedido.estado)
-  const estadoDelPaso = (indice: number) => {
-    if (cancelado || indice > pasoActual) return 'pendiente'
-    // El último paso (entregado) no queda «en curso»: ya está hecho
-    return indice < pasoActual || indice === pasos.length - 1 ? 'hecho' : 'actual'
-  }
+  // El descuento se puede cambiar mientras el pedido está en curso y no se confirmó el pago
+  const sePuedeDescontar = ESTADOS_ACTIVOS.includes(pedido.estado) && !pedido.pagoConfirmado
 
   const cantidadProductos = items.reduce((suma, item) => suma + item.cantidad, 0)
 
@@ -120,27 +111,12 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
           <div className="pn-card order-1 p-5 sm:p-6 lg:order-none">
             <h2 className="text-2xl leading-none">Estado del pedido</h2>
 
-            <ol className="pn-steps mt-6" aria-label="Pasos del pedido">
-              {pasos.map((paso, indice) => {
-                const estadoPaso = estadoDelPaso(indice)
-                return (
-                  <li
-                    key={paso}
-                    className="pn-step"
-                    data-paso={estadoPaso}
-                    aria-current={estadoPaso === 'actual' ? 'step' : undefined}
-                  >
-                    <span className="pn-step__num" aria-hidden="true">
-                      {estadoPaso === 'hecho' ? <Check className="size-5" strokeWidth={3} /> : indice + 1}
-                    </span>
-                    <span className="pn-step__name">
-                      {ETIQUETA_ESTADO[paso]}
-                      {estadoPaso === 'hecho' && <span className="sr-only"> (hecho)</span>}
-                    </span>
-                  </li>
-                )
-              })}
-            </ol>
+            <PasosPedido
+              pedidoId={pedido.id}
+              pasos={pasosDelPedido(pedido.modalidad)}
+              estadoActual={pedido.estado}
+              cancelado={cancelado}
+            />
 
             <div className="mt-6 border-t-2 border-dotted border-pancho-black/25 pt-5">
               {avance ? (
@@ -266,7 +242,14 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
               </div>
               {pedido.descuentoMonto > 0 && (
                 <div className="flex justify-between gap-3">
-                  <dt className="pn-muted">Descuento ({pedido.descuentoPorcentaje}%)</dt>
+                  <dt className="pn-muted">
+                    Descuento ({pedido.descuentoPorcentaje}%)
+                    {descuentoAplicadoPor && pedido.descuentoAplicadoEn && (
+                      <span className="block text-xs font-medium">
+                        {descuentoAplicadoPor} · {formatearFechaHora(pedido.descuentoAplicadoEn)}
+                      </span>
+                    )}
+                  </dt>
                   <dd>-{formatearPrecio(pedido.descuentoMonto)}</dd>
                 </div>
               )}
@@ -275,6 +258,15 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
                 <dd className="font-display text-4xl leading-none">{formatearPrecio(pedido.total)}</dd>
               </div>
             </dl>
+
+            {sePuedeDescontar && (
+              <div className="mt-5 border-t-2 border-dotted border-pancho-black/25 pt-5">
+                <DescuentoPedido pedidoId={pedido.id} porcentaje={pedido.descuentoPorcentaje} />
+                <p className="pn-muted mt-2 text-xs font-medium">
+                  Aplicalo antes de confirmar por WhatsApp, así el mensaje sale con el total correcto.
+                </p>
+              </div>
+            )}
 
             {esTransferencia && (
               <div className="mt-5 border-t-2 border-dotted border-pancho-black/25 pt-5">

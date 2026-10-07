@@ -1,15 +1,26 @@
 'use client'
 
+import { Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { PanchoButton } from '@/components/pancho-button'
 import { Button } from '@/components/ui/button'
-import { avanzarPedido, borrarPedido, cancelarPedido, confirmarPago, type ResultadoAccion } from '@/lib/orders/actions'
+import {
+  aplicarDescuento,
+  avanzarPedido,
+  borrarPedido,
+  cambiarEstado,
+  cancelarPedido,
+  confirmarPago,
+  type ResultadoAccion,
+} from '@/lib/orders/actions'
+import { ETIQUETA_ESTADO, type EstadoPedido } from '@/lib/orders/estados'
 
 // Las acciones del pedido van repartidas por la pantalla, cada una al lado de lo que cambia:
-// - <BotonAvanzar>   junto a los pasos del pedido
-// - <PagoConfirmado> dentro de la hoja del pago
-// - <AnularPedido>   aparte, al final
+// - <PasosPedido>     los pasos, que se pueden tocar para mover el pedido (también hacia atrás)
+// - <BotonAvanzar>    junto a los pasos del pedido
+// - <PagoConfirmado>  y <DescuentoPedido> dentro de la hoja del pago
+// - <AnularPedido>    aparte, al final
 // (Confirmar por WhatsApp e Imprimir comandas son enlaces: están en page.tsx.)
 
 /** Corre una acción del servidor y guarda el error, si lo hay, para mostrarlo al lado. */
@@ -53,24 +64,176 @@ export function BotonAvanzar({ pedidoId, etiqueta }: { pedidoId: number; etiquet
   )
 }
 
-/** Casilla para marcar que la transferencia ya llegó. */
+interface PasosProps {
+  pedidoId: number
+  pasos: EstadoPedido[]
+  estadoActual: EstadoPedido
+  cancelado: boolean
+}
+
+/**
+ * Pasos del pedido. Cada paso es un botón: sirve para volver atrás si se marcó uno por error
+ * (o para saltear uno). Antes de cambiar pide confirmación, así un toque sin querer no mueve nada.
+ */
+export function PasosPedido({ pedidoId, pasos, estadoActual, cancelado }: PasosProps) {
+  const { enCurso, error, setError, ejecutar } = useAccion()
+  const [elegido, setElegido] = useState<EstadoPedido | null>(null)
+  const actual = pasos.indexOf(estadoActual)
+
+  const estadoDelPaso = (indice: number) => {
+    if (cancelado || indice > actual) return 'pendiente'
+    // El último paso (entregado) no queda «en curso»: ya está hecho
+    return indice < actual || indice === pasos.length - 1 ? 'hecho' : 'actual'
+  }
+
+  function confirmar() {
+    if (!elegido) return
+    ejecutar(() => cambiarEstado(pedidoId, elegido), () => setElegido(null))
+  }
+
+  const vuelveAtras = elegido !== null && pasos.indexOf(elegido) < actual
+
+  return (
+    <div>
+      <ol className="pn-steps mt-6" aria-label="Pasos del pedido">
+        {pasos.map((paso, indice) => {
+          const estadoPaso = estadoDelPaso(indice)
+          const esActual = paso === estadoActual
+          return (
+            <li
+              key={paso}
+              className="pn-step"
+              data-paso={estadoPaso}
+              aria-current={estadoPaso === 'actual' ? 'step' : undefined}
+            >
+              <button
+                type="button"
+                className="pn-step__btn"
+                data-elegido={elegido === paso || undefined}
+                disabled={cancelado || esActual || enCurso}
+                onClick={() => {
+                  setError(null)
+                  setElegido(paso)
+                }}
+                aria-label={esActual ? `${ETIQUETA_ESTADO[paso]} (estado actual)` : `Pasar el pedido a ${ETIQUETA_ESTADO[paso]}`}
+              >
+                <span className="pn-step__num" aria-hidden="true">
+                  {estadoPaso === 'hecho' ? <Check className="size-5" strokeWidth={3} /> : indice + 1}
+                </span>
+                <span className="pn-step__name">{ETIQUETA_ESTADO[paso]}</span>
+              </button>
+            </li>
+          )
+        })}
+      </ol>
+
+      {elegido ? (
+        <div role="alertdialog" aria-label="Confirmar cambio de estado" className="pn-alert pn-alert--warn mt-5">
+          <p className="font-bold">
+            ¿Pasar el pedido a «{ETIQUETA_ESTADO[elegido]}»?
+          </p>
+          {vuelveAtras && (
+            <p className="mt-1 text-sm font-medium">Vuelve atrás: el cliente lo va a ver así en su seguimiento.</p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant="default" size="sm" disabled={enCurso} onClick={confirmar}>
+              {enCurso ? 'Cambiando…' : 'Sí, cambiar'}
+            </Button>
+            <Button variant="ghost" size="sm" disabled={enCurso} onClick={() => setElegido(null)}>
+              No
+            </Button>
+          </div>
+        </div>
+      ) : (
+        !cancelado && (
+          <p className="pn-muted mt-4 text-xs font-medium">
+            Tocá un paso para mover el pedido; sirve para volver atrás si te equivocaste.
+          </p>
+        )
+      )}
+      <MensajeError error={error} />
+    </div>
+  )
+}
+
+/** Botón para marcar que la transferencia llegó (o deshacerlo si se marcó por error). */
 export function PagoConfirmado({ pedidoId, confirmado }: { pedidoId: number; confirmado: boolean }) {
   const { enCurso, error, ejecutar } = useAccion()
 
   return (
     <div>
-      <label className="flex cursor-pointer items-center gap-3 text-sm font-bold">
-        <input
-          type="checkbox"
-          checked={confirmado}
+      {confirmado ? (
+        <Button
+          variant="ghost"
+          size="sm"
           disabled={enCurso}
-          onChange={(e) => ejecutar(() => confirmarPago(pedidoId, e.target.checked))}
-          className="pn-check"
-        />
-        La transferencia ya llegó
-      </label>
+          onClick={() => ejecutar(() => confirmarPago(pedidoId, false))}
+        >
+          Deshacer: la transferencia no llegó
+        </Button>
+      ) : (
+        <Button
+          variant="secondary"
+          className="w-full"
+          disabled={enCurso}
+          onClick={() => ejecutar(() => confirmarPago(pedidoId, true))}
+        >
+          <Check strokeWidth={3} />
+          {enCurso ? 'Guardando…' : 'La transferencia llegó'}
+        </Button>
+      )}
       <MensajeError error={error} />
     </div>
+  )
+}
+
+/** Descuento del pedido en porcentaje. El total lo recalcula el servidor. */
+export function DescuentoPedido({ pedidoId, porcentaje }: { pedidoId: number; porcentaje: number }) {
+  const { enCurso, error, setError, ejecutar } = useAccion()
+  const [valor, setValor] = useState(porcentaje > 0 ? String(porcentaje) : '')
+
+  function aplicar(nuevo: number) {
+    if (!Number.isInteger(nuevo) || nuevo < 0 || nuevo > 100) {
+      setError('El descuento debe ser un número entero entre 0 y 100.')
+      return
+    }
+    ejecutar(() => aplicarDescuento(pedidoId, nuevo), () => setValor(nuevo > 0 ? String(nuevo) : ''))
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        aplicar(Number(valor) || 0)
+      }}
+    >
+      <label htmlFor="descuento-pedido" className="pn-label">
+        Descuento %
+      </label>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          id="descuento-pedido"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={100}
+          step={1}
+          value={valor}
+          onChange={(e) => setValor(e.target.value)}
+          placeholder="0"
+          className="pn-field w-24"
+        />
+        <Button type="submit" size="sm" disabled={enCurso}>
+          {enCurso ? 'Aplicando…' : 'Aplicar'}
+        </Button>
+        {porcentaje > 0 && (
+          <Button type="button" variant="ghost" size="sm" disabled={enCurso} onClick={() => aplicar(0)}>
+            Quitar
+          </Button>
+        )}
+      </div>
+      <MensajeError error={error} />
+    </form>
   )
 }
 

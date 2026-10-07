@@ -24,6 +24,13 @@ export const ETIQUETA_PAGO = {
 
 export const ESTADOS_ACTIVOS: readonly EstadoPedido[] = ['pendiente', 'en_preparacion', 'en_camino']
 
+/** Pasos que recorre un pedido según la modalidad (el retiro no pasa por "en camino"). */
+export function pasosDelPedido(modalidad: ModalidadPedido): EstadoPedido[] {
+  return modalidad === 'delivery'
+    ? ['pendiente', 'en_preparacion', 'en_camino', 'entregado']
+    : ['pendiente', 'en_preparacion', 'entregado']
+}
+
 /**
  * Flujo normal: pendiente → en_preparacion → en_camino (solo delivery) → entregado.
  * Devuelve el próximo estado, o null si el pedido ya terminó.

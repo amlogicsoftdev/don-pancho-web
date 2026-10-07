@@ -1,11 +1,11 @@
 'use server'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { requerirUsuario } from '@/lib/auth/guards'
 import { db, schema } from '@/lib/db'
 import { crearVentaMostrador, ErrorPedido } from './create'
-import { sePuedeCancelar, siguienteEstado } from './estados'
+import { ESTADOS_ACTIVOS, pasosDelPedido, sePuedeCancelar, siguienteEstado, type EstadoPedido } from './estados'
 import { validarVentaMostrador } from './validate'
 
 // Acciones del panel sobre un pedido. Cada una verifica sesión y rol en el servidor
@@ -73,6 +73,92 @@ export async function avanzarPedido(id: number): Promise<ResultadoAccion> {
 
   refrescar()
   if (!cambiado) return { ok: false, error: 'El pedido cambió mientras lo mirabas. Se actualizó la pantalla.' }
+  return { ok: true }
+}
+
+/**
+ * Lleva el pedido a cualquier paso de su recorrido, hacia adelante o hacia atrás (por ejemplo,
+ * si se marcó "entregado" por error). No reabre pedidos cancelados: eso queda en anulaciones.
+ */
+export async function cambiarEstado(id: number, destino: EstadoPedido): Promise<ResultadoAccion> {
+  const usuario = await requerirUsuario()
+  if (!idValido(id)) return { ok: false, error: 'Pedido inválido.' }
+
+  const pedido = await leerPedido(id)
+  if (!pedido) return { ok: false, error: 'El pedido no existe.' }
+  if (pedido.estado === 'cancelado') return { ok: false, error: 'Un pedido cancelado no se puede reabrir.' }
+  if (!pasosDelPedido(pedido.modalidad).includes(destino)) {
+    return { ok: false, error: 'Ese estado no corresponde a este pedido.' }
+  }
+  if (destino === pedido.estado) return { ok: true }
+
+  const cambiado = await db.transaction(async (tx) => {
+    // La condición sobre `estado` evita pisar un cambio que otra persona hizo recién.
+    const filas = await tx
+      .update(schema.pedidos)
+      .set({ estado: destino, actualizadoEn: new Date() })
+      .where(and(eq(schema.pedidos.id, id), eq(schema.pedidos.estado, pedido.estado), isNull(schema.pedidos.borradoEn)))
+      .returning({ id: schema.pedidos.id })
+    if (filas.length === 0) return false
+
+    await tx.insert(schema.pedidoHistorial).values({
+      pedidoId: id,
+      estadoAnterior: pedido.estado,
+      estadoNuevo: destino,
+      usuarioId: usuario.id,
+    })
+    return true
+  })
+
+  refrescar()
+  if (!cambiado) return { ok: false, error: 'El pedido cambió mientras lo mirabas. Se actualizó la pantalla.' }
+  return { ok: true }
+}
+
+/**
+ * Aplica (o quita, con 0) un descuento en porcentaje a un pedido. El total se recalcula acá
+ * con el subtotal guardado. Solo mientras el pedido está en curso y, si es por transferencia,
+ * antes de confirmar el pago: no se cambia un total que ya se cobró.
+ */
+export async function aplicarDescuento(id: number, porcentaje: number): Promise<ResultadoAccion> {
+  const usuario = await requerirUsuario()
+  if (!idValido(id)) return { ok: false, error: 'Pedido inválido.' }
+  if (typeof porcentaje !== 'number' || !Number.isInteger(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+    return { ok: false, error: 'El descuento debe ser un número entero entre 0 y 100.' }
+  }
+
+  const pedido = await leerPedido(id)
+  if (!pedido) return { ok: false, error: 'El pedido no existe.' }
+  if (!ESTADOS_ACTIVOS.includes(pedido.estado)) {
+    return { ok: false, error: 'Solo se puede cambiar el descuento de un pedido en curso.' }
+  }
+  if (pedido.pagoConfirmado) {
+    return { ok: false, error: 'La transferencia ya está confirmada: el total no se puede cambiar.' }
+  }
+
+  const descuentoMonto = Math.round((pedido.subtotal * porcentaje) / 100)
+  const filas = await db
+    .update(schema.pedidos)
+    .set({
+      descuentoPorcentaje: porcentaje,
+      descuentoMonto,
+      total: pedido.subtotal - descuentoMonto,
+      descuentoAplicadoPor: porcentaje > 0 ? usuario.id : null,
+      descuentoAplicadoEn: porcentaje > 0 ? new Date() : null,
+      actualizadoEn: new Date(),
+    })
+    .where(
+      and(
+        eq(schema.pedidos.id, id),
+        eq(schema.pedidos.pagoConfirmado, false),
+        inArray(schema.pedidos.estado, [...ESTADOS_ACTIVOS]),
+        isNull(schema.pedidos.borradoEn),
+      ),
+    )
+    .returning({ id: schema.pedidos.id })
+
+  refrescar()
+  if (filas.length === 0) return { ok: false, error: 'El pedido cambió mientras lo mirabas. Se actualizó la pantalla.' }
   return { ok: true }
 }
 

@@ -26,13 +26,19 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
   const [cantidades, setCantidades] = useState<Record<number, number>>({})
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo')
   const [nombre, setNombre] = useState('')
+  const [descuento, setDescuento] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [registrada, setRegistrada] = useState<Registrada | null>(null)
   const [enCurso, iniciar] = useTransition()
 
   const productos = menu.flatMap((c) => c.productos)
   const lineas = productos.filter((p) => (cantidades[p.id] ?? 0) > 0)
-  const total = lineas.reduce((suma, p) => suma + p.precio * cantidades[p.id], 0)
+  const subtotal = lineas.reduce((suma, p) => suma + p.precio * cantidades[p.id], 0)
+  // Mismo cálculo que el servidor (lib/orders/create.ts); el que vale es el del servidor
+  const porcentaje = Number(descuento) || 0
+  const descuentoValido = Number.isInteger(porcentaje) && porcentaje >= 0 && porcentaje <= 100
+  const descuentoMonto = descuentoValido ? Math.round((subtotal * porcentaje) / 100) : 0
+  const total = subtotal - descuentoMonto
 
   function cambiar(id: number, delta: number) {
     setCantidades((actual) => {
@@ -44,17 +50,20 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
   function limpiar() {
     setCantidades({})
     setNombre('')
+    setDescuento('')
     setMetodoPago('efectivo')
     setError(null)
   }
 
   function registrar() {
     setError(null)
+    if (!descuentoValido) return setError('El descuento debe ser un número entero entre 0 y 100.')
     iniciar(async () => {
       const resultado = await registrarVentaMostrador({
         metodoPago,
         clienteNombre: nombre,
         items: lineas.map((p) => ({ productoId: p.id, cantidad: cantidades[p.id] })),
+        descuentoPorcentaje: porcentaje,
       })
       if (!resultado.ok) {
         setError(resultado.error)
@@ -143,6 +152,19 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
           </ul>
         )}
 
+        {descuentoMonto > 0 && (
+          <dl className="space-y-1 border-t-2 border-dotted border-pancho-black/25 pt-3 text-sm font-semibold tabular-nums">
+            <div className="flex justify-between gap-3">
+              <dt className="pn-muted">Subtotal</dt>
+              <dd>{formatearPrecio(subtotal)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="pn-muted">Descuento ({porcentaje}%)</dt>
+              <dd>-{formatearPrecio(descuentoMonto)}</dd>
+            </div>
+          </dl>
+        )}
+
         <div className="flex items-baseline justify-between border-t-2 border-pancho-black pt-3">
           <span className="font-display text-2xl leading-none">Total</span>
           <span className="font-display text-4xl leading-none tabular-nums">{formatearPrecio(total)}</span>
@@ -168,6 +190,21 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
         <label className="block">
           <span className="pn-label">Nombre (opcional)</span>
           <input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={80} className="pn-field" />
+        </label>
+
+        <label className="block">
+          <span className="pn-label">Descuento % (opcional)</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={100}
+            step={1}
+            value={descuento}
+            onChange={(e) => setDescuento(e.target.value)}
+            placeholder="0"
+            className="pn-field"
+          />
         </label>
 
         {error && (

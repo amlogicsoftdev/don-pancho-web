@@ -29,21 +29,11 @@ export interface PedidoCreado {
   total: number
 }
 
-async function leerDescuentoPorcentaje(): Promise<number> {
-  const [fila] = await db
-    .select({ valor: schema.configuracion.valor })
-    .from(schema.configuracion)
-    .where(eq(schema.configuracion.clave, 'descuento_porcentaje'))
-  const porcentaje = Number(fila?.valor ?? 0)
-  // Nunca confiar ciegamente en lo guardado: se acota a 0–100.
-  return Number.isInteger(porcentaje) && porcentaje >= 0 && porcentaje <= 100 ? porcentaje : 0
-}
-
 /**
  * Toma los precios de la base (solo productos activos de categorías activas) y calcula
  * subtotal, descuento y total. Del navegador solo se usan ids y cantidades.
  */
-async function calcularLineas(items: ItemPedidoEntrada[]) {
+async function calcularLineas(items: ItemPedidoEntrada[], descuentoPorcentaje: number) {
   const ids = [...new Set(items.map((i) => i.productoId))]
   const productos = await db
     .select({
@@ -77,7 +67,7 @@ async function calcularLineas(items: ItemPedidoEntrada[]) {
   })
 
   const subtotal = lineas.reduce((suma, l) => suma + l.precioUnitario * l.cantidad, 0)
-  const descuentoPorcentaje = await leerDescuentoPorcentaje()
+  // El descuento se decide en cada pedido (mostrador o detalle del pedido), nunca en el navegador del cliente
   const descuentoMonto = Math.round((subtotal * descuentoPorcentaje) / 100)
   return { lineas, subtotal, descuentoPorcentaje, descuentoMonto, total: subtotal - descuentoMonto }
 }
@@ -119,7 +109,8 @@ export async function crearPedidoWeb(entrada: PedidoEntrada, ipHash: string | nu
     throw new ErrorPedido('Hiciste varios pedidos seguidos. Esperá unos minutos o escribinos por WhatsApp.', 429)
   }
 
-  const { lineas, subtotal, descuentoPorcentaje, descuentoMonto, total } = await calcularLineas(entrada.items)
+  // Los pedidos de la web entran sin descuento: si corresponde, lo aplica el local desde el panel
+  const { lineas, subtotal, descuentoPorcentaje, descuentoMonto, total } = await calcularLineas(entrada.items, 0)
   const token = randomBytes(24).toString('base64url')
 
   const { id, numero } = await db.transaction(async (tx) => {
@@ -162,7 +153,11 @@ export async function crearPedidoWeb(entrada: PedidoEntrada, ipHash: string | nu
  * cargó, así suma sola a los reportes y al cierre de caja.
  */
 export async function crearVentaMostrador(entrada: VentaMostradorEntrada, usuarioId: string): Promise<PedidoCreado> {
-  const { lineas, subtotal, descuentoPorcentaje, descuentoMonto, total } = await calcularLineas(entrada.items)
+  // En el mostrador el descuento se carga junto con la venta (se cobra en el momento)
+  const { lineas, subtotal, descuentoPorcentaje, descuentoMonto, total } = await calcularLineas(
+    entrada.items,
+    entrada.descuentoPorcentaje,
+  )
   const token = randomBytes(24).toString('base64url')
 
   const { id, numero } = await db.transaction(async (tx) => {
@@ -182,6 +177,8 @@ export async function crearVentaMostrador(entrada: VentaMostradorEntrada, usuari
         subtotal,
         descuentoPorcentaje,
         descuentoMonto,
+        descuentoAplicadoPor: descuentoPorcentaje > 0 ? usuarioId : null,
+        descuentoAplicadoEn: descuentoPorcentaje > 0 ? new Date() : null,
         total,
         creadoPor: usuarioId,
       })
