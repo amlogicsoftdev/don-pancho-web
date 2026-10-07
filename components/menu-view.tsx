@@ -310,11 +310,11 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                     key={product.id}
                     {...hoverProps(product)}
                     style={{ '--i': index + 1 } as React.CSSProperties}
-                    className="menu-row grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4.5 gap-y-1.5 border-b border-pancho-black/20 py-5 [@media(hover:none)]:grid-cols-[auto_minmax(0,1fr)] [@media(hover:none)]:gap-x-4"
+                    className="menu-row grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4.5 gap-y-1.5 border-b border-pancho-black/20 py-5 [@media(hover:none)]:grid-cols-[minmax(0,1fr)_auto] [@media(hover:none)]:gap-x-4"
                   >
-                    {/* Sin mouse no hay foto que siga al puntero: va al lado de cada plato, y el
-                        precio pasa abajo de la descripción para que el nombre tenga lugar */}
-                    <div className="foto-plato row-span-3 mt-1 hidden self-start [@media(hover:none)]:block">
+                    {/* Sin mouse no hay foto que siga al puntero: va a la derecha de cada plato, y
+                        el precio pasa abajo de la descripción para que el nombre tenga lugar */}
+                    <div className="foto-plato col-start-2 row-span-3 row-start-1 mt-1 hidden self-start [@media(hover:none)]:block">
                       <div className="relative size-16 overflow-hidden bg-neutral-900">
                         <Image src={product.image} alt="" fill sizes="64px" className="object-cover" />
                       </div>
@@ -357,16 +357,17 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
               className="menu-row relative grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] items-center gap-x-14 gap-y-6 overflow-hidden bg-pancho-red-deep bg-[url('/images/fondo-footer-bordo.webp')] bg-cover bg-center p-7 text-white sm:p-12"
             >
               <div className="flex flex-col gap-3.5">
-                <div className="foto-plato mb-1 hidden w-32 rotate-6! self-end [@media(hover:none)]:block">
-                  <div className="relative aspect-square w-full overflow-hidden bg-neutral-900">
-                    <Image src={combo.image} alt="" fill sizes="128px" className="object-cover" />
-                  </div>
-                </div>
                 <span className="-rotate-2 self-start bg-white px-2.5 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-pancho-red-deep">
                   Promo · Combo
                 </span>
                 <h2 className="font-heading text-[clamp(40px,5vw,68px)] leading-[0.92]">{combo.name}</h2>
                 <p className="max-w-[40ch] text-[15px] font-bold leading-normal">{combo.description}</p>
+                {/* Sin mouse: la foto del combo a todo el ancho, debajo de la información */}
+                <div className="foto-plato mt-2 hidden w-full rotate-[-1.5deg]! [@media(hover:none)]:block">
+                  <div className="relative aspect-4/3 w-full overflow-hidden bg-neutral-900">
+                    <Image src={combo.image} alt="" fill sizes="(max-width: 640px) 100vw, 50vw" className="object-cover" />
+                  </div>
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-5">
                 <span className="font-heading text-[clamp(48px,5.5vw,72px)] leading-none">
