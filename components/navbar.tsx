@@ -123,7 +123,7 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
   // El inicio es claro: la barra va transparente sobre el papel naranja y, al scrollear,
   // en papel crema; en los dos casos el texto y los controles van en negro.
   // La carta es oscura: ahí la barra sigue oscura.
-  const isHome = pathname === '/'
+  const isHome = pathname === '/' || pathname === '/menu'
   const solid = isScrolled || mobileMenuOpen
 
   const handleLinkClick = (e: React.MouseEvent, link: (typeof navLinks)[number]) => {

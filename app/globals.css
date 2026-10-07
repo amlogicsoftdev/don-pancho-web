@@ -80,7 +80,8 @@ html {
   --scrollbar-thumb: #2a2a2a;
 }
 
-html:has(.page-home) {
+html:has(.page-home),
+html:has(.page-menu) {
   --scrollbar-track: var(--color-pancho-paper);
   --scrollbar-thumb: #d8b98f;
 }

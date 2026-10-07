@@ -3,6 +3,8 @@ import React from 'react'
 interface SplitLinesProps {
   /** Cada elemento es una línea del título. */
   lines: string[]
+  /** Palabras que van en naranja (sin importar mayúsculas). */
+  accentWords?: string[]
 }
 
 /**
@@ -16,7 +18,7 @@ interface SplitLinesProps {
  * Los lectores de pantalla reciben el texto completo de una sola vez; las letras
  * sueltas van ocultas para ellos.
  */
-export function SplitLines({ lines }: SplitLinesProps) {
+export function SplitLines({ lines, accentWords = [] }: SplitLinesProps) {
   // Número de cada letra dentro del título completo: de ahí sale su retraso
   const offsets = lines.map((_, lineIndex) =>
     lines.slice(0, lineIndex).reduce((total, line) => total + line.replace(/\s/g, '').length, 0),
@@ -35,7 +37,13 @@ export function SplitLines({ lines }: SplitLinesProps) {
                 return (
                   <React.Fragment key={`${word}-${wordIndex}`}>
                     {wordIndex > 0 ? ' ' : null}
-                    <span className="tx-word">
+                    <span
+                      className={
+                        accentWords.some((accent) => accent.toLowerCase() === word.toLowerCase())
+                          ? 'tx-word text-pancho-orange'
+                          : 'tx-word'
+                      }
+                    >
                       {Array.from(word).map((char, charIndex) => (
                         <span
                           key={charIndex}
