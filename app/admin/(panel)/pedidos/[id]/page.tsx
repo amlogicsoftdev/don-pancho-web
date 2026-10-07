@@ -213,10 +213,10 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
                   className={buttonVariants({ variant: 'outline', className: 'w-full' })}
                 >
                   <IconoWhatsApp className="size-4" />
-                  Reenviar confirmación por WhatsApp
+                  Reenviar por WhatsApp
                 </a>
                 <p className="pn-muted mt-2 text-xs font-medium">
-                  Abre WhatsApp con el mensaje de confirmación ya escrito, con el tiempo informado.
+                  Vuelve a abrir WhatsApp con el mensaje de confirmación ya escrito, con el tiempo informado.
                 </p>
               </div>
             )}

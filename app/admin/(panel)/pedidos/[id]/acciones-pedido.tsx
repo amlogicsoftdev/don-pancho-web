@@ -134,7 +134,7 @@ function RechazarPedido({ pedidoId, onCerrar }: { pedidoId: number; onCerrar: ()
   if (hecho) {
     return (
       <div className="space-y-3">
-        <p className="pn-alert pn-alert--ok">Pedido rechazado. Quedó en el registro de anulaciones con el motivo.</p>
+        <p className="pn-alert pn-alert--ok">Pedido rechazado. Quedó en Cancelados con el motivo.</p>
         <div className="flex flex-wrap gap-2">
           {hecho.linkWhatsApp && (
             <a
