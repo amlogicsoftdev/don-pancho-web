@@ -5,6 +5,7 @@ import { Logo } from '@/components/logo'
 import { PanchoButton } from '@/components/pancho-button'
 import { leerDatosLocal } from '@/lib/local/queries'
 import {
+  descuentoDeLinea,
   ESTADOS_ACTIVOS,
   ETIQUETA_MODALIDAD,
   ETIQUETA_PAGO,
@@ -205,7 +206,17 @@ export default async function SeguimientoPage({ params }: { params: Promise<{ to
                       </p>
                       {item.aclaraciones && <p className="text-sm text-pancho-black/60">{item.aclaraciones}</p>}
                     </div>
-                    <span className="shrink-0 font-medium">{formatearPrecio(item.precioUnitario * item.cantidad)}</span>
+                    <span className="shrink-0 text-right font-medium">
+                      {item.descuentoPorcentaje > 0 && (
+                        <span className="block text-xs text-pancho-black/60">
+                          -{item.descuentoPorcentaje}% · {formatearPrecio(item.precioUnitario * item.cantidad)}
+                        </span>
+                      )}
+                      {formatearPrecio(
+                        item.precioUnitario * item.cantidad -
+                          descuentoDeLinea(item.precioUnitario, item.cantidad, item.descuentoPorcentaje),
+                      )}
+                    </span>
                   </li>
                 ))}
               </ul>

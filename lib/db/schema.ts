@@ -189,6 +189,8 @@ export const pedidoItems = pgTable(
     precioUnitario: integer('precio_unitario').notNull(),
     cantidad: integer('cantidad').notNull(),
     aclaraciones: text('aclaraciones'),
+    // Descuento de esta línea, en porcentaje entero (0 = sin descuento). Lo carga el local.
+    descuentoPorcentaje: integer('descuento_porcentaje').notNull().default(0),
   },
   (t) => [index('pedido_items_pedido_idx').on(t.pedidoId)],
 )

@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { requerirUsuario } from '@/lib/auth/guards'
 import { db, schema } from '@/lib/db'
 import { crearVentaMostrador, ErrorPedido } from './create'
-import { ESTADOS_ACTIVOS, pasosDelPedido, sePuedeCancelar, siguienteEstado, type EstadoPedido } from './estados'
+import { descuentoDeLinea, ESTADOS_ACTIVOS, esPorcentajeValido, pasosDelPedido, sePuedeCancelar, siguienteEstado, type EstadoPedido } from './estados'
 import { linkConfirmacion, linkRechazo } from './mensajes'
 import { esTiempoEntrega, validarVentaMostrador } from './validate'
 
@@ -117,15 +117,22 @@ export async function cambiarEstado(id: number, destino: EstadoPedido): Promise<
 }
 
 /**
- * Aplica (o quita, con 0) un descuento en porcentaje a un pedido. El total se recalcula acá
- * con el subtotal guardado. Solo mientras el pedido está en curso y, si es por transferencia,
- * antes de confirmar el pago: no se cambia un total que ya se cobró.
+ * Guarda el descuento de cada línea de un pedido (porcentaje entero, 0 la quita). El total se
+ * recalcula acá con los precios guardados en las líneas. Solo mientras el pedido está en curso
+ * y, si es por transferencia, antes de confirmar el pago: no se cambia un total que ya se cobró.
  */
-export async function aplicarDescuento(id: number, porcentaje: number): Promise<ResultadoAccion> {
+export async function aplicarDescuentos(
+  id: number,
+  descuentos: { itemId: number; porcentaje: number }[],
+): Promise<ResultadoAccion> {
   const usuario = await requerirUsuario()
   if (!idValido(id)) return { ok: false, error: 'Pedido inválido.' }
-  if (typeof porcentaje !== 'number' || !Number.isInteger(porcentaje) || porcentaje < 0 || porcentaje > 100) {
-    return { ok: false, error: 'El descuento debe ser un número entero entre 0 y 100.' }
+  if (!Array.isArray(descuentos) || descuentos.length === 0) return { ok: false, error: 'No hay descuentos para guardar.' }
+  for (const d of descuentos) {
+    if (typeof d !== 'object' || d === null || !idValido(d.itemId)) return { ok: false, error: 'Producto inválido.' }
+    if (!esPorcentajeValido(d.porcentaje)) {
+      return { ok: false, error: 'El descuento debe ser un número entero entre 0 y 100.' }
+    }
   }
 
   const pedido = await leerPedido(id)
@@ -137,29 +144,52 @@ export async function aplicarDescuento(id: number, porcentaje: number): Promise<
     return { ok: false, error: 'La transferencia ya está confirmada: el total no se puede cambiar.' }
   }
 
-  const descuentoMonto = Math.round((pedido.subtotal * porcentaje) / 100)
-  const filas = await db
-    .update(schema.pedidos)
-    .set({
-      descuentoPorcentaje: porcentaje,
-      descuentoMonto,
-      total: pedido.subtotal - descuentoMonto,
-      descuentoAplicadoPor: porcentaje > 0 ? usuario.id : null,
-      descuentoAplicadoEn: porcentaje > 0 ? new Date() : null,
-      actualizadoEn: new Date(),
-    })
-    .where(
-      and(
-        eq(schema.pedidos.id, id),
-        eq(schema.pedidos.pagoConfirmado, false),
-        inArray(schema.pedidos.estado, [...ESTADOS_ACTIVOS]),
-        isNull(schema.pedidos.borradoEn),
-      ),
+  const cambiado = await db.transaction(async (tx) => {
+    const items = await tx.select().from(schema.pedidoItems).where(eq(schema.pedidoItems.pedidoId, id))
+    const porcentajes = new Map(items.map((i) => [i.id, i.descuentoPorcentaje]))
+    for (const d of descuentos) {
+      if (!porcentajes.has(d.itemId)) return false // el producto no es de este pedido
+      porcentajes.set(d.itemId, d.porcentaje)
+    }
+
+    const descuentoMonto = items.reduce(
+      (suma, i) => suma + descuentoDeLinea(i.precioUnitario, i.cantidad, porcentajes.get(i.id) ?? 0),
+      0,
     )
-    .returning({ id: schema.pedidos.id })
+    // La condición sobre el pago y el estado evita pisar un pedido que cambió mientras tanto.
+    const filas = await tx
+      .update(schema.pedidos)
+      .set({
+        // El descuento por pedido quedó atrás: ahora se guarda por línea.
+        descuentoPorcentaje: 0,
+        descuentoMonto,
+        total: pedido.subtotal - descuentoMonto,
+        descuentoAplicadoPor: descuentoMonto > 0 ? usuario.id : null,
+        descuentoAplicadoEn: descuentoMonto > 0 ? new Date() : null,
+        actualizadoEn: new Date(),
+      })
+      .where(
+        and(
+          eq(schema.pedidos.id, id),
+          eq(schema.pedidos.pagoConfirmado, false),
+          inArray(schema.pedidos.estado, [...ESTADOS_ACTIVOS]),
+          isNull(schema.pedidos.borradoEn),
+        ),
+      )
+      .returning({ id: schema.pedidos.id })
+    if (filas.length === 0) return false
+
+    for (const d of descuentos) {
+      await tx
+        .update(schema.pedidoItems)
+        .set({ descuentoPorcentaje: d.porcentaje })
+        .where(and(eq(schema.pedidoItems.id, d.itemId), eq(schema.pedidoItems.pedidoId, id)))
+    }
+    return true
+  })
 
   refrescar()
-  if (filas.length === 0) return { ok: false, error: 'El pedido cambió mientras lo mirabas. Se actualizó la pantalla.' }
+  if (!cambiado) return { ok: false, error: 'El pedido cambió mientras lo mirabas. Se actualizó la pantalla.' }
   return { ok: true }
 }
 

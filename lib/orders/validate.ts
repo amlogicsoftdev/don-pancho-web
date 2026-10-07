@@ -2,7 +2,7 @@
 // información no confiable: acá solo se aceptan los campos esperados, con tipos y largos acotados.
 // Los precios y el total NO se leen del navegador; se recalculan en el servidor (create.ts).
 
-import { TIEMPOS_ENTREGA } from './estados'
+import { esPorcentajeValido, TIEMPOS_ENTREGA } from './estados'
 
 export const MODALIDADES = ['delivery', 'retiro'] as const
 export const METODOS_PAGO = ['efectivo', 'transferencia'] as const
@@ -14,6 +14,8 @@ export interface ItemPedidoEntrada {
   productoId: number
   cantidad: number
   aclaraciones: string | null
+  /** Descuento de la línea en porcentaje entero. Solo lo carga el local: los pedidos de la web van en 0. */
+  descuentoPorcentaje: number
 }
 
 export interface PedidoEntrada {
@@ -62,7 +64,9 @@ export function normalizarTelefono(valor: string): string {
 
 type ResultadoItems = { ok: true; items: ItemPedidoEntrada[] } | { ok: false; error: string }
 
-function validarItems(crudos: unknown): ResultadoItems {
+// `conDescuento` solo se activa para las ventas del panel: el descuento que mande el navegador
+// del cliente en un pedido de la web se ignora.
+function validarItems(crudos: unknown, conDescuento = false): ResultadoItems {
   if (!Array.isArray(crudos) || crudos.length === 0) {
     return { ok: false, error: 'El pedido no tiene productos.' }
   }
@@ -75,7 +79,7 @@ function validarItems(crudos: unknown): ResultadoItems {
     if (typeof crudo !== 'object' || crudo === null) {
       return { ok: false, error: 'Hay un producto inválido en el pedido.' }
     }
-    const { productoId, cantidad, aclaraciones } = crudo as Record<string, unknown>
+    const { productoId, cantidad, aclaraciones, descuentoPorcentaje } = crudo as Record<string, unknown>
     if (!Number.isInteger(productoId) || (productoId as number) <= 0) {
       return { ok: false, error: 'Hay un producto inválido en el pedido.' }
     }
@@ -86,7 +90,16 @@ function validarItems(crudos: unknown): ResultadoItems {
     if (aclaracion === undefined) {
       return { ok: false, error: 'Una aclaración es demasiado larga.' }
     }
-    items.push({ productoId: productoId as number, cantidad: cantidad as number, aclaraciones: aclaracion })
+    const descuento = conDescuento ? (descuentoPorcentaje ?? 0) : 0
+    if (!esPorcentajeValido(descuento)) {
+      return { ok: false, error: 'El descuento debe ser un número entero entre 0 y 100.' }
+    }
+    items.push({
+      productoId: productoId as number,
+      cantidad: cantidad as number,
+      aclaraciones: aclaracion,
+      descuentoPorcentaje: descuento,
+    })
   }
   return { ok: true, items }
 }
@@ -152,9 +165,8 @@ export interface VentaMostradorEntrada {
   /** Obligatoria si es delivery. */
   direccion: string | null
   notas: string | null
+  /** Cada línea trae su propio descuento (`descuentoPorcentaje`, 0 = sin descuento). */
   items: ItemPedidoEntrada[]
-  /** Descuento de esta venta, en porcentaje entero (0 = sin descuento). */
-  descuentoPorcentaje: number
   /** Tiempo de entrega informado, en minutos (uno de TIEMPOS_ENTREGA). */
   tiempoEstimadoMin: number
 }
@@ -192,13 +204,9 @@ export function validarVentaMostrador(cuerpo: unknown): ResultadoMostrador {
     return { ok: false, error: 'El teléfono no es válido (o dejalo vacío).' }
   }
 
-  const resultadoItems = validarItems(dato.items)
+  const resultadoItems = validarItems(dato.items, true)
   if (!resultadoItems.ok) return resultadoItems
 
-  const descuento = dato.descuentoPorcentaje ?? 0
-  if (typeof descuento !== 'number' || !Number.isInteger(descuento) || descuento < 0 || descuento > 100) {
-    return { ok: false, error: 'El descuento debe ser un número entero entre 0 y 100.' }
-  }
   if (!esTiempoEntrega(dato.tiempoEstimadoMin)) {
     return { ok: false, error: 'Elegí el tiempo de entrega.' }
   }
@@ -213,7 +221,6 @@ export function validarVentaMostrador(cuerpo: unknown): ResultadoMostrador {
       direccion: dato.modalidad === 'delivery' ? direccion : null,
       notas,
       items: resultadoItems.items,
-      descuentoPorcentaje: descuento,
       tiempoEstimadoMin: dato.tiempoEstimadoMin,
     },
   }

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requerirUsuario } from '@/lib/auth/guards'
 import {
+  descuentoDeLinea,
   ETIQUETA_MODALIDAD,
   ETIQUETA_PAGO,
   etiquetaTiempo,
@@ -107,6 +108,14 @@ export default async function ComandasPage({ params }: { params: Promise<{ id: s
                   </span>
                   <span>{formatearPrecio(item.precioUnitario * item.cantidad)}</span>
                 </p>
+                {item.descuentoPorcentaje > 0 && (
+                  <p className="flex justify-between gap-2 pl-3">
+                    <span>Dto. {item.descuentoPorcentaje}%</span>
+                    <span>
+                      -{formatearPrecio(descuentoDeLinea(item.precioUnitario, item.cantidad, item.descuentoPorcentaje))}
+                    </span>
+                  </p>
+                )}
                 {item.aclaraciones && <p className="pl-3">** {item.aclaraciones}</p>}
               </li>
             ))}
@@ -119,7 +128,7 @@ export default async function ComandasPage({ params }: { params: Promise<{ id: s
                 <span>{formatearPrecio(pedido.subtotal)}</span>
               </p>
               <p className="flex justify-between">
-                <span>Descuento {pedido.descuentoPorcentaje}%</span>
+                <span>Descuento{pedido.descuentoPorcentaje > 0 && ` ${pedido.descuentoPorcentaje}%`}</span>
                 <span>-{formatearPrecio(pedido.descuentoMonto)}</span>
               </p>
             </>

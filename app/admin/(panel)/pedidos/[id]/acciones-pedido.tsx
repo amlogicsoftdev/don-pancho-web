@@ -6,7 +6,7 @@ import { useState, useTransition } from 'react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { IconoWhatsApp } from '@/components/icono-whatsapp'
 import {
-  aplicarDescuento,
+  aplicarDescuentos,
   avanzarPedido,
   borrarPedido,
   cambiarEstado,
@@ -342,50 +342,61 @@ export function PagoConfirmado({ pedidoId, confirmado }: { pedidoId: number; con
   )
 }
 
-/** Descuento del pedido en porcentaje. El total lo recalcula el servidor. */
-export function DescuentoPedido({ pedidoId, porcentaje }: { pedidoId: number; porcentaje: number }) {
+/** Descuento de cada producto del pedido, en porcentaje. El total lo recalcula el servidor. */
+export function DescuentoPedido({
+  pedidoId,
+  items,
+}: {
+  pedidoId: number
+  items: { id: number; nombre: string; cantidad: number; descuentoPorcentaje: number }[]
+}) {
   const { enCurso, error, setError, ejecutar } = useAccion()
-  const [valor, setValor] = useState(porcentaje > 0 ? String(porcentaje) : '')
+  const [valores, setValores] = useState<Record<number, string>>(() =>
+    Object.fromEntries(items.map((i) => [i.id, i.descuentoPorcentaje > 0 ? String(i.descuentoPorcentaje) : ''])),
+  )
 
-  function aplicar(nuevo: number) {
-    if (!Number.isInteger(nuevo) || nuevo < 0 || nuevo > 100) {
+  function guardar() {
+    const descuentos = items.map((i) => ({ itemId: i.id, porcentaje: Number(valores[i.id]) || 0 }))
+    if (descuentos.some((d) => !Number.isInteger(d.porcentaje) || d.porcentaje < 0 || d.porcentaje > 100)) {
       setError('El descuento debe ser un número entero entre 0 y 100.')
       return
     }
-    ejecutar(() => aplicarDescuento(pedidoId, nuevo), () => setValor(nuevo > 0 ? String(nuevo) : ''))
+    ejecutar(() => aplicarDescuentos(pedidoId, descuentos))
   }
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault()
-        aplicar(Number(valor) || 0)
+        guardar()
       }}
     >
-      <label htmlFor="descuento-pedido" className="pn-label">
-        Descuento %
-      </label>
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          id="descuento-pedido"
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={100}
-          step={1}
-          value={valor}
-          onChange={(e) => setValor(e.target.value)}
-          placeholder="0"
-          className="pn-field w-24"
-        />
+      <p className="pn-label">Descuento por producto %</p>
+      <ul className="space-y-2">
+        {items.map((i) => (
+          <li key={i.id} className="flex items-center justify-between gap-3">
+            <label htmlFor={`descuento-${i.id}`} className="min-w-0 truncate text-sm font-semibold">
+              <strong className="font-extrabold">{i.cantidad}x</strong> {i.nombre}
+            </label>
+            <input
+              id={`descuento-${i.id}`}
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={100}
+              step={1}
+              value={valores[i.id] ?? ''}
+              onChange={(e) => setValores((actual) => ({ ...actual, [i.id]: e.target.value }))}
+              placeholder="0"
+              className="pn-field w-20 flex-none"
+            />
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3">
         <Button type="submit" size="sm" disabled={enCurso}>
-          {enCurso ? 'Aplicando…' : 'Aplicar'}
+          {enCurso ? 'Aplicando…' : 'Aplicar descuentos'}
         </Button>
-        {porcentaje > 0 && (
-          <Button type="button" variant="ghost" size="sm" disabled={enCurso} onClick={() => aplicar(0)}>
-            Quitar
-          </Button>
-        )}
       </div>
       <MensajeError error={error} />
     </form>

@@ -5,6 +5,7 @@ import { IconoWhatsApp } from '@/components/icono-whatsapp'
 import { buttonVariants } from '@/components/ui/button'
 import { requerirUsuario } from '@/lib/auth/guards'
 import {
+  descuentoDeLinea,
   ESTADOS_ACTIVOS,
   ETIQUETA_ESTADO,
   ETIQUETA_MODALIDAD,
@@ -150,8 +151,16 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
                     <p className="text-base leading-snug font-bold">{item.nombre}</p>
                     {item.aclaraciones && <p className="pn-muted text-sm font-medium">{item.aclaraciones}</p>}
                   </div>
-                  <span className="pt-0.5 text-base font-bold tabular-nums">
-                    {formatearPrecio(item.precioUnitario * item.cantidad)}
+                  <span className="pt-0.5 text-right text-base font-bold tabular-nums">
+                    {item.descuentoPorcentaje > 0 && (
+                      <span className="pn-muted block text-xs font-semibold">
+                        -{item.descuentoPorcentaje}% · {formatearPrecio(item.precioUnitario * item.cantidad)}
+                      </span>
+                    )}
+                    {formatearPrecio(
+                      item.precioUnitario * item.cantidad -
+                        descuentoDeLinea(item.precioUnitario, item.cantidad, item.descuentoPorcentaje),
+                    )}
                   </span>
                 </li>
               ))}
@@ -237,7 +246,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
               {pedido.descuentoMonto > 0 && (
                 <div className="flex justify-between gap-3">
                   <dt className="pn-muted">
-                    Descuento ({pedido.descuentoPorcentaje}%)
+                    Descuento{pedido.descuentoPorcentaje > 0 && ` (${pedido.descuentoPorcentaje}%)`}
                     {descuentoAplicadoPor && pedido.descuentoAplicadoEn && (
                       <span className="block text-xs font-medium">
                         {descuentoAplicadoPor} · {formatearFechaHora(pedido.descuentoAplicadoEn)}
@@ -255,7 +264,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
 
             {sePuedeDescontar && (
               <div className="mt-5 border-t-2 border-dotted border-pancho-black/25 pt-5">
-                <DescuentoPedido pedidoId={pedido.id} porcentaje={pedido.descuentoPorcentaje} />
+                <DescuentoPedido pedidoId={pedido.id} items={items} />
                 <p className="pn-muted mt-2 text-xs font-medium">
                   Aplicalo antes de confirmar por WhatsApp, así el mensaje sale con el total correcto.
                 </p>
