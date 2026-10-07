@@ -38,6 +38,9 @@ export default async function PanelLayout({ children }: { children: React.ReactN
                 <Link href="/admin/ventas" className={ENLACE}>
                   Ventas
                 </Link>
+                <Link href="/admin/menu" className={ENLACE}>
+                  Menú
+                </Link>
                 <Link href="/admin/gastos" className={ENLACE}>
                   Gastos
                 </Link>
