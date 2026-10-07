@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, Plus } from 'lucide-react'
@@ -51,7 +51,9 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   const [navHeight, setNavHeight] = useState(88)
   const [cartOpen, setCartOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>(initialCategory)
-  const [hoveredProduct, setHoveredProduct] = useState<Product | null>(null)
+  // Plato que señala el mouse y su fila (la foto se pega a la fila)
+  const [hovered, setHovered] = useState<{ product: Product; fila: HTMLElement } | null>(null)
+  const ocultarFoto = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const nav = document.querySelector('header')
@@ -87,7 +89,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   const handleCategoryClick = (category: CategoryFilter) => {
     if (category === activeCategory) return
     setActiveCategory(category)
-    setHoveredProduct(null)
+    setHovered(null)
     // La URL acompaña al filtro, así el enlace se puede compartir y «atrás» vuelve a la misma categoría
     window.history.replaceState(
       null,
@@ -96,11 +98,21 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     )
   }
 
-  // Solo dice sobre qué plato está el mouse: la posición la sigue <FotoFlotante> por su cuenta,
-  // así mover el mouse no vuelve a dibujar toda la carta
+  // Solo cambia al entrar o salir de un plato: mover el mouse no vuelve a dibujar la carta.
+  // Al salir se espera un momento, así al pasar a la fila de al lado la foto se desliza en vez
+  // de apagarse y volver a aparecer.
   const hoverProps = (product: Product) => ({
-    onMouseEnter: () => setHoveredProduct(product),
-    onMouseLeave: () => setHoveredProduct((actual) => (actual?.id === product.id ? null : actual)),
+    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
+      if (ocultarFoto.current) clearTimeout(ocultarFoto.current)
+      setHovered({ product, fila: e.currentTarget })
+    },
+    onMouseLeave: () => {
+      if (ocultarFoto.current) clearTimeout(ocultarFoto.current)
+      ocultarFoto.current = setTimeout(
+        () => setHovered((actual) => (actual?.product.id === product.id ? null : actual)),
+        120,
+      )
+    },
   })
 
   /** Botón cuadrado de agregar: cuando el producto ya está en el pedido se estira a −  n  + */
@@ -341,8 +353,8 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
         </main>
       </div>
 
-      {/* Foto que sigue al mouse sobre cada plato (solo con mouse) */}
-      {mounted && <FotoFlotante producto={hoveredProduct} />}
+      {/* Foto pegada al plato que señala el mouse (solo con mouse) */}
+      {mounted && <FotoFlotante producto={hovered?.product ?? null} ancla={hovered?.fila ?? null} />}
 
       {/* Cartel con el pedido: abre el carrito */}
       {mounted && <BarraPedido cantidad={totalCartCount} total={cartTotal} onAbrir={() => setCartOpen(true)} />}
