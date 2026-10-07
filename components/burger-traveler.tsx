@@ -3,6 +3,14 @@
 import React, { useEffect, useRef } from 'react'
 import Image from 'next/image'
 
+// Punto del viaje (de 0 a 1) en el que la hamburguesa se da por llegada
+const ARRIVE_AT = 0.96
+
+interface BurgerTravelerProps {
+  /** Avisa que la hamburguesa ya está en su lugar en la sección de elección. */
+  onArrive?: () => void
+}
+
 /**
  * La hamburguesa que viaja: arranca en su hueco del hero y, a medida que se hace
  * scroll, se desplaza y se achica hasta el hueco de la mitad «Hamburguesa» de la
@@ -14,8 +22,11 @@ import Image from 'next/image'
  * Cada hueco trae su propia imagen fija. Esta capa las reemplaza recién cuando está
  * lista (pone `data-travel="on"` en el contenedor), así que sin JavaScript o con
  * «reducir movimiento» la hamburguesa se ve igual, quieta, en los dos lugares.
+ *
+ * `onArrive` se llama una sola vez, cuando la hamburguesa llega a la sección de elección
+ * (o enseguida, si no va a viajar): es la señal para que esa sección muestre su contenido.
  */
-export function BurgerTraveler() {
+export function BurgerTraveler({ onArrive }: BurgerTravelerProps) {
   const travelerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -25,9 +36,11 @@ export function BurgerTraveler() {
 
     const heroSlot = stage.querySelector<HTMLElement>('[data-burger-slot="hero"]')
     const versusSlot = stage.querySelector<HTMLElement>('[data-burger-slot="versus"]')
-    if (!heroSlot || !versusSlot) return
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    // Sin viaje no hay llegada que esperar: la sección de elección se muestra de entrada
+    if (!heroSlot || !versusSlot || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      onArrive?.()
+      return
+    }
 
     // Posición y tamaño de cada hueco, relativos al contenedor
     let from = { x: 0, y: 0, w: 0, h: 0 }
@@ -35,6 +48,7 @@ export function BurgerTraveler() {
     // Scroll en el que la hamburguesa termina de llegar a la sección de elección
     let endScroll = 1
     let active = false
+    let arrived = false
     let rafId: number | null = null
 
     const measure = () => {
@@ -70,6 +84,12 @@ export function BurgerTraveler() {
       if (!active) return
 
       const progress = Math.max(0, Math.min(1, window.scrollY / endScroll))
+
+      // Ya casi en su lugar: se avisa una sola vez
+      if (!arrived && progress >= ARRIVE_AT) {
+        arrived = true
+        onArrive?.()
+      }
       // Arranque y llegada suaves
       const eased = progress * progress * (3 - 2 * progress)
 
@@ -146,7 +166,7 @@ export function BurgerTraveler() {
       resizeObserver.disconnect()
       delete stage.dataset.travel
     }
-  }, [])
+  }, [onArrive])
 
   return (
     <div
@@ -154,17 +174,20 @@ export function BurgerTraveler() {
       aria-hidden="true"
       // Tamaño inicial con la proporción del hueco del hero (la imagen con `fill` necesita alto);
       // measure() lo reemplaza por el tamaño exacto antes de mostrarla
-      className="burger-traveler pointer-events-none absolute left-0 top-0 z-20 aspect-718/442 w-[min(88vw,40rem)] origin-top-left will-change-transform"
+      className="burger-traveler pointer-events-none absolute left-0 top-0 z-20 aspect-771/524 w-[min(88vw,40rem)] origin-top-left will-change-transform"
     >
-      <div data-hero-parallax className="burger-art burger-traveler-art animate-float relative h-full w-full">
-        <Image
-          src="/images/hamburguesa-recortada.webp"
-          alt=""
-          fill
-          priority
-          sizes="(max-width: 640px) 88vw, 640px"
-          className="object-contain"
-        />
+      {/* Pose: crece o se achica cuando se elige una mitad en la sección de elección */}
+      <div className="burger-traveler-pose h-full w-full">
+        <div data-hero-parallax className="burger-art burger-traveler-art animate-float relative h-full w-full">
+          <Image
+            src="/images/hero-eleccion-hamburguesa.webp"
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 640px) 88vw, 640px"
+            className="object-contain"
+          />
+        </div>
       </div>
     </div>
   )

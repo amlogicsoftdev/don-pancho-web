@@ -102,7 +102,7 @@ export function BenefitsSection() {
   ]
 
   return (
-    <section className="relative overflow-hidden bg-pancho-paper bg-[url('/images/fondo-papel-crema.webp')] bg-cover bg-center py-20 text-pancho-black sm:py-28">
+    <section className="relative overflow-hidden pt-4 pb-20 text-pancho-black sm:pt-6 sm:pb-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Encabezado de un solo color: las letras se paran una por una */}
         <div

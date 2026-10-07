@@ -411,15 +411,6 @@ html:has(.page-home) {
   --btn-focus: var(--color-pancho-yellow);
 }
 
-/* variante «paper»: para papel crema */
-.btn-pancho--paper {
-  --btn-fill: var(--color-pancho-orange);
-  --btn-fill-fg: var(--color-pancho-black);
-  --btn-chip-bg: var(--color-pancho-orange);
-  --btn-chip-fg: var(--color-pancho-black);
-  --btn-shadow: 0 16px 28px -14px rgb(0 0 0 / 0.45);
-}
-
 .btn-pancho--sm {
   --btn-h: 2.75rem;
   font-size: 0.875rem;
@@ -732,21 +723,42 @@ html:has(.page-home) {
 }
 
 /* =========================================================
+   ESCENARIO DEL INICIO: HERO + SECCIÓN DE ELECCIÓN
+   (components/landing-view.tsx, .intro-stage)
+   El hero y la mitad de la hamburguesa comparten una sola hoja de papel naranja,
+   sin corte entre los dos. Encima van dos sombras suaves: una en los costados y
+   otra arriba, como la viñeta de los flyers.
+========================================================= */
+
+.intro-stage {
+  background:
+    linear-gradient(
+      90deg,
+      rgb(255 76 0 / 0.5),
+      rgb(255 76 0 / 0) 20%,
+      rgb(255 76 0 / 0) 80%,
+      rgb(255 76 0 / 0.5)
+    ),
+    linear-gradient(180deg, rgb(255 76 0 / 0.45), rgb(255 76 0 / 0) 14rem),
+    var(--color-pancho-orange) url('/images/fondo-hero-eleccion-naranja.webp') center top / cover no-repeat;
+}
+
+/* =========================================================
    HAMBURGUESA QUE VIAJA DEL HERO A LA SECCIÓN DE ELECCIÓN
    (components/burger-traveler.tsx)
 ========================================================= */
 
 /* Sombra corta debajo de la comida recortada.
    translate lo usa el hero para que la hamburguesa siga apenas al mouse;
-   scale y rotate, la selección de la sección de elección. */
+   translate, scale y rotate, la selección de la sección de elección. */
 .burger-art,
 .pancho-art {
   filter: drop-shadow(0 18px 22px rgb(0 0 0 / 0.35));
   transition:
     translate 0.6s var(--ease-out),
-    scale 0.35s var(--ease-pop),
-    rotate 0.35s var(--ease-pop),
-    filter 0.3s ease-out;
+    scale 0.45s var(--ease-pop),
+    rotate 0.45s var(--ease-pop),
+    filter 0.35s ease-out;
 }
 
 /* Hasta que la capa viajera está lista se ven las imágenes fijas de cada hueco */
@@ -762,29 +774,74 @@ html:has(.page-home) {
   visibility: hidden;
 }
 
+/* Pose de la hamburguesa que viaja cuando se elige una mitad (ver más abajo) */
+.burger-traveler-pose {
+  transition:
+    translate 0.6s var(--ease-out),
+    scale 0.45s var(--ease-pop),
+    rotate 0.45s var(--ease-pop);
+}
+
 /* =========================================================
    SECCIÓN DE ELECCIÓN: HAMBURGUESA O PANCHO
    (components/versus-section.tsx)
-   Una mitad queda «seleccionada» con el mouse o con el foco del teclado.
+   Funciona como la pantalla de elegir jugador de un videojuego. Las dos mitades
+   miden siempre lo mismo: el corte queda fijo al medio. Con el mouse o con el
+   foco del teclado, una mitad queda elegida:
+   - su comida crece y se inclina;
+   - su nombre crece y aparece su botón, ya encendido;
+   - la otra mitad se oscurece y su comida se achica y queda en gris.
+
+   El pancho va a la izquierda y la hamburguesa a la derecha, igual que en el hero.
+   El contenido (pancho, título, «VS», nombres y botones) espera a que la hamburguesa
+   que viaja desde el hero llegue a su lugar: recién ahí la sección recibe data-inview.
 ========================================================= */
+
+/* Mitad roja: un rectángulo de papel que ocupa la mitad izquierda, de borde recto */
+.versus-red {
+  position: absolute;
+  inset: 0 50% 0 0;
+  background: var(--color-pancho-red) url('/images/fondo-eleccion-rojo.webp') center / cover no-repeat;
+}
+
+/* Velos que oscurecen la mitad no elegida. El del lado naranja arranca transparente
+   arriba para no marcar una línea contra el hero, que comparte el mismo papel. */
+.versus-red::after,
+.versus-veil {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+}
+
+.versus-red::after {
+  background: rgb(0 0 0 / 0.66);
+}
+
+.versus-veil {
+  left: 50%;
+  background: linear-gradient(180deg, rgb(0 0 0 / 0), rgb(0 0 0 / 0.66) 26%);
+}
+
+.versus:has(.versus-side[data-side='hamburguesa']:is(:hover, :focus-visible)) .versus-red::after,
+.versus:has(.versus-side[data-side='pancho']:is(:hover, :focus-visible)) .versus-veil {
+  opacity: 1;
+}
 
 .versus-side {
   cursor: pointer;
 }
 
-/* Velo que apaga la mitad no elegida */
-.versus-dim {
-  position: absolute;
-  inset: 0;
-  background: rgb(0 0 0 / 0.5);
-  opacity: 0;
-  transition: opacity 0.3s ease-out;
+/* Hasta que llega la hamburguesa no hay nada para elegir */
+.versus:not([data-inview='true']) .versus-side {
+  pointer-events: none;
 }
 
-/* El pancho entra desde su borde cuando la sección aparece */
+/* El pancho entra desde su borde apenas llega la hamburguesa */
 .versus-pancho {
   opacity: 0;
-  transform: translate3d(22%, 0, 0) rotate(8deg);
+  transform: translate3d(-22%, 0, 0) rotate(-8deg);
   transition:
     opacity 0.5s ease-out,
     transform 1.1s var(--ease-out);
@@ -795,30 +852,34 @@ html:has(.page-home) {
   transform: none;
 }
 
-/* Etiqueta y botón, centrados abajo de cada mitad */
+/* Nombre y botón, centrados abajo de cada mitad */
 .versus-caption {
   position: absolute;
   inset-inline: 0;
-  bottom: 9%;
+  bottom: 7%;
   z-index: 30;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.875rem;
 }
 
-.versus-label {
-  padding: 0.25rem 0.5rem;
-  font-family: var(--font-sans);
-  font-size: 1.1875rem;
-  font-weight: 900;
-  line-height: 1.1;
-  letter-spacing: 0.02em;
+/* Nombre de cada jugador: letras grandes directo sobre el papel, con sombra dura */
+.versus-name {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 6.6vw, 6rem);
+  font-weight: 400;
+  line-height: 0.9;
   text-transform: uppercase;
-  transition: scale 0.35s var(--ease-pop);
+  color: var(--color-pancho-white);
+  text-shadow: 0.055em 0.055em 0 var(--color-pancho-black);
+  transform-origin: 50% 100%;
+  transition:
+    scale 0.45s var(--ease-pop),
+    opacity 0.3s ease-out;
 }
 
-/* Botón «Elegir»: aparece cuando la mitad está seleccionada */
+/* Botón «Elegir»: aparece cuando la mitad está elegida */
 .versus-go {
   opacity: 0;
   translate: 0 8px;
@@ -828,29 +889,22 @@ html:has(.page-home) {
     transform 160ms var(--ease-out);
 }
 
-@media (min-width: 40rem) {
-  .versus-label {
-    font-size: 1.875rem;
-    padding: 0.375rem 0.75rem;
-  }
-}
-
-/* --- Mitad seleccionada --- */
-
-.versus-side:is(:hover, :focus-visible) .versus-food {
-  scale: 1.08;
-}
+/* --- Mitad elegida --- */
 
 .versus-side[data-side='hamburguesa']:is(:hover, :focus-visible) .versus-food {
-  rotate: -3deg;
+  scale: 1.16;
+  rotate: 5deg;
+  translate: 0 -8%;
 }
 
 .versus-side[data-side='pancho']:is(:hover, :focus-visible) .versus-food {
-  rotate: 3deg;
+  scale: 1.14;
+  rotate: -5deg;
+  translate: 0 -4%;
 }
 
-.versus-side:is(:hover, :focus-visible) .versus-label {
-  scale: 1.12;
+.versus-side:is(:hover, :focus-visible) .versus-name {
+  scale: 1.16;
 }
 
 .versus-side:is(:hover, :focus-visible) .versus-go {
@@ -885,26 +939,43 @@ html:has(.page-home) {
   outline-offset: 3px;
 }
 
-/* --- Mitad no elegida: se apaga --- */
-
-.versus:has(.versus-side:is(:hover, :focus-visible)) .versus-side:not(:hover, :focus-visible) .versus-dim {
-  opacity: 1;
-}
+/* --- Mitad no elegida: se apaga, se achica y retrocede --- */
 
 .versus:has(.versus-side:is(:hover, :focus-visible)) .versus-side:not(:hover, :focus-visible) .versus-food {
-  scale: 0.94;
-  filter: grayscale(0.5) brightness(0.55);
+  scale: 0.8;
+  filter: grayscale(1) brightness(0.45) drop-shadow(0 10px 12px rgb(0 0 0 / 0.3));
+}
+
+.versus:has(.versus-side:is(:hover, :focus-visible)) .versus-side[data-side='hamburguesa']:not(:hover, :focus-visible) .versus-food {
+  rotate: -6deg;
+  translate: 0 4%;
+}
+
+.versus:has(.versus-side:is(:hover, :focus-visible)) .versus-side[data-side='pancho']:not(:hover, :focus-visible) .versus-food {
+  rotate: 6deg;
+  translate: 0 4%;
+}
+
+.versus:has(.versus-side:is(:hover, :focus-visible)) .versus-side:not(:hover, :focus-visible) .versus-name {
+  scale: 0.84;
+  opacity: 0.4;
 }
 
 /* La hamburguesa que viaja está fuera de la sección: sigue la selección desde el escenario */
-.intro-stage:has(.versus-side[data-side='hamburguesa']:is(:hover, :focus-visible)) .burger-traveler-art {
-  scale: 1.08;
-  rotate: -3deg;
+.intro-stage:has(.versus-side[data-side='hamburguesa']:is(:hover, :focus-visible)) .burger-traveler-pose {
+  scale: 1.16;
+  rotate: 5deg;
+  translate: 0 -8%;
+}
+
+.intro-stage:has(.versus-side[data-side='pancho']:is(:hover, :focus-visible)) .burger-traveler-pose {
+  scale: 0.8;
+  rotate: -6deg;
+  translate: 0 4%;
 }
 
 .intro-stage:has(.versus-side[data-side='pancho']:is(:hover, :focus-visible)) .burger-traveler-art {
-  scale: 0.94;
-  filter: grayscale(0.5) brightness(0.55);
+  filter: grayscale(1) brightness(0.45) drop-shadow(0 10px 12px rgb(0 0 0 / 0.3));
 }
 
 /* En pantallas táctiles no hay «pasar el mouse»: el botón de elegir se ve siempre */
@@ -916,130 +987,268 @@ html:has(.page-home) {
 }
 
 /* =========================================================
-   CINTA DE TEXTO EN MOVIMIENTO (components/marquee-band.tsx)
-   Sin JavaScript corre sola, a velocidad constante. Con JavaScript el componente
-   toma el control (data-driven) y la cinta acompaña al scroll: se acelera y se
-   inclina en el sentido en que se mueve la página.
+   NOSOTROS (components/about-section.tsx)
+   Todo se entinta con el scroll. Cada grupo ([data-ink]) recibe del componente la
+   variable --p; cada pieza de adentro tiene su número en --i y calcula --t, que va
+   de 0 (apenas marcada) a 1 (entintada) mientras --p pasa de --i a --i + --spread.
+   Sin JavaScript --p no cambia y se ve todo entero.
 ========================================================= */
 
-@keyframes dpMarquee {
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
+[data-ink] {
+  --p: 999;
 }
 
-.marquee-track {
-  display: flex;
-  width: max-content;
-  animation: dpMarquee 36s linear infinite;
-  will-change: transform;
+.about-title__char,
+.about-mark__bg,
+.about-photo,
+.about-stamp,
+.about-text__word,
+.about-value {
+  --t: clamp(0, calc((var(--p) - var(--i)) / var(--spread, 1)), 1);
 }
 
-.marquee-track[data-driven='true'] {
-  animation: none;
+/* Rótulo chico del encabezado */
+.about-eyebrow {
+  flex: none;
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(13 13 13 / 0.7);
 }
 
-/* =========================================================
-   FOTO CON PROFUNDIDAD (components/tilt-photo.tsx) Y SELLO (components/stamp.tsx)
-   La foto se descubre de arriba hacia abajo mientras se acomoda el zoom.
-   Con mouse, el marco se inclina hacia el cursor, la foto se mueve por dentro
-   y un brillo sigue al puntero. Al scrollear, la foto se desplaza apenas
-   dentro del marco.
-   --rx y --ry (de -0.5 a 0.5) y --sy (de -1 a 1) los escribe el componente.
-========================================================= */
-
-.rv-photo {
-  opacity: 0;
-  transform: translate3d(0, 48px, 0) rotate(-6deg) scale(0.94);
-  transition:
-    opacity 0.5s ease-out,
-    transform 1.1s var(--ease-out);
+/* Línea de puntos entre la etiqueta y la zona: se dibuja de izquierda a derecha */
+.about-rule {
+  flex: 1;
+  min-width: 1.5rem;
+  border-top: 2px dotted rgb(13 13 13 / 0.35);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 1s var(--ease-in-out) 0.1s;
 }
 
-[data-inview='true'] .rv-photo {
-  opacity: 1;
+[data-inview='true'] .about-rule {
   transform: none;
 }
 
-.tilt {
-  --rx: 0;
-  --ry: 0;
-  --sy: 0;
+/* --- Título --- */
+
+.about-title {
+  /* a este tamaño «que se comparte», con su bloque, entra en un solo renglón en cualquier ancho */
+  font-size: min(12.4vw, 9.5rem);
+  line-height: 0.92;
+}
+
+.about-title__line {
+  display: block;
+  white-space: nowrap;
+}
+
+.about-title__word {
+  display: inline-block;
+}
+
+/* Cada letra se entinta y termina de asentarse */
+.about-title__char {
+  display: inline-block;
+  opacity: calc(0.12 + 0.88 * var(--t));
+  translate: 0 calc((1 - var(--t)) * 0.14em);
+}
+
+/* Palabra sobre el bloque naranja, torcido y con sombra dura como las etiquetas de los flyers */
+.about-mark {
   position: relative;
-  perspective: 1100px;
+  display: inline-block;
+  isolation: isolate;
+  padding-inline: 0.14em;
+  margin-left: 0.04em;
 }
 
-.tilt-card {
-  transform: rotateX(calc(var(--ry) * -10deg)) rotateY(calc(var(--rx) * 12deg));
-  transition: transform 0.7s var(--ease-out);
-  will-change: transform;
+.about-mark__bg {
+  position: absolute;
+  inset: 0.03em 0 -0.01em;
+  z-index: -1;
+  background: var(--color-pancho-orange);
+  box-shadow: 0.045em 0.045em 0 var(--color-pancho-black);
+  rotate: -1.6deg;
+  transform: scaleX(var(--t));
+  transform-origin: 0 50%;
 }
 
-.tilt-media {
-  clip-path: inset(0 0 100% 0);
-  transition: clip-path 1.1s var(--ease-in-out) 0.15s;
+/* --- Fotos pegadas con cinta --- */
+
+.about-photos {
+  position: relative;
+  width: 100%;
+  max-width: 27rem;
+  margin-inline: auto;
+  aspect-ratio: 10 / 11;
 }
 
-.tilt-img {
-  /* un poco más grande que el marco, para tener de dónde moverla */
-  transform: translate3d(calc(var(--rx) * -18px), calc(var(--ry) * -18px), 0) scale(1.14);
-  translate: 0 calc(var(--sy) * -3.5%);
-  scale: 1.3;
+/* La foto cae girando y se endereza hasta su inclinación (--tilt) */
+.about-photo {
+  position: absolute;
+  opacity: min(1, calc(var(--t) * 2.5));
+  scale: calc(0.72 + 0.28 * var(--t));
+  rotate: calc(var(--tilt) + (1 - var(--t)) * var(--spin));
+  translate: 0 calc((1 - var(--t)) * 3.5rem);
+}
+
+.about-photo--big {
+  --tilt: -4deg;
+  --spin: -14deg;
+  top: 0;
+  left: 0;
+  width: 66%;
+}
+
+.about-photo--small {
+  --tilt: 4deg;
+  --spin: 16deg;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 50%;
+}
+
+.about-photo__card {
+  position: relative;
+  padding: 0.55rem 0.55rem 0;
+  background: var(--color-pancho-white);
+  box-shadow: 0 22px 34px -14px rgb(0 0 0 / 0.45);
   transition:
-    transform 0.7s var(--ease-out),
-    scale 1.6s var(--ease-out) 0.15s;
+    rotate 0.5s var(--ease-out),
+    translate 0.5s var(--ease-out),
+    box-shadow 0.5s var(--ease-out);
 }
 
-[data-inview='true'] .tilt-media {
-  clip-path: inset(0 0 0 0);
-}
-
-[data-inview='true'] .tilt-img {
-  scale: 1;
-}
-
-.tilt-sheen {
+.about-photo__tape {
   position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(
-    circle at calc(50% + var(--rx) * 100%) calc(50% + var(--ry) * 100%),
-    rgb(255 255 255 / 0.38),
-    rgb(255 255 255 / 0) 55%
-  );
-  mix-blend-mode: soft-light;
-  opacity: 0;
-  transition: opacity 0.4s ease-out;
+  top: -0.7rem;
+  left: 50%;
+  z-index: 1;
+  width: 34%;
+  height: 1.4rem;
+  translate: -50% 0;
+  rotate: -2deg;
+  background: rgb(240 226 196 / 0.88);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
 }
 
-/* Lo que flota por delante de la foto (el sello) se mueve más que el marco */
-.tilt-float {
-  position: absolute;
-  z-index: 10;
-  transform: translate3d(calc(var(--rx) * 26px), calc(var(--ry) * 26px), 0);
-  transition: transform 0.7s var(--ease-out);
+.about-photo--small .about-photo__tape {
+  left: 68%;
+  rotate: 3deg;
 }
 
-/* Mientras el mouse está encima, sigue al puntero casi sin demora */
-.tilt[data-tilt='on'] :is(.tilt-card, .tilt-float) {
-  transition-duration: 0.16s;
+.about-photo__cutout {
+  padding: 9%;
+  filter: drop-shadow(0 10px 12px rgb(0 0 0 / 0.3));
 }
 
-.tilt[data-tilt='on'] .tilt-img {
-  transition-duration: 0.16s, 1.6s;
+.about-photo__caption {
+  padding: 0.6rem 0.2rem 0.7rem;
+  font-family: var(--font-heading);
+  font-size: clamp(0.8rem, 2.9vw, 1rem);
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.tilt[data-tilt='on'] .tilt-sheen {
-  opacity: 1;
-}
+/* Al pasarle el mouse, la foto se endereza y se levanta */
+@media (hover: hover) and (pointer: fine) {
+  .about-photo:hover {
+    z-index: 2;
+  }
 
-/* Sello redondo con el texto girando alrededor */
-@keyframes dpSpin {
-  to {
-    transform: rotate(360deg);
+  .about-photo:hover .about-photo__card {
+    rotate: calc(var(--tilt) * -1);
+    translate: 0 -6px;
+    box-shadow: 0 30px 44px -16px rgb(0 0 0 / 0.5);
   }
 }
 
+/* Sello: se pega girando en la esquina de la foto grande */
+.about-stamp {
+  position: absolute;
+  top: 3%;
+  left: 55%;
+  z-index: 2;
+  width: 25%;
+  aspect-ratio: 1;
+  opacity: min(1, calc(var(--t) * 3));
+  scale: calc(0.3 + 0.7 * var(--t));
+  rotate: calc((1 - var(--t)) * -90deg);
+}
+
+/* --- Texto y valores --- */
+
+.about-text {
+  max-width: 26rem;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.75;
+}
+
+@media (min-width: 40rem) {
+  .about-text {
+    font-size: 1.125rem;
+  }
+}
+
+.about-text__word {
+  opacity: calc(0.22 + 0.78 * var(--t));
+}
+
+.about-text__word[data-bold='true'] {
+  font-weight: 700;
+}
+
+/* Palabra resaltada: el trazo naranja avanza por debajo mientras se entinta */
+.about-text__word[data-mark='true'] {
+  font-weight: 700;
+  background: linear-gradient(rgb(255 115 0 / 0.6), rgb(255 115 0 / 0.6)) 0 92% / calc(var(--t) * 100%) 0.36em no-repeat;
+}
+
+.about-values {
+  border-block: 2px solid var(--color-pancho-black);
+}
+
+.about-value {
+  display: flex;
+  align-items: baseline;
+  gap: 1.75rem;
+  padding: 0.95rem 0.25rem 0.8rem;
+  opacity: calc(0.16 + 0.84 * var(--t));
+  translate: calc((1 - var(--t)) * -1.25rem) 0;
+}
+
+.about-value + .about-value {
+  border-top: 2px dotted rgb(13 13 13 / 0.3);
+}
+
+.about-value__num {
+  flex: none;
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  line-height: 1;
+  color: var(--color-pancho-red-deep);
+}
+
+.about-value__text {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* El botón de esta sección lleva el cuadrado naranja, que sobre el crema se ve más */
+.about .btn-pancho {
+  --btn-chip-bg: var(--color-pancho-orange);
+}
+
+/* Sello redondo con el texto girando alrededor (components/stamp.tsx) */
 .stamp {
   position: relative;
   display: grid;
@@ -1071,6 +1280,13 @@ html:has(.page-home) {
   height: 34%;
 }
 
+/* Giro continuo del sello */
+@keyframes dpSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* =========================================================
    CARTA (components/menu-view.tsx)
    Las filas entran escalonadas al abrir y cada vez que cambia el filtro.
@@ -1090,167 +1306,6 @@ html:has(.page-home) {
 .menu-row {
   animation: dpRowIn 0.55s var(--ease-out) both;
   animation-delay: calc(var(--row-base, 0ms) + min(var(--i, 0), 9) * 45ms);
-}
-
-/* =========================================================
-   NUESTRO SECRETO ARTESANAL (components/secret-section.tsx)
-   La hamburguesa al centro y tres notas alrededor. De cada nota sale una línea
-   que se dibuja hasta su punto sobre la hamburguesa. El panel naranja entra
-   angosto y se abre a todo el ancho con el scroll (lo escribe el componente).
-========================================================= */
-
-.secret-panel {
-  will-change: clip-path;
-}
-
-/* La hamburguesa cae girada, como en la primera pantalla */
-.secret-burger {
-  opacity: 0;
-  transform: translate3d(0, 48px, 0) rotate(-9deg) scale(0.86);
-  transition:
-    opacity 0.4s ease-out,
-    transform 1.1s var(--ease-out),
-    scale 0.4s var(--ease-out);
-  filter: drop-shadow(0 22px 26px rgb(0 0 0 / 0.35));
-}
-
-[data-inview='true'] .secret-burger {
-  opacity: 1;
-  transform: none;
-}
-
-/* Punto sobre la hamburguesa. --x y --y son su posición dentro de la foto. */
-.secret-dot {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  margin: -0.875rem 0 0 -0.875rem;
-  border: 3px solid var(--color-pancho-black);
-  border-radius: 9999px;
-  background: var(--color-pancho-white);
-  color: var(--color-pancho-black);
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
-  font-weight: 800;
-  line-height: 1;
-  opacity: 0;
-  transform: scale(0.3);
-  transition:
-    opacity 0.2s ease-out var(--d, 0ms),
-    transform 0.5s var(--ease-pop) var(--d, 0ms),
-    scale 0.3s var(--ease-pop),
-    background-color 0.2s ease-out,
-    color 0.2s ease-out;
-}
-
-[data-inview='true'] .secret-dot {
-  opacity: 1;
-  transform: none;
-}
-
-/* En escritorio el punto no lleva número: lo une la línea */
-@media (min-width: 80rem) {
-  .secret-dot {
-    width: 1.125rem;
-    height: 1.125rem;
-    margin: -0.5625rem 0 0 -0.5625rem;
-    font-size: 0;
-  }
-}
-
-/* Onda que sale del punto de la nota señalada */
-@keyframes dpPing {
-  from {
-    opacity: 0.7;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(2.8);
-  }
-}
-
-.secret-dot::after {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border: 2px solid var(--color-pancho-black);
-  border-radius: inherit;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.secret-dot[data-on='true'] {
-  scale: 1.35;
-  background: var(--color-pancho-black);
-  color: var(--color-pancho-white);
-}
-
-.secret-dot[data-on='true']::after {
-  animation: dpPing 1.1s var(--ease-out) infinite;
-}
-
-/* Líneas que unen cada nota con su punto (solo escritorio) */
-.secret-lines {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-}
-
-.secret-line {
-  fill: none;
-  stroke: var(--color-pancho-black);
-  stroke-width: 2;
-  stroke-linecap: square;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  transition:
-    stroke-dashoffset 0.9s var(--ease-in-out) var(--d, 0ms),
-    stroke-width 0.2s ease-out;
-}
-
-[data-inview='true'] .secret-line {
-  stroke-dashoffset: 0;
-}
-
-.secret-line[data-on='true'] {
-  stroke-width: 4;
-}
-
-/* Raya debajo del título de cada nota: de su punta sale la línea */
-.secret-rule {
-  height: 2px;
-  background: var(--color-pancho-black);
-  transform: scaleX(0);
-  transition:
-    transform 0.6s var(--ease-out) var(--d, 0ms),
-    height 0.2s ease-out;
-}
-
-[data-inview='true'] .secret-rule {
-  transform: none;
-}
-
-.secret-note {
-  transition: opacity 0.3s ease-out;
-}
-
-/* Al señalar una nota, las otras dos se apagan un poco */
-.secret-stage[data-active] .secret-note:not([data-on='true']) {
-  opacity: 0.45;
-}
-
-.secret-stage[data-active] .secret-burger {
-  scale: 1.03;
 }
 
 /* =========================================================
@@ -1356,15 +1411,13 @@ html:has(.page-home) {
   .animate-float,
   .animate-float-reverse,
   .stamp-ring,
-  .marquee-track,
   .hero-tag,
   .hero-tag::before,
   .block-line::after,
   .btn-in .btn-pancho,
   .btn-in .btn-pancho__arrow--out,
   [data-inview='true'] .rv-btn .btn-pancho,
-  [data-inview='true'] .rv-btn .btn-pancho__arrow--out,
-  .secret-dot[data-on='true']::after {
+  [data-inview='true'] .rv-btn .btn-pancho__arrow--out {
     animation: none;
   }
 
@@ -1390,10 +1443,7 @@ html:has(.page-home) {
   .rv-up,
   .rv-pop,
   .rv-slap,
-  .rv-photo,
   .versus-pancho,
-  .secret-burger,
-  .secret-dot,
   .rv-chars .tx-char,
   .footer-mark__char {
     opacity: 0;
@@ -1401,39 +1451,27 @@ html:has(.page-home) {
     transition: opacity 0.4s ease-out var(--d, 0ms);
   }
 
-  [data-inview='true'] :is(.rv-photo, .versus-pancho, .secret-burger, .secret-dot, .footer-mark__char),
+  [data-inview='true'] :is(.versus-pancho, .footer-mark__char),
   [data-inview='true'] .rv-chars .tx-char,
   .rv-chars[data-inview='true'] .tx-char {
     opacity: 1;
   }
 
-  .secret-line {
-    stroke-dashoffset: 0;
-    transition: none;
-  }
-
-  .secret-rule {
+  .about-rule {
     transform: none;
-    transition: none;
-  }
-
-  .tilt-media {
-    clip-path: none;
-    transition: none;
-  }
-
-  .tilt-img {
-    scale: 1;
     transition: none;
   }
 
   .burger-art,
   .pancho-art,
-  .versus-label,
+  .burger-traveler-pose,
+  .versus-red::after,
+  .versus-veil,
+  .versus-name,
   .versus-go,
-  .versus-dim,
   .btn-pancho,
   .btn-pancho__arrow,
+  .about-photo__card,
   .ticket {
     transition: none;
   }
