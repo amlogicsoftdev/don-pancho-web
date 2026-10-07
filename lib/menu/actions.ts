@@ -4,6 +4,7 @@ import { and, asc, eq, max, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { requerirDueno } from '@/lib/auth/guards'
 import { db, schema } from '@/lib/db'
+import { CLAVES_TRANSFERENCIA } from '@/lib/pagos/transferencia'
 import { esUrlDeCloudinary, firmarSubida as firmarSubidaCloudinary, type FirmaSubida } from './cloudinary'
 
 // Gestión del menú: solo el dueño (CLAUDE.md, sección 9). Cada acción verifica sesión y rol en
@@ -199,7 +200,10 @@ export async function moverProducto(id: unknown, direccion: unknown): Promise<Re
 
 // --- Ajustes del local ---
 
-/** Descuento por pedido (0–100 %) y hora de corte del día de caja (0–23). */
+/**
+ * Descuento por pedido (0–100 %), hora de corte del día de caja (0–23) y datos de la cuenta para
+ * transferencias (alias, CBU, titular y banco; todos opcionales).
+ */
 export async function guardarAjustes(entrada: unknown): Promise<ResultadoAccion> {
   await requerirDueno()
   if (typeof entrada !== 'object' || entrada === null) return { ok: false, error: 'Los ajustes no son válidos.' }
@@ -214,10 +218,28 @@ export async function guardarAjustes(entrada: unknown): Promise<ResultadoAccion>
     return { ok: false, error: 'La hora de corte debe ser un número entero entre 0 y 23.' }
   }
 
+  const alias = texto(d.alias ?? '', 20)
+  const cbu = texto(d.cbu ?? '', 22)
+  const titular = texto(d.titular ?? '', 80)
+  const banco = texto(d.banco ?? '', 60)
+  if (alias === null || (alias !== '' && !/^[a-zA-Z0-9.-]{6,20}$/.test(alias))) {
+    return { ok: false, error: 'El alias debe tener entre 6 y 20 caracteres: letras, números, puntos o guiones.' }
+  }
+  if (cbu === null || (cbu !== '' && !/^\d{22}$/.test(cbu))) {
+    return { ok: false, error: 'El CBU o CVU debe tener exactamente 22 números.' }
+  }
+  if (titular === null) return { ok: false, error: 'El nombre del titular es demasiado largo (máximo 80 caracteres).' }
+  if (banco === null) return { ok: false, error: 'El nombre del banco es demasiado largo (máximo 60 caracteres).' }
+
   await db.transaction(async (tx) => {
+    // Un dato de transferencia vacío se guarda como texto vacío: el sitio lo trata como "no cargado".
     for (const [clave, valor] of [
       ['descuento_porcentaje', String(descuento)],
       ['corte_dia_hora', String(corte)],
+      [CLAVES_TRANSFERENCIA.alias, alias],
+      [CLAVES_TRANSFERENCIA.cbu, cbu],
+      [CLAVES_TRANSFERENCIA.titular, titular],
+      [CLAVES_TRANSFERENCIA.banco, banco],
     ] as const) {
       await tx
         .insert(schema.configuracion)
@@ -227,5 +249,6 @@ export async function guardarAjustes(entrada: unknown): Promise<ResultadoAccion>
   })
   refrescar()
   revalidatePath('/admin/caja')
+  revalidatePath('/admin/pedidos', 'layout')
   return { ok: true }
 }

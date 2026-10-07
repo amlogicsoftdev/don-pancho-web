@@ -11,7 +11,7 @@ export interface DatosTransferencia {
   banco: string | null
 }
 
-const CLAVES = {
+export const CLAVES_TRANSFERENCIA = {
   alias: 'transferencia_alias',
   cbu: 'transferencia_cbu',
   titular: 'transferencia_titular',
@@ -23,14 +23,14 @@ export async function leerDatosTransferencia(): Promise<DatosTransferencia | nul
   const filas = await db
     .select({ clave: schema.configuracion.clave, valor: schema.configuracion.valor })
     .from(schema.configuracion)
-    .where(inArray(schema.configuracion.clave, Object.values(CLAVES)))
+    .where(inArray(schema.configuracion.clave, Object.values(CLAVES_TRANSFERENCIA)))
   const valor = (clave: string) => filas.find((f) => f.clave === clave)?.valor.trim() || null
 
   const datos: DatosTransferencia = {
-    alias: valor(CLAVES.alias),
-    cbu: valor(CLAVES.cbu),
-    titular: valor(CLAVES.titular),
-    banco: valor(CLAVES.banco),
+    alias: valor(CLAVES_TRANSFERENCIA.alias),
+    cbu: valor(CLAVES_TRANSFERENCIA.cbu),
+    titular: valor(CLAVES_TRANSFERENCIA.titular),
+    banco: valor(CLAVES_TRANSFERENCIA.banco),
   }
   return datos.alias || datos.cbu ? datos : null
 }

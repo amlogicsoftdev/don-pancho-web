@@ -17,7 +17,11 @@ export default async function MenuAdminPage() {
         </p>
       </header>
 
-      <AjustesLocal descuentoPorcentaje={ajustes.descuentoPorcentaje} corteHora={ajustes.corteHora} />
+      <AjustesLocal
+        descuentoPorcentaje={ajustes.descuentoPorcentaje}
+        corteHora={ajustes.corteHora}
+        transferencia={ajustes.transferencia}
+      />
       <ListaMenu menu={menu} />
     </section>
   )
