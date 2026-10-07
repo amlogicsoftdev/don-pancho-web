@@ -1538,6 +1538,50 @@ html:has(.panel) {
     letter-spacing: 0;
   }
 
+  /* --- Bloque plegable de la lista de pedidos (Pendientes, En preparación…) --- */
+
+  .pn-bloque__titulo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    cursor: pointer;
+    list-style: none;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-pancho-black);
+    user-select: none;
+  }
+
+  /* Sin el triángulo propio del navegador: la flecha va a la derecha */
+  .pn-bloque__titulo::-webkit-details-marker {
+    display: none;
+  }
+
+  .pn-bloque__titulo:focus-visible {
+    outline: 2px solid var(--color-pancho-black);
+    outline-offset: 4px;
+  }
+
+  .pn-bloque__flecha {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 2px solid var(--color-pancho-black);
+    background: var(--color-pancho-white);
+    transition:
+      background-color 0.15s ease-out,
+      color 0.15s ease-out;
+  }
+
+  /* Solo con mouse: en el celular el hover queda pegado después de tocar */
+  @media (hover: hover) {
+    .pn-bloque__titulo:hover .pn-bloque__flecha {
+      background: var(--color-pancho-black);
+      color: var(--color-pancho-white);
+    }
+  }
+
   /* --- Textos --- */
 
   /* Rótulo chico en mayúsculas: arriba de un título o de un dato */

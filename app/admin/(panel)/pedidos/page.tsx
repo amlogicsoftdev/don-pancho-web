@@ -13,6 +13,7 @@ import {
 } from '@/lib/orders/estados'
 import { buscarPedidos, esFiltro, listarPedidos, type FiltroPedidos } from '@/lib/orders/queries'
 import { Encabezado } from '../encabezado'
+import { BloquePedidos } from './bloque-pedidos'
 import { HaceCuanto } from './hace-cuanto'
 import { InsigniaEstado } from './insignia-estado'
 
@@ -156,17 +157,13 @@ export default async function PedidosPage({
             // Los pendientes, del más viejo al más nuevo: primero el que más espera
             const ordenados = estado === 'pendiente' ? [...delEstado].reverse() : delEstado
             return (
-              <section key={estado} aria-labelledby={`bloque-${estado}`}>
-                <h2 id={`bloque-${estado}`} className="mb-3 flex items-center gap-3 text-2xl leading-none">
-                  {ETIQUETA_ESTADO[estado]}
-                  <span className="pn-count">{delEstado.length}</span>
-                </h2>
+              <BloquePedidos key={estado} id={estado} titulo={ETIQUETA_ESTADO[estado]} cantidad={delEstado.length}>
                 <ul className="flex flex-col gap-3">
                   {ordenados.map((p) => (
                     <FilaPedido key={p.id} p={p} activos />
                   ))}
                 </ul>
-              </section>
+              </BloquePedidos>
             )
           })}
         </div>
