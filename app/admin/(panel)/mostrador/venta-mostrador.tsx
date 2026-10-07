@@ -19,6 +19,8 @@ interface Registrada {
   id: number
   numero: number
   total: number
+  /** Delivery en efectivo: lo cobra el cadete y suma a la caja al marcarlo entregado. */
+  cobraAlEntregar: boolean
 }
 
 // Los precios acá son solo para mostrar el total mientras se arma la venta. El servidor
@@ -88,7 +90,12 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
       true,
     )
     if (!resultado.ok) return resultado
-    setRegistrada({ id: resultado.id, numero: resultado.numero, total: resultado.total })
+    setRegistrada({
+      id: resultado.id,
+      numero: resultado.numero,
+      total: resultado.total,
+      cobraAlEntregar: modalidad === 'delivery' && metodoPago === 'efectivo',
+    })
     setGuardadaEnCuadro(true)
     return { ok: true as const, pedidoId: resultado.id, numero: resultado.numero, linkWhatsApp: resultado.linkWhatsApp }
   }
@@ -153,6 +160,7 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
             <p>
               Venta N° {formatearNumero(registrada.numero)} registrada por {formatearPrecio(registrada.total)}. Quedó en
               preparación.
+              {registrada.cobraAlEntregar && ' El efectivo suma a la caja cuando lo marques como entregado.'}
             </p>
             <Link href={`/admin/pedidos/${registrada.id}`} className="pn-link mt-1 inline-flex">
               Ver el pedido
