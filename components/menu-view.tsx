@@ -57,8 +57,10 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     if (!nav) return
     const measure = () => setNavHeight(nav.offsetHeight)
     measure()
+    // Al scrollear la barra cambia su relleno, no su contenido: hay que mirar la caja entera
+    // (border-box); si no, el cambio no se avisa y queda un hueco arriba de los filtros
     const observer = new ResizeObserver(measure)
-    observer.observe(nav)
+    observer.observe(nav, { box: 'border-box' })
     return () => observer.disconnect()
   }, [])
 
