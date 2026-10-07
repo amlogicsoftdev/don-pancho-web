@@ -3,7 +3,7 @@
 import { hashPassword } from 'better-auth/crypto'
 import { randomUUID } from 'node:crypto'
 import { db, schema } from './index'
-import { CATEGORIES, PRODUCTS, SITE_CONFIG } from '../data'
+import { CATEGORIES, DATOS_TRANSFERENCIA_PRUEBA, PRODUCTS, SITE_CONFIG } from '../data'
 
 async function sembrarMenu() {
   const existentes = await db.select().from(schema.categorias)
@@ -41,6 +41,11 @@ async function sembrarConfiguracion() {
       { clave: 'whatsapp', valor: SITE_CONFIG.whatsappNumber },
       { clave: 'direccion', valor: SITE_CONFIG.address },
       { clave: 'horario', valor: SITE_CONFIG.schedule },
+      // Cuenta para transferencias: datos FALSOS de prueba (ver lib/data.ts)
+      { clave: 'transferencia_alias', valor: DATOS_TRANSFERENCIA_PRUEBA.alias },
+      { clave: 'transferencia_cbu', valor: DATOS_TRANSFERENCIA_PRUEBA.cbu },
+      { clave: 'transferencia_titular', valor: DATOS_TRANSFERENCIA_PRUEBA.titular },
+      { clave: 'transferencia_banco', valor: DATOS_TRANSFERENCIA_PRUEBA.banco },
     ])
     .onConflictDoNothing()
   console.log('Configuración del local cargada.')

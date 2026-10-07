@@ -1,5 +1,6 @@
 import { ETIQUETA_MODALIDAD, ETIQUETA_PAGO, formatearNumero, formatearPrecio } from '@/lib/orders/estados'
 import type { ModalidadPedido } from '@/lib/orders/estados'
+import type { DatosTransferencia } from '@/lib/pagos/transferencia'
 
 /**
  * Lleva un teléfono argentino al formato internacional de WhatsApp: 549 + área + número,
@@ -27,6 +28,21 @@ export interface DatosMensaje {
   direccion: string | null
   total: number
   items: { nombre: string; cantidad: number; aclaraciones: string | null }[]
+  /** Link absoluto a /pedido/[token] para que el cliente siga el estado. */
+  linkSeguimiento?: string
+  /** Cuenta del local: se agrega al mensaje solo si el pago es por transferencia. */
+  datosTransferencia?: DatosTransferencia | null
+}
+
+/** Líneas con los datos de la cuenta para transferir, o ninguna si no hay datos cargados. */
+function lineasTransferencia(datos: DatosTransferencia | null | undefined): string[] {
+  if (!datos) return []
+  return [
+    ...(datos.alias ? [`Alias: ${datos.alias}`] : []),
+    ...(datos.cbu ? [`CBU: ${datos.cbu}`] : []),
+    ...(datos.titular ? [`Titular: ${datos.titular}${datos.banco ? ` · ${datos.banco}` : ''}`] : []),
+    'Mandanos el comprobante por acá 🙌',
+  ]
 }
 
 /** Mensaje de confirmación que se le manda al cliente desde el WhatsApp del local. */
@@ -47,9 +63,11 @@ export function mensajeConfirmacion(pedido: DatosMensaje, nombreLocal: string): 
     '',
     entrega,
     `💳 Pago: ${ETIQUETA_PAGO[pedido.metodoPago]}`,
+    ...(pedido.metodoPago === 'transferencia' ? lineasTransferencia(pedido.datosTransferencia) : []),
     `💰 Total: ${formatearPrecio(pedido.total)}`,
     '',
     '¡Ya lo estamos preparando! Gracias por elegirnos.',
+    ...(pedido.linkSeguimiento ? ['', `📍 Seguí tu pedido acá: ${pedido.linkSeguimiento}`] : []),
   ].join('\n')
 }
 
