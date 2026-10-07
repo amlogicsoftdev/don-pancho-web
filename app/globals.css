@@ -1499,7 +1499,7 @@ html:has(.panel) {
     align-items: center;
     gap: 0.5rem;
     height: 2.75rem;
-    padding-inline: 0.75rem;
+    padding-inline: 0.625rem;
     font-size: 0.8125rem;
     font-weight: 800;
     letter-spacing: 0.06em;
@@ -1536,6 +1536,43 @@ html:has(.panel) {
     font-weight: 800;
     line-height: 1;
     letter-spacing: 0;
+  }
+
+  /* Aviso de pedidos pendientes en el nav: campana y cantidad. Cuando entra uno nuevo, la
+     campana se sacude hasta que se entra a Pedidos. */
+  .pn-aviso {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: 1.5rem;
+    padding-inline: 0.4rem;
+    background: var(--color-pancho-red);
+    color: var(--color-pancho-white);
+    font-size: 0.75rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .pn-aviso[data-nuevo='true'] svg {
+    transform-origin: 50% 0;
+    animation: pn-campana 1.2s ease-in-out infinite;
+  }
+
+  @keyframes pn-campana {
+    0%,
+    50%,
+    100% {
+      rotate: 0deg;
+    }
+    10%,
+    30% {
+      rotate: 16deg;
+    }
+    20%,
+    40% {
+      rotate: -16deg;
+    }
   }
 
   /* --- Manija para ordenar arrastrando (menú: categorías y productos) --- */
@@ -2150,7 +2187,8 @@ html:has(.panel) {
   .btn-in .btn-pancho,
   .btn-in .btn-pancho__arrow--out,
   [data-inview='true'] .rv-btn .btn-pancho,
-  [data-inview='true'] .rv-btn .btn-pancho__arrow--out {
+  [data-inview='true'] .rv-btn .btn-pancho__arrow--out,
+  .pn-aviso[data-nuevo='true'] svg {
     animation: none;
   }
 
