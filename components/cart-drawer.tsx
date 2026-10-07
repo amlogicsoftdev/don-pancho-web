@@ -286,7 +286,7 @@ export function CartDrawer({
                     aria-hidden="true"
                     value={website}
                     onChange={(e) => setWebsite(e.target.value)}
-                    className="absolute -left-[9999px] h-0 w-0 opacity-0"
+                    className="absolute left-[-9999px] h-0 w-0 opacity-0"
                   />
                 </div>
 
@@ -529,7 +529,7 @@ export function CartDrawer({
             {/* Botón secundario: Agregar más productos */}
             <button
               onClick={handleAddMore}
-              className="w-full flex items-center justify-center gap-2 min-h-11 py-3 px-4 rounded-xs border border-neutral-700/80 hover:border-pancho-orange bg-neutral-800/40 hover:bg-neutral-800 text-neutral-300 hover:text-pancho-orange font-sans font-bold uppercase tracking-[0.04em] text-sm transition-[transform,color,background-color,border-color] duration-200 ease-(--ease-out) cursor-pointer active:scale-[0.97]"
+              className="w-full flex items-center justify-center gap-2 min-h-11 py-3 px-4 rounded-xs border border-neutral-700/80 hover:border-pancho-orange bg-neutral-800/40 hover:bg-neutral-800 text-neutral-300 hover:text-pancho-orange font-sans font-bold uppercase tracking-[0.04em] text-sm transition-[transform,color,background-color,border-color] duration-200 ease-out cursor-pointer active:scale-[0.97]"
             >
               <Plus className="w-4 h-4 text-pancho-orange" />
               <span>Agregar más productos</span>
