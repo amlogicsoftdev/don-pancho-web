@@ -41,8 +41,16 @@ export function CuadroConfirmar({ abierto, titulo, textoConfirmar, onConfirmar, 
     if (!abierto && dialogo.open) dialogo.close()
   }, [abierto])
 
+  // Se cierra el cuadro directamente (no espera a que la pantalla de atrás se actualice) y el
+  // evento "close" del cuadro avisa al resto. Así funciona aunque la página se haya refrescado
+  // tras confirmar.
   function cerrar() {
     if (enCurso) return
+    if (ref.current?.open) ref.current.close()
+    else alCerrarse()
+  }
+
+  function alCerrarse() {
     setMinutos(null)
     setError(null)
     setHecho(null)
@@ -70,9 +78,10 @@ export function CuadroConfirmar({ abierto, titulo, textoConfirmar, onConfirmar, 
       className="pn-dialog"
       aria-labelledby="cuadro-confirmar-titulo"
       onCancel={(e) => {
-        e.preventDefault()
-        cerrar()
+        // Escape: mientras se confirma no se cierra
+        if (enCurso) e.preventDefault()
       }}
+      onClose={alCerrarse}
     >
       {hecho ? (
         <div className="space-y-5">
@@ -104,9 +113,9 @@ export function CuadroConfirmar({ abierto, titulo, textoConfirmar, onConfirmar, 
             <Button variant="ghost" size="sm" onClick={() => void imprimirComandas(hecho.pedidoId)}>
               <Printer /> Volver a imprimir
             </Button>
-            <Button size="sm" onClick={cerrar}>
+            <button type="button" className={buttonVariants({ variant: 'default', size: 'sm' })} onClick={cerrar}>
               <Check strokeWidth={3} /> Listo
-            </Button>
+            </button>
           </div>
         </div>
       ) : (
