@@ -3,7 +3,6 @@
 import { Minus, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
-import { PanchoButton } from '@/components/pancho-button'
 import { Button } from '@/components/ui/button'
 import { registrarVentaMostrador } from '@/lib/orders/actions'
 import { formatearNumero, formatearPrecio } from '@/lib/orders/estados'
@@ -289,9 +288,9 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
         )}
 
         <div className="space-y-2">
-          <PanchoButton block disabled={lineas.length === 0} onClick={abrirConfirmacion}>
+          <Button variant="default" size="lg" className="w-full" disabled={lineas.length === 0} onClick={abrirConfirmacion}>
             Registrar venta
-          </PanchoButton>
+          </Button>
           {lineas.length > 0 && (
             <Button variant="ghost" className="w-full" onClick={limpiar}>
               Vaciar

@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
-import { PanchoButton } from '@/components/pancho-button'
+import { Button } from '@/components/ui/button'
 import { authClient } from '@/lib/auth/client'
 
 export function LoginForm() {
@@ -46,9 +46,9 @@ export function LoginForm() {
           {error}
         </p>
       )}
-      <PanchoButton type="submit" block disabled={enviando}>
+      <Button type="submit" variant="default" size="lg" className="w-full" disabled={enviando}>
         {enviando ? 'Ingresando…' : 'Ingresar'}
-      </PanchoButton>
+      </Button>
     </form>
   )
 }

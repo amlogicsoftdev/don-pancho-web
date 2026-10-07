@@ -3,7 +3,6 @@
 import { Check, Printer } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { PanchoButton } from '@/components/pancho-button'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { IconoWhatsApp } from '@/components/icono-whatsapp'
 import {
@@ -79,9 +78,9 @@ export function AccionesEstado({ pedidoId, numero, estado, etiquetaAvance }: Acc
         <>
           <p className="pn-eyebrow mb-3">Pedido nuevo</p>
           <div className="flex flex-wrap items-center gap-2">
-            <PanchoButton size="lg" onClick={() => setConfirmando(true)}>
+            <Button variant="default" size="lg" onClick={() => setConfirmando(true)}>
               Confirmar pedido
-            </PanchoButton>
+            </Button>
             <Button variant="destructive" onClick={() => setRechazando(true)}>
               Rechazar
             </Button>
@@ -212,9 +211,9 @@ export function BotonAvanzar({ pedidoId, etiqueta }: { pedidoId: number; etiquet
 
   return (
     <div>
-      <PanchoButton size="lg" disabled={enCurso} onClick={() => ejecutar(() => avanzarPedido(pedidoId))}>
+      <Button variant="default" size="lg" disabled={enCurso} onClick={() => ejecutar(() => avanzarPedido(pedidoId))}>
         {etiqueta}
-      </PanchoButton>
+      </Button>
       <MensajeError error={error} />
     </div>
   )

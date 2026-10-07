@@ -3,8 +3,9 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
 
-// Botón secundario del panel: recto, en mayúsculas, con borde negro. Para la acción
-// principal de cada pantalla se usa <PanchoButton>, el botón del sitio.
+// Botón del panel: recto, en mayúsculas, con borde negro. La acción principal de cada pantalla
+// va en negro lleno y grande (variant="default", size="lg"). <PanchoButton>, el botón animado,
+// es solo para el sitio público.
 // Al pasar el mouse invierte sus colores; al apretarlo se achica apenas.
 const buttonVariants = cva(
   "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xs border-2 font-sans font-extrabold tracking-[0.06em] whitespace-nowrap uppercase select-none transition-[background-color,color,border-color,transform] duration-200 ease-(--ease-out) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pancho-black active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",

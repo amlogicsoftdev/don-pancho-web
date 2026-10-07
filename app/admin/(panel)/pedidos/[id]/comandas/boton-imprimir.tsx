@@ -2,7 +2,7 @@
 
 import { Printer } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { PanchoButton } from '@/components/pancho-button'
+import { Button } from '@/components/ui/button'
 import { registrarImpresion } from '@/lib/orders/actions'
 
 /** Imprime las comandas y suma la impresión (la próxima sale marcada como REIMPRESIÓN). */
@@ -16,8 +16,9 @@ export function BotonImprimir({ pedidoId }: { pedidoId: number }) {
   }
 
   return (
-    <PanchoButton onClick={imprimir} icon={<Printer className="size-5" aria-hidden="true" />}>
+    <Button variant="default" size="lg" onClick={imprimir}>
+      <Printer aria-hidden="true" />
       Imprimir comandas
-    </PanchoButton>
+    </Button>
   )
 }
