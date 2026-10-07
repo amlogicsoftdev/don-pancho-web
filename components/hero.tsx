@@ -170,7 +170,7 @@ export function Hero() {
               ))}
             </span>
           </span>
-          <span aria-hidden="true" className="hero-rule" />
+          <span aria-hidden="true" className="hero-rule hidden md:block" />
           </div>
 
           {/* Titular de un solo color: las letras se paran una por una */}

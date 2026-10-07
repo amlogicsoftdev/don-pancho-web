@@ -267,7 +267,9 @@ export function AboutSection() {
             {/* Botón a la carta */}
             <div ref={footRef} data-inview={isFootInView} className="mt-8">
               <div className="rv-btn">
-                <PanchoButton href="/menu">Ver el menú</PanchoButton>
+                <PanchoButton href="/menu" className="btn-pancho--flyer">
+                  Ver el menú
+                </PanchoButton>
               </div>
             </div>
           </div>
