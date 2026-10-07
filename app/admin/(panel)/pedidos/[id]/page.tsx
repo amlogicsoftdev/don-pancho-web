@@ -13,6 +13,8 @@ import {
 } from '@/lib/orders/estados'
 import { leerNombreLocal, obtenerPedido } from '@/lib/orders/queries'
 import { linkWhatsApp, mensajeConfirmacion } from '@/lib/whatsapp'
+import { urlDelSitio } from '@/lib/url-sitio'
+import { leerDatosTransferencia } from '@/lib/pagos/transferencia'
 import { InsigniaEstado } from '../insignia-estado'
 import { AccionesPedido } from './acciones-pedido'
 
@@ -26,7 +28,11 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
   if (!datos) notFound()
   const { pedido, items, historial, cancelacion } = datos
 
-  const nombreLocal = await leerNombreLocal()
+  const [nombreLocal, sitio, datosTransferencia] = await Promise.all([
+    leerNombreLocal(),
+    urlDelSitio(),
+    pedido.metodoPago === 'transferencia' ? leerDatosTransferencia() : null,
+  ])
   const enlaceWhatsApp = linkWhatsApp(
     pedido.clienteTelefono,
     mensajeConfirmacion(
@@ -38,6 +44,8 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
         direccion: pedido.direccion,
         total: pedido.total,
         items,
+        linkSeguimiento: `${sitio}/pedido/${pedido.tokenSeguimiento}`,
+        datosTransferencia,
       },
       nombreLocal,
     ),

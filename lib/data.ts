@@ -15,6 +15,15 @@ export const SITE_CONFIG: SiteConfig = {
   },
 }
 
+// DATOS DE TRANSFERENCIA FALSOS, solo para desarrollo (los carga npm run db:seed en `configuracion`).
+// Reemplazar por la cuenta real del local antes de la entrega.
+export const DATOS_TRANSFERENCIA_PRUEBA = {
+  alias: 'donpancho.prueba',
+  cbu: '0000000000000000000000',
+  titular: 'Don Pancho (DATOS DE PRUEBA)',
+  banco: 'Banco de prueba',
+}
+
 // MENÚ INICIAL PARA EL SEED (npm run db:seed). La web ya no lo lee: la carta sale de la
 // base (lib/menu/queries.ts). Cambiar esto no cambia la carta de una base ya cargada.
 export const CATEGORIES = ['Todas', 'Hamburguesas', 'Panchos', 'Combos'] as const

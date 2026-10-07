@@ -53,7 +53,7 @@ export function CartDrawer({
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fallbackAvailable, setFallbackAvailable] = useState(false)
-  const [confirmation, setConfirmation] = useState<{ numero: number; total: number } | null>(null)
+  const [confirmation, setConfirmation] = useState<{ numero: number; total: number; token: string } | null>(null)
   const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const totalCount = items.reduce((sum, item) => sum + item.quantity, 0)
 
@@ -134,7 +134,7 @@ export function CartDrawer({
       const data = await response.json().catch(() => ({}))
 
       if (response.ok) {
-        setConfirmation({ numero: data.numero, total: data.total })
+        setConfirmation({ numero: data.numero, total: data.total, token: data.token })
         onOrderCreated()
         return
       }
@@ -210,11 +210,21 @@ export function CartDrawer({
               </p>
               <p className="text-neutral-400 text-sm mb-6">Total: {formatPrice(confirmation.total)}</p>
               <p className="text-neutral-400 text-sm max-w-xs mb-6">
-                El local te lo va a confirmar por WhatsApp al número que nos dejaste.
+                El local te lo va a confirmar por WhatsApp al número que nos dejaste. Desde el link de
+                seguimiento ves cómo avanza.
               </p>
-              <PanchoButton onClick={handleCloseConfirmation} variant="orange" block className="max-w-xs">
-                Listo
-              </PanchoButton>
+              <div className="flex w-full max-w-xs flex-col gap-3">
+                <PanchoButton href={`/pedido/${confirmation.token}`} variant="orange" block>
+                  Seguir mi pedido
+                </PanchoButton>
+                <button
+                  type="button"
+                  onClick={handleCloseConfirmation}
+                  className="min-h-11 text-sm font-bold uppercase tracking-[0.04em] text-neutral-400 hover:text-white cursor-pointer"
+                >
+                  Listo
+                </button>
+              </div>
             </div>
           ) : items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-16">
