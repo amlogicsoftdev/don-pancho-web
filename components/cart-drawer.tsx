@@ -16,8 +16,10 @@ import {
   User,
   Phone,
   CheckCircle2,
+  MessageSquarePlus,
 } from 'lucide-react'
 import { CartItem } from '@/lib/types'
+import { NOTE_MAX_LENGTH } from '@/lib/cart'
 import { formatPrice, SITE_CONFIG } from '@/lib/data'
 import { PanchoButton } from './pancho-button'
 
@@ -27,17 +29,29 @@ interface CartDrawerProps {
   onClose: () => void
   onUpdateQuantity: (id: number, delta: number) => void
   onRemoveItem: (id: number) => void
+  /** Guarda la aclaración de un producto (sin cebolla, sin aderezo…). */
+  onUpdateNote: (id: number, note: string) => void
   onOrderCreated: () => void
   /** Productos que estaban en el carrito y ya no están en el menú. */
   unavailableCount?: number
 }
 
+const inputClass =
+  'w-full border-2 border-pancho-black bg-white py-2.5 text-base text-pancho-black outline-none transition-shadow placeholder:text-pancho-black/45 focus:ring-2 focus:ring-pancho-orange sm:text-sm'
+
+const labelClass = 'about-label'
+
+/**
+ * Carrito lateral, en papel crema como el resto del sitio: el detalle del pedido (con una
+ * aclaración opcional por producto), los datos del cliente, la entrega, el pago y el total.
+ */
 export function CartDrawer({
   items,
   isOpen,
   onClose,
   onUpdateQuantity,
   onRemoveItem,
+  onUpdateNote,
   onOrderCreated,
   unavailableCount = 0,
 }: CartDrawerProps) {
@@ -54,6 +68,8 @@ export function CartDrawer({
   const [error, setError] = useState<string | null>(null)
   const [fallbackAvailable, setFallbackAvailable] = useState(false)
   const [confirmation, setConfirmation] = useState<{ numero: number; total: number; token: string } | null>(null)
+  // Productos cuyo campo de aclaración está abierto (los que ya tienen una siempre lo muestran)
+  const [openNotes, setOpenNotes] = useState<number[]>([])
   const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const totalCount = items.reduce((sum, item) => sum + item.quantity, 0)
 
@@ -88,10 +104,15 @@ export function CartDrawer({
     router.push('/menu')
   }
 
+  const openNote = (id: number) => setOpenNotes((current) => (current.includes(id) ? current : [...current, id]))
+
   // Respaldo: si no se pudo guardar el pedido, se manda por WhatsApp al local para no perder la venta.
   const openWhatsAppFallback = () => {
     const itemLines = items
-      .map((item) => `🍔 ${item.quantity}x ${item.name} (${formatPrice(item.price * item.quantity)})`)
+      .map((item) => {
+        const line = `🍔 ${item.quantity}x ${item.name} (${formatPrice(item.price * item.quantity)})`
+        return item.note?.trim() ? `${line}\n   ✏️ ${item.note.trim()}` : line
+      })
       .join('\n')
 
     const deliveryLines =
@@ -117,7 +138,7 @@ export function CartDrawer({
 
     setIsSending(true)
     try {
-      // Solo se mandan ids y cantidades: el servidor calcula los precios y el total.
+      // Se mandan ids, cantidades y aclaraciones: el servidor calcula los precios y el total.
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -128,7 +149,11 @@ export function CartDrawer({
           clienteTelefono: customerPhone,
           direccion: orderType === 'delivery' ? address : null,
           website,
-          items: items.map((item) => ({ productoId: item.id, cantidad: item.quantity })),
+          items: items.map((item) => ({
+            productoId: item.id,
+            cantidad: item.quantity,
+            aclaraciones: item.note?.trim() || null,
+          })),
         }),
       })
       const data = await response.json().catch(() => ({}))
@@ -153,11 +178,17 @@ export function CartDrawer({
     onClose()
   }
 
+  /** Dos opciones en un solo bloque con borde negro; la elegida va en naranja */
+  const segmentClass = (active: boolean, second: boolean) =>
+    `flex cursor-pointer select-none items-center justify-center gap-2 px-3 py-2.5 text-xs font-extrabold uppercase tracking-[0.04em] transition-colors duration-200 sm:text-sm ${
+      second ? 'border-l-2 border-pancho-black' : ''
+    } ${active ? 'bg-pancho-orange text-pancho-black' : 'bg-white text-pancho-black/65 hover:text-pancho-black'}`
+
   return (
     <>
       {/* Telón de fondo (overlay) */}
       <div
-        className={`fixed inset-0 z-60 bg-black/70 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-60 bg-pancho-black/55 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -167,7 +198,7 @@ export function CartDrawer({
       {/* Panel lateral del carrito */}
       <aside
         aria-label="Tu pedido"
-        className={`fixed top-0 right-0 z-60 h-full w-full max-w-md bg-[#161616] border-l border-neutral-800 flex flex-col shadow-2xl transition-transform duration-400 ease-(--ease-drawer) transform-gpu will-change-transform ${
+        className={`cart-panel fixed top-0 right-0 z-60 flex h-full w-full max-w-md transform-gpu flex-col border-l-2 border-pancho-black bg-pancho-paper bg-[url('/images/fondo-secciones-crema.webp')] bg-cover bg-top text-pancho-black shadow-2xl transition-transform duration-400 ease-(--ease-drawer) will-change-transform ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         style={{
@@ -176,82 +207,184 @@ export function CartDrawer({
         }}
       >
         {/* Cabecera del carrito */}
-        <div className="flex items-center justify-between p-6 border-b border-neutral-800">
+        <div className="flex items-start justify-between border-b-2 border-pancho-black p-5 sm:p-6">
           <div>
-            <h2 className="text-3xl font-heading text-white flex items-center gap-2">
-              Tu pedido <span className="text-neutral-400 font-sans text-base font-normal normal-case tracking-normal">({totalCount})</span>
+            <span className="inline-block -rotate-3 bg-pancho-red px-2 py-1 font-sans text-xs font-extrabold uppercase leading-none tracking-[0.04em] text-white shadow-[3px_3px_0_var(--color-pancho-black)]">
+              Tu carrito
+            </span>
+            <h2 className="mt-3 flex items-center gap-3 text-5xl leading-[0.9]">
+              Tu pedido
+              {totalCount > 0 && (
+                <span className="flex min-w-9 items-center justify-center bg-pancho-black px-2 py-1 font-heading text-xl leading-none text-pancho-orange">
+                  {totalCount}
+                </span>
+              )}
             </h2>
           </div>
 
           <button
             onClick={onClose}
-            className="w-10 h-10 rounded-full border border-neutral-700 bg-neutral-800/50 hover:bg-neutral-800 text-neutral-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+            className="flex size-10 cursor-pointer items-center justify-center border-2 border-pancho-black bg-white text-pancho-black transition-colors hover:bg-pancho-black hover:text-white"
             aria-label="Cerrar carrito"
           >
-            <X className="w-5 h-5" />
+            <X className="size-5" />
           </button>
         </div>
 
         {/* Contenido del carrito */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
           {!confirmation && unavailableCount > 0 && (
-            <p role="status" className="mb-4 rounded-xl border border-pancho-orange/40 bg-pancho-orange/10 p-3 text-sm text-pancho-cream">
+            <p
+              role="status"
+              className="mb-4 border-2 border-pancho-black bg-pancho-orange/25 p-3 text-sm font-medium text-pancho-black"
+            >
               {unavailableCount === 1
                 ? 'Un producto de tu pedido ya no está disponible y lo sacamos.'
                 : `${unavailableCount} productos de tu pedido ya no están disponibles y los sacamos.`}
             </p>
           )}
           {confirmation ? (
-            <div className="h-full flex flex-col items-center justify-center text-center py-16">
-              <CheckCircle2 className="w-16 h-16 text-pancho-orange mb-4" />
-              <h3 className="font-heading text-3xl text-white mb-2">¡Recibimos tu pedido!</h3>
-              <p className="text-neutral-300 mb-1">
-                Pedido <span className="font-bold text-pancho-orange">N° {String(confirmation.numero).padStart(4, '0')}</span>
+            <div className="flex h-full flex-col items-center justify-center py-16 text-center">
+              <CheckCircle2 className="mb-4 size-16 text-pancho-red-deep" />
+              <h3 className="mb-2 text-4xl leading-[0.95]">¡Recibimos tu pedido!</h3>
+              <p className="mb-1 font-medium">
+                Pedido{' '}
+                <span className="font-extrabold text-pancho-red-deep">
+                  N° {String(confirmation.numero).padStart(4, '0')}
+                </span>
               </p>
-              <p className="text-neutral-400 text-sm mb-6">Total: {formatPrice(confirmation.total)}</p>
-              <p className="text-neutral-400 text-sm max-w-xs mb-6">
+              <p className="mb-6 text-sm text-pancho-black/70">Total: {formatPrice(confirmation.total)}</p>
+              <p className="mb-6 max-w-xs text-sm font-medium text-pancho-black/75">
                 El local te lo va a confirmar por WhatsApp al número que nos dejaste. Desde el link de
                 seguimiento ves cómo avanza.
               </p>
               <div className="flex w-full max-w-xs flex-col gap-3">
-                <PanchoButton href={`/pedido/${confirmation.token}`} variant="orange" block>
+                <PanchoButton href={`/pedido/${confirmation.token}`} block>
                   Seguir mi pedido
                 </PanchoButton>
                 <button
                   type="button"
                   onClick={handleCloseConfirmation}
-                  className="min-h-11 text-sm font-bold uppercase tracking-[0.04em] text-neutral-400 hover:text-white cursor-pointer"
+                  className="min-h-11 cursor-pointer text-sm font-extrabold uppercase tracking-[0.04em] text-pancho-black/70 hover:text-pancho-black"
                 >
                   Listo
                 </button>
               </div>
             </div>
           ) : items.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center py-16">
-              <div className="w-20 h-20 rounded-full bg-neutral-800/80 border border-neutral-700 flex items-center justify-center text-neutral-400 mb-4 animate-float">
-                <ShoppingCart className="w-10 h-10 text-pancho-orange" />
+            <div className="flex h-full flex-col items-center justify-center py-16 text-center">
+              <div className="animate-float mb-5 flex size-20 items-center justify-center border-2 border-pancho-black bg-white shadow-[5px_5px_0_var(--color-pancho-black)]">
+                <ShoppingCart className="size-10 text-pancho-red-deep" />
               </div>
-              <h3 className="font-heading text-2xl text-white mb-2">
-                Tu carrito está vacío
-              </h3>
-              <p className="text-neutral-400 text-sm max-w-xs mb-6">
+              <h3 className="mb-2 text-3xl leading-[0.95]">Tu carrito está vacío</h3>
+              <p className="mb-6 max-w-xs text-sm font-medium text-pancho-black/70">
                 Elegí tus burgers favoritas del menú y armá tu pedido en unos pocos clics.
               </p>
-              <PanchoButton onClick={handleAddMore} variant="orange" block className="max-w-xs">
+              <PanchoButton onClick={handleAddMore} block className="max-w-xs">
                 Ver el menú
               </PanchoButton>
             </div>
           ) : (
             <div>
-              {/* Contenedor de opciones de entrega y pago */}
-              <div className="bg-neutral-900/50 border border-neutral-800/80 rounded-2xl p-4 space-y-4 mb-6">
+              {/* Detalle del pedido */}
+              <div className="mb-3 flex items-center gap-3">
+                <span className={`${labelClass} shrink-0`}>Detalle del pedido</span>
+                <div className="flex-1 border-b-2 border-pancho-black" />
+              </div>
+
+              <div className="mb-8 divide-y divide-pancho-black/20">
+                {items.map((item) => {
+                  const noteVisible = Boolean(item.note) || openNotes.includes(item.id)
+                  return (
+                    <div key={item.id} className="py-4 first:pt-1 last:pb-1">
+                      {/* Nombre ············ subtotal, como una comanda */}
+                      <div className="flex items-baseline justify-between gap-2">
+                        <h4 className="truncate font-heading text-xl">{item.name}</h4>
+                        <div className="mx-2 mb-1 flex-1 self-baseline border-b-2 border-dotted border-pancho-black/35" />
+                        <span className="shrink-0 font-heading text-xl text-pancho-red-deep">
+                          {formatPrice(item.price * item.quantity)}
+                        </span>
+                      </div>
+
+                      {/* Precio unitario y controles */}
+                      <div className="mt-2.5 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 font-medium text-pancho-black/70">
+                          <span>{formatPrice(item.price)}</span>
+                          <span className="text-pancho-black/50">c/u</span>
+                        </div>
+
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex items-stretch border-2 border-pancho-black bg-white">
+                            <button
+                              onClick={() => onUpdateQuantity(item.id, -1)}
+                              className="flex size-7 cursor-pointer items-center justify-center transition-colors hover:bg-pancho-orange"
+                              aria-label={`Disminuir cantidad de ${item.name}`}
+                            >
+                              <Minus className="size-3.5 stroke-3" />
+                            </button>
+                            <span className="flex min-w-7 items-center justify-center border-x-2 border-pancho-black bg-pancho-black px-1 font-heading text-sm text-pancho-orange">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() => onUpdateQuantity(item.id, 1)}
+                              className="flex size-7 cursor-pointer items-center justify-center transition-colors hover:bg-pancho-orange"
+                              aria-label={`Aumentar cantidad de ${item.name}`}
+                            >
+                              <Plus className="size-3.5 stroke-3" />
+                            </button>
+                          </div>
+
+                          <button
+                            onClick={() => onRemoveItem(item.id)}
+                            className="cursor-pointer p-1.5 text-pancho-black/55 transition-colors hover:text-pancho-red-deep"
+                            aria-label={`Eliminar ${item.name}`}
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Aclaración: sin cebolla, sin aderezo, punto de la carne… */}
+                      {noteVisible ? (
+                        <div className="mt-3">
+                          <label htmlFor={`nota-${item.id}`} className="sr-only">
+                            Aclaración para {item.name}
+                          </label>
+                          <input
+                            id={`nota-${item.id}`}
+                            type="text"
+                            value={item.note ?? ''}
+                            maxLength={NOTE_MAX_LENGTH}
+                            autoFocus={!item.note}
+                            onChange={(e) => onUpdateNote(item.id, e.target.value)}
+                            onFocus={() => setIsInputFocused(true)}
+                            onBlur={() => setIsInputFocused(false)}
+                            placeholder="Ej: sin cebolla, sin aderezo…"
+                            className={`${inputClass} px-3 py-2 text-sm sm:text-xs`}
+                          />
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openNote(item.id)}
+                          className="mt-3 flex cursor-pointer items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.06em] text-pancho-red-deep underline-offset-4 hover:underline"
+                        >
+                          <MessageSquarePlus className="size-4" />
+                          Agregar aclaración
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Datos, entrega y pago */}
+              <div className="space-y-5 border-2 border-pancho-black bg-white/70 p-4 shadow-[5px_5px_0_var(--color-pancho-black)]">
                 {/* Datos del cliente: el local los usa para confirmarle el pedido */}
                 <div className="space-y-2.5">
-                  <span className="block px-1 text-xs font-bold uppercase tracking-[0.12em] text-neutral-400 font-sans">
-                    Tus datos
-                  </span>
+                  <span className={`${labelClass} block`}>Tus datos</span>
                   <div className="relative flex items-center">
-                    <User className="w-4 h-4 text-neutral-400 absolute left-3 pointer-events-none" />
+                    <User className="pointer-events-none absolute left-3 size-4 text-pancho-black/55" />
                     <input
                       type="text"
                       aria-label="Tu nombre"
@@ -260,11 +393,11 @@ export function CartDrawer({
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       placeholder="Tu nombre"
-                      className="w-full bg-neutral-950 border border-neutral-800 focus:border-pancho-orange/70 focus:ring-1 focus:ring-pancho-orange/50 rounded-xl pl-9 pr-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 outline-none transition-all"
+                      className={`${inputClass} pl-9 pr-3`}
                     />
                   </div>
                   <div className="relative flex items-center">
-                    <Phone className="w-4 h-4 text-neutral-400 absolute left-3 pointer-events-none" />
+                    <Phone className="pointer-events-none absolute left-3 size-4 text-pancho-black/55" />
                     <input
                       type="tel"
                       aria-label="Tu teléfono"
@@ -274,7 +407,7 @@ export function CartDrawer({
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
                       placeholder="Tu teléfono (para confirmarte el pedido)"
-                      className="w-full bg-neutral-950 border border-neutral-800 focus:border-pancho-orange/70 focus:ring-1 focus:ring-pancho-orange/50 rounded-xl pl-9 pr-3 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 outline-none transition-all"
+                      className={`${inputClass} pl-9 pr-3`}
                     />
                   </div>
                   {/* Campo trampa anti-bots: oculto para las personas */}
@@ -290,53 +423,42 @@ export function CartDrawer({
                   />
                 </div>
 
-                {/* Selector Tipo de entrega */}
+                {/* Tipo de entrega */}
                 <div>
-                  <div className="flex items-center justify-between mb-2 px-1">
-                    <span className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-400 font-sans">
-                      Forma de entrega
-                    </span>
-                    <span className="text-[11px] text-neutral-500 font-medium">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className={labelClass}>Forma de entrega</span>
+                    <span className="text-[11px] font-semibold text-pancho-black/60">
                       {orderType === 'delivery' ? 'A tu puerta' : 'Retiro en el local'}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 p-1 bg-neutral-950 rounded-xl gap-1">
+                  <div className="grid grid-cols-2 border-2 border-pancho-black">
                     <button
                       type="button"
                       onClick={() => setOrderType('delivery')}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
-                        orderType === 'delivery'
-                          ? 'bg-pancho-orange text-pancho-black'
-                          : 'text-neutral-400 hover:text-white'
-                      }`}
+                      className={segmentClass(orderType === 'delivery', false)}
                     >
-                      <Bike className="w-4 h-4" />
+                      <Bike className="size-4" />
                       <span>Delivery</span>
                     </button>
-
                     <button
                       type="button"
                       onClick={() => setOrderType('retiro')}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
-                        orderType === 'retiro'
-                          ? 'bg-pancho-orange text-pancho-black'
-                          : 'text-neutral-400 hover:text-white'
-                      }`}
+                      className={segmentClass(orderType === 'retiro', true)}
                     >
-                      <Store className="w-4 h-4" />
+                      <Store className="size-4" />
                       <span>Para retirar</span>
                     </button>
                   </div>
 
-                  {/* Input de dirección condicional para Delivery */}
+                  {/* Dirección, solo para delivery */}
                   {orderType === 'delivery' && (
                     <div className="mt-2.5 animate-fadeIn">
                       <label htmlFor="delivery-address" className="sr-only">
                         Dirección de entrega
                       </label>
                       <div className="relative flex items-center">
-                        <MapPin className="w-4 h-4 text-neutral-400 absolute left-3 pointer-events-none" />
+                        <MapPin className="pointer-events-none absolute left-3 size-4 text-pancho-black/55" />
                         <input
                           ref={inputRef}
                           id="delivery-address"
@@ -355,7 +477,7 @@ export function CartDrawer({
                           }}
                           onChange={(e) => handleAddressChange(e.target.value)}
                           placeholder="Calle, número, depto o referencia..."
-                          className="w-full bg-neutral-950 border border-neutral-800 focus:border-pancho-orange/70 focus:ring-1 focus:ring-pancho-orange/50 rounded-xl pl-9 pr-16 py-2.5 text-base sm:text-sm text-white placeholder-neutral-500 outline-none transition-all"
+                          className={`${inputClass} pl-9 pr-16`}
                         />
                         {isInputFocused && (
                           <button
@@ -363,7 +485,7 @@ export function CartDrawer({
                             onMouseDown={(e) => e.preventDefault()}
                             onTouchStart={(e) => e.preventDefault()}
                             onClick={() => inputRef.current?.blur()}
-                            className="absolute right-2 px-2.5 py-1 text-xs font-extrabold uppercase tracking-[0.04em] bg-pancho-orange text-pancho-black rounded-lg sm:hidden cursor-pointer active:scale-95 transition-transform select-none"
+                            className="absolute right-2 cursor-pointer select-none bg-pancho-orange px-2.5 py-1 text-xs font-extrabold uppercase tracking-[0.04em] text-pancho-black transition-transform active:scale-95 sm:hidden"
                           >
                             Listo
                           </button>
@@ -373,148 +495,68 @@ export function CartDrawer({
                   )}
                 </div>
 
-                {/* Barra de opciones de Método de Pago */}
+                {/* Método de pago */}
                 <div>
-                  <div className="flex items-center justify-between mb-2 px-1">
-                    <span className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-400 font-sans">
-                      Método de pago
-                    </span>
-                    <span className="text-[11px] text-neutral-500 font-medium">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className={labelClass}>Método de pago</span>
+                    <span className="text-[11px] font-semibold text-pancho-black/60">
                       {paymentMethod === 'efectivo' ? 'Abonás al recibir' : 'Transferís al confirmar'}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 p-1 bg-neutral-950 rounded-xl gap-1">
+                  <div className="grid grid-cols-2 border-2 border-pancho-black">
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('efectivo')}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
-                        paymentMethod === 'efectivo'
-                          ? 'bg-pancho-orange text-pancho-black'
-                          : 'text-neutral-400 hover:text-white'
-                      }`}
+                      className={segmentClass(paymentMethod === 'efectivo', false)}
                     >
-                      <Banknote className="w-4 h-4" />
+                      <Banknote className="size-4" />
                       <span>Efectivo</span>
                     </button>
-
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('transferencia')}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
-                        paymentMethod === 'transferencia'
-                          ? 'bg-pancho-orange text-pancho-black'
-                          : 'text-neutral-400 hover:text-white'
-                      }`}
+                      className={segmentClass(paymentMethod === 'transferencia', true)}
                     >
-                      <CreditCard className="w-4 h-4" />
+                      <CreditCard className="size-4" />
                       <span>Transferencia</span>
                     </button>
                   </div>
                 </div>
               </div>
-
-              {/* Encabezado y divisor de la sección de productos */}
-              <div className="flex items-center gap-3 mb-3 px-1">
-                <span className="text-xs font-bold uppercase tracking-[0.12em] text-neutral-400 font-sans shrink-0">
-                  Detalle del pedido
-                </span>
-                <div className="flex-1 border-b border-neutral-800" />
-              </div>
-
-              {/* Lista de productos */}
-              <div className="divide-y divide-neutral-800/70">
-              {items.map((item) => (
-                <div
-                  key={item.id}
-                  className="py-4 first:pt-0 last:pb-0 group transition-colors"
-                >
-                  {/* Fila principal estilo comanda de restaurante: Nombre ············ Subtotal */}
-                  <div className="flex items-baseline justify-between gap-2">
-                    <h4 className="font-heading text-lg sm:text-xl text-white truncate">
-                      {item.name}
-                    </h4>
-
-                    {/* Línea punteada tradicional igual que en el menú */}
-                    <div className="flex-1 mx-2 sm:mx-3 border-b-2 border-dotted border-neutral-800 self-baseline mb-1 group-hover:border-neutral-700 transition-colors" />
-
-                    <span className="font-heading text-lg sm:text-xl text-pancho-orange shrink-0">
-                      {formatPrice(item.price * item.quantity)}
-                    </span>
-                  </div>
-
-                  {/* Fila secundaria: Precio unitario y Controles */}
-                  <div className="flex items-center justify-between mt-2.5 text-xs text-neutral-400">
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <span className="text-neutral-300">{formatPrice(item.price)}</span>
-                      <span className="text-neutral-500">c/u</span>
-                    </div>
-
-                    <div className="flex items-center gap-2.5">
-                      {/* Controles de cantidad */}
-                      <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-full px-2.5 py-1">
-                        <button
-                          onClick={() => onUpdateQuantity(item.id, -1)}
-                          className="w-5 h-5 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-                          aria-label={`Disminuir cantidad de ${item.name}`}
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="text-xs font-bold text-white min-w-4 text-center font-sans">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => onUpdateQuantity(item.id, 1)}
-                          className="w-5 h-5 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-                          aria-label={`Aumentar cantidad de ${item.name}`}
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-
-                      {/* Botón eliminar */}
-                      <button
-                        onClick={() => onRemoveItem(item.id)}
-                        className="text-neutral-500 hover:text-pancho-red p-1.5 rounded-md hover:bg-neutral-900 transition-colors cursor-pointer"
-                        aria-label={`Eliminar ${item.name}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
-          </div>
-        )}
+          )}
         </div>
 
         {/* Pie del carrito */}
-        {items.length > 0 && (
+        {items.length > 0 && !confirmation && (
           <div
-            className={`p-6 border-t border-neutral-800 bg-neutral-900/60 space-y-4 ${
+            className={`space-y-4 border-t-2 border-pancho-black bg-pancho-paper/95 p-5 backdrop-blur-sm sm:p-6 ${
               isInputFocused ? 'hidden sm:block' : 'block'
             }`}
           >
-            <div className="flex items-center justify-between text-base">
-              <span className="text-neutral-400">Total</span>
-              <span className="font-heading text-3xl text-pancho-orange">
+            <div className="flex items-end justify-between">
+              <span className={labelClass}>Total</span>
+              <span className="font-heading text-4xl leading-none text-pancho-red-deep">
                 {formatPrice(totalAmount)}
               </span>
             </div>
 
-            <p className="text-[11px] text-neutral-500 leading-normal">
+            <p className="text-[11px] font-medium leading-normal text-pancho-black/60">
               El costo de envío y horario de entrega se confirman por WhatsApp.
             </p>
 
             {error && (
-              <div role="alert" className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-300">
+              <div
+                role="alert"
+                className="border-2 border-pancho-red-deep bg-white p-3 text-sm font-medium text-pancho-red-deep"
+              >
                 <p>{error}</p>
                 {fallbackAvailable && (
                   <button
                     type="button"
                     onClick={openWhatsAppFallback}
-                    className="mt-2 font-bold text-pancho-orange underline underline-offset-2 cursor-pointer"
+                    className="mt-2 cursor-pointer font-extrabold underline underline-offset-2"
                   >
                     Enviar el pedido por WhatsApp
                   </button>
@@ -522,16 +564,16 @@ export function CartDrawer({
               </div>
             )}
 
-            <PanchoButton onClick={handleSubmitOrder} disabled={isSending} variant="orange" block>
+            <PanchoButton onClick={handleSubmitOrder} disabled={isSending} block>
               {isSending ? 'Enviando…' : 'Confirmar pedido'}
             </PanchoButton>
 
-            {/* Botón secundario: Agregar más productos */}
+            {/* Botón secundario: agregar más productos */}
             <button
               onClick={handleAddMore}
-              className="w-full flex items-center justify-center gap-2 min-h-11 py-3 px-4 rounded-xs border border-neutral-700/80 hover:border-pancho-orange bg-neutral-800/40 hover:bg-neutral-800 text-neutral-300 hover:text-pancho-orange font-sans font-bold uppercase tracking-[0.04em] text-sm transition-[transform,color,background-color,border-color] duration-200 ease-out cursor-pointer active:scale-[0.97]"
+              className="flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 border-2 border-pancho-black bg-transparent px-4 py-3 font-sans text-sm font-extrabold uppercase tracking-[0.04em] text-pancho-black transition-[transform,color,background-color] duration-200 ease-out hover:bg-pancho-black hover:text-white active:scale-[0.97]"
             >
-              <Plus className="w-4 h-4 text-pancho-orange" />
+              <Plus className="size-4" />
               <span>Agregar más productos</span>
             </button>
           </div>

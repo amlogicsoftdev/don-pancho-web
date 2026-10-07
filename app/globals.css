@@ -1237,8 +1237,9 @@ html:has(.page-menu) {
   text-transform: uppercase;
 }
 
-/* El botón de esta sección lleva el cuadrado naranja, que sobre el crema se ve más */
-.about .btn-pancho {
+/* El botón de esta sección y el del carrito llevan el cuadrado naranja, que sobre el crema se ve más */
+.about .btn-pancho,
+.cart-panel .btn-pancho {
   --btn-chip-bg: var(--color-pancho-orange);
 }
 

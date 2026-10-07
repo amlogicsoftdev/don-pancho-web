@@ -18,7 +18,7 @@ interface LandingViewProps {
 }
 
 export function LandingView({ products }: LandingViewProps) {
-  const { cart, totalCartCount, unavailableCount, handleUpdateQuantity, handleRemoveItem, handleClearCart } =
+  const { cart, totalCartCount, unavailableCount, handleUpdateQuantity, handleRemoveItem, handleUpdateNote, handleClearCart } =
     useCart(products)
   const [cartOpen, setCartOpen] = useState(false)
   // La sección de elección espera a la hamburguesa que viaja desde el hero
@@ -65,6 +65,7 @@ export function LandingView({ products }: LandingViewProps) {
         onClose={() => setCartOpen(false)}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
+        onUpdateNote={handleUpdateNote}
         onOrderCreated={handleClearCart}
         unavailableCount={unavailableCount}
       />

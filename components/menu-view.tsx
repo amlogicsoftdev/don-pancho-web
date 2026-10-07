@@ -28,7 +28,7 @@ const esMasPedida = (product: Product) => /m[aá]s pedida/i.test(product.badge ?
 
 /**
  * Carta: título grande, categorías fijas arriba, la favorita de la casa, la lista a dos
- * columnas con línea punteada, los combos en un bloque naranja y, abajo, la barra con el
+ * columnas con línea punteada, los combos en un bloque de papel bordó y, abajo, la barra con el
  * pedido. Los productos, precios y categorías vienen de la base; el carrito es el de siempre.
  */
 export function MenuView({ categories, products, initialCategory = TODAS }: MenuViewProps) {
@@ -39,6 +39,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     handleAddToCart,
     handleUpdateQuantity,
     handleRemoveItem,
+    handleUpdateNote,
     handleClearCart,
   } = useCart(products)
   const mounted = useMounted()
@@ -115,23 +116,23 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
       )
     }
     return (
-      <div className="flex h-11 items-stretch bg-pancho-orange text-pancho-black">
+      <div className="flex h-11 items-stretch border-2 border-pancho-black bg-white text-pancho-black">
         <button
           type="button"
           onClick={() => handleUpdateQuantity(product.id, -1)}
           aria-label={`Quitar uno de ${product.name}`}
-          className="w-9 cursor-pointer text-xl font-extrabold"
+          className="w-9 cursor-pointer text-xl font-extrabold transition-colors hover:bg-pancho-black hover:text-white"
         >
           −
         </button>
-        <span className="box-border flex min-w-7 items-center justify-center border-2 border-pancho-orange bg-pancho-black px-1 font-heading text-lg text-pancho-orange">
+        <span className="box-border flex min-w-8 items-center justify-center border-x-2 border-pancho-black bg-white px-1 font-heading text-lg">
           {quantity}
         </span>
         <button
           type="button"
           onClick={() => handleUpdateQuantity(product.id, 1)}
           aria-label={`Agregar otro ${product.name}`}
-          className="w-9 cursor-pointer text-xl font-extrabold"
+          className="w-9 cursor-pointer text-xl font-extrabold transition-colors hover:bg-pancho-black hover:text-white"
         >
           +
         </button>
@@ -154,14 +155,14 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
       >
         <span
           className={`px-5.5 py-4 text-[13px] font-extrabold uppercase tracking-[0.08em] ${
-            tone === 'black' ? 'bg-pancho-black text-white' : 'bg-pancho-orange text-pancho-black'
+            'bg-pancho-black text-white'
           }`}
         >
           {quantity > 0 ? `En tu pedido · ${quantity}` : 'Agregar al pedido'}
         </span>
         <span
           className={`flex w-13.5 items-center justify-center ${
-            tone === 'black' ? 'bg-white text-pancho-black' : 'bg-pancho-black text-white'
+            tone === 'black' ? 'bg-white text-pancho-black' : 'bg-pancho-red-deep text-white'
           }`}
         >
           <Plus className="size-4.5 stroke-3" />
@@ -244,7 +245,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
           {/* La favorita de la casa */}
           {featured && (
             <article
-              className="menu-row grid grid-cols-[repeat(auto-fit,minmax(min(100%,380px),1fr))] border-2 border-pancho-black bg-white shadow-[8px_8px_0_var(--color-pancho-black)]"
+              className="menu-row grid grid-cols-[repeat(auto-fit,minmax(min(100%,380px),1fr))] border-2 border-pancho-black bg-white bg-[url('/images/fondo-papel-blanco.webp')] bg-cover bg-center shadow-[8px_8px_0_var(--color-pancho-black)]"
               style={{ '--i': 0 } as React.CSSProperties}
             >
               <div className="relative aspect-4/3 overflow-hidden bg-neutral-900">
@@ -324,16 +325,16 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
             </div>
           )}
 
-          {/* Combos: bloque naranja */}
+          {/* Combos: bloque de papel bordó, como el pie */}
           {comboProducts.map((combo, index) => (
             <article
               key={combo.id}
               {...hoverProps(combo)}
               style={{ '--i': index + 2 } as React.CSSProperties}
-              className="menu-row relative grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] items-center gap-x-14 gap-y-6 overflow-hidden bg-pancho-orange p-7 text-pancho-black sm:p-12"
+              className="menu-row relative grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] items-center gap-x-14 gap-y-6 overflow-hidden bg-pancho-red-deep bg-[url('/images/fondo-footer-bordo.webp')] bg-cover bg-center p-7 text-white sm:p-12"
             >
               <div className="flex flex-col gap-3.5">
-                <span className="-rotate-2 self-start bg-pancho-black px-2.5 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-pancho-orange">
+                <span className="-rotate-2 self-start bg-white px-2.5 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-pancho-red-deep">
                   Promo · Combo
                 </span>
                 <h2 className="font-heading text-[clamp(40px,5vw,68px)] leading-[0.92]">{combo.name}</h2>
@@ -373,16 +374,16 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
           <button
             type="button"
             onClick={() => setCartOpen(true)}
-            className="pointer-events-auto mx-auto flex w-full max-w-180 cursor-pointer items-stretch border-2 border-pancho-black text-left text-pancho-black shadow-[0_18px_40px_-12px_rgba(0,0,0,0.8)]"
+            className="pointer-events-auto mx-auto flex w-full max-w-180 cursor-pointer items-stretch border-2 border-pancho-black bg-white text-left text-pancho-black shadow-[6px_6px_0_var(--color-pancho-black)] transition-transform duration-200 hover:-translate-x-0.5 hover:-translate-y-0.5"
           >
-            <span className="flex items-center border-2 border-pancho-orange bg-pancho-black px-4.5 font-heading text-[22px] text-pancho-orange">
+            <span className="flex min-w-14 items-center justify-center bg-pancho-red-deep px-4 font-heading text-[22px] text-white">
               {totalCartCount}
             </span>
-            <span className="flex flex-1 items-center justify-between gap-3 bg-pancho-orange px-5 py-4">
+            <span className="flex flex-1 items-center justify-between gap-3 px-5 py-3.5">
               <span className="text-[13px] font-extrabold uppercase tracking-[0.08em]">Tu pedido</span>
-              <span className="font-heading text-2xl leading-none">{formatPrice(cartTotal)}</span>
+              <span className="font-heading text-2xl leading-none text-pancho-red-deep">{formatPrice(cartTotal)}</span>
             </span>
-            <span className="flex w-14.5 items-center justify-center bg-white">
+            <span className="flex w-14.5 items-center justify-center bg-pancho-black text-white">
               <ArrowRight className="size-5 stroke-[2.5]" />
             </span>
           </button>
@@ -399,6 +400,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
         onClose={() => setCartOpen(false)}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
+        onUpdateNote={handleUpdateNote}
         onOrderCreated={handleClearCart}
         unavailableCount={unavailableCount}
       />
