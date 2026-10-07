@@ -25,7 +25,7 @@ export function Logo({ variant = 'nav', className = '' }: LogoProps) {
     <Link
       href="/#inicio"
       onClick={handleClick}
-      className={`inline-flex items-center rounded-full transition-transform duration-300 ease-(--ease-out) hover:-rotate-8 active:scale-95 ${className}`}
+      className={`inline-flex items-center rounded-full transition-transform duration-300 ease-out hover:-rotate-8 active:scale-95 ${className}`}
       aria-label="Don Pancho & Burger - Volver al inicio"
     >
       {/* Sello redondo de Don Pancho & Burger, a color: va sobre naranja, rojo u oscuro.
