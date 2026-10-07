@@ -1,5 +1,6 @@
 'use client'
 
+import { BellRing } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
@@ -77,7 +78,12 @@ export function AvisoPedidos({ pendientesIniciales, activo }: { pendientesInicia
     >
       Pedidos
       {pendientes > 0 && (
-        <span className={`pn-count ${hayNuevo ? 'animate-pulse' : ''}`} aria-label={`${pendientes} pedidos pendientes`}>
+        <span
+          className="pn-aviso"
+          data-nuevo={hayNuevo}
+          aria-label={pendientes === 1 ? '1 pedido pendiente' : `${pendientes} pedidos pendientes`}
+        >
+          <BellRing className="size-3.5" strokeWidth={2.75} aria-hidden="true" />
           {pendientes}
         </span>
       )}
