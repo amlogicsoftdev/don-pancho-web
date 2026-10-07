@@ -138,12 +138,15 @@ export function Hero() {
         ======================================================= */}
 
         <div ref={textRef} className="relative z-30 w-full will-change-transform md:max-w-155 lg:max-w-165">
+          {/* Encabezado: la etiqueta roja, y una línea negra, igual que en «Sobre nosotros» */}
+          <div className="-mt-6 flex items-center gap-3 sm:-mt-10 sm:gap-4 md:w-[calc(100vw-3rem)] md:max-w-[86rem] lg:w-[calc(100vw-4rem)]">
           {/* Etiqueta recta roja, como en los flyers: se imprime letra por letra y se pega torcida */}
           <span
             style={{ '--d': '200ms', '--n': TAG.length } as React.CSSProperties}
             className="
               hero-tag
               -rotate-4
+              flex-none
               px-2
               py-1
               font-sans
@@ -167,6 +170,8 @@ export function Hero() {
               ))}
             </span>
           </span>
+          <span aria-hidden="true" className="hero-rule" />
+          </div>
 
           {/* Titular de un solo color: las letras se paran una por una */}
           <h1
@@ -202,10 +207,10 @@ export function Hero() {
             "
           >
             <span className="block-line" style={{ '--d': '820ms' } as React.CSSProperties}>
-              <span className="block-line__text">Armá tu pedido en el menú</span>
+              <span className="block-line__text">Elegí lo que se te antoje</span>
             </span>{' '}
             <span className="block-line" style={{ '--d': '940ms' } as React.CSSProperties}>
-              <span className="block-line__text">y elegí delivery o retiro.</span>
+              <span className="block-line__text">y lo preparamos para vos.</span>
             </span>
           </p>
 

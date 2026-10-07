@@ -6,8 +6,8 @@ export const SITE_CONFIG: SiteConfig = {
   // TEMPORAL: WhatsApp de Alex para pruebas. Reemplazar por el del local antes de la entrega.
   whatsappNumber: '5493442668413',
   displayPhone: '+54 3442 66-8413',
-  address: 'Honduras 4920, Palermo Soho, CABA',
-  schedule: 'Mar — Dom · 19:00 a 00:30',
+  address: 'Congreso de Tucumán 782, Concepción del Uruguay',
+  schedule: 'Mar — Dom · 20:30 a 00:10',
   socialLinks: {
     instagram: 'https://instagram.com',
     facebook: 'https://facebook.com',
