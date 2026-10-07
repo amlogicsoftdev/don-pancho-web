@@ -1379,6 +1379,22 @@ html:has(.page-menu) {
   animation: dpFotoCambio 0.32s var(--ease-out);
 }
 
+/* Filtros de la carta: arriba, una línea de puntos como el corte de un ticket, que los
+   separa de la barra sin sombra (el mismo negro suave de las líneas punteadas de la lista) */
+.menu-filtros {
+  padding-top: 0.625rem;
+}
+
+.menu-filtros::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0.1875rem;
+  height: 0.25rem;
+  background: radial-gradient(circle, rgb(13 13 13 / 0.45) 1.15px, transparent 1.6px) center / 0.5rem 0.25rem repeat-x;
+  pointer-events: none;
+}
+
 /* Foto de cada plato en pantallas táctiles (sin mouse no hay foto que siga al puntero) */
 .foto-plato {
   rotate: -3deg;

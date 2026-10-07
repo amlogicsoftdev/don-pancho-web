@@ -220,7 +220,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
         {/* Categorías: quedan fijas debajo del encabezado al scrollear */}
         <div
           style={{ top: navHeight }}
-          className="sticky z-20 mt-6 border-b-2 border-pancho-black bg-pancho-paper/95 backdrop-blur-sm sm:mt-10"
+          className="menu-filtros sticky z-20 mt-6 border-b-2 border-pancho-black bg-pancho-paper/95 backdrop-blur-sm sm:mt-10"
         >
           <div
             role="tablist"
@@ -310,13 +310,13 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                     key={product.id}
                     {...hoverProps(product)}
                     style={{ '--i': index + 1 } as React.CSSProperties}
-                    className="menu-row grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4.5 gap-y-1.5 border-b border-pancho-black/20 py-5 [@media(hover:none)]:grid-cols-[minmax(0,1fr)_auto] [@media(hover:none)]:gap-x-4"
+                    className="menu-row grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4.5 gap-y-1.5 border-b border-pancho-black/20 py-5 [@media(hover:none)]:grid-cols-[minmax(0,1fr)_auto] [@media(hover:none)]:items-start [@media(hover:none)]:gap-x-4"
                   >
-                    {/* Sin mouse no hay foto que siga al puntero: va a la derecha de cada plato, y
-                        el precio pasa abajo de la descripción para que el nombre tenga lugar */}
-                    <div className="foto-plato col-start-2 row-span-3 row-start-1 mt-1 hidden self-start [@media(hover:none)]:block">
-                      <div className="relative size-16 overflow-hidden bg-neutral-900">
-                        <Image src={product.image} alt="" fill sizes="64px" className="object-cover" />
+                    {/* Sin mouse no hay foto que siga al puntero: va grande a la derecha de cada
+                        plato, y el precio con el + pasa abajo de la descripción */}
+                    <div className="foto-plato col-start-2 row-span-3 row-start-1 mt-1 hidden self-center [@media(hover:none)]:block">
+                      <div className="relative size-26 overflow-hidden bg-neutral-900">
+                        <Image src={product.image} alt="" fill sizes="104px" className="object-cover" />
                       </div>
                     </div>
                     <div className="flex min-w-0 items-baseline gap-2.5">
@@ -328,7 +328,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                       )}
                       <span className="min-w-4 flex-1 -translate-y-1.25 border-b-2 border-dotted border-pancho-black/35" />
                     </div>
-                    <div className="row-span-2 flex items-center gap-3.5 [@media(hover:none)]:order-last [@media(hover:none)]:row-span-1 [@media(hover:none)]:mt-1 [@media(hover:none)]:justify-between">
+                    <div className="row-span-2 flex items-center gap-3.5 [@media(hover:none)]:order-last [@media(hover:none)]:row-span-1 [@media(hover:none)]:mt-1.5">
                       <span className="font-heading text-[26px] leading-none text-pancho-red-deep">
                         {formatPrice(product.price)}
                       </span>
