@@ -270,6 +270,17 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
                 <PagoConfirmado pedidoId={pedido.id} confirmado={pedido.pagoConfirmado} />
               </div>
             )}
+
+            {/* Efectivo: se cobra al entregar (o en el mostrador, al registrar la venta) */}
+            {!esTransferencia && !cancelado && (
+              <p
+                className={`pn-alert mt-5 ${pedido.pagoConfirmado || pedido.estado === 'entregado' ? 'pn-alert--ok' : 'pn-alert--warn'}`}
+              >
+                {pedido.pagoConfirmado || pedido.estado === 'entregado'
+                  ? 'Efectivo cobrado.'
+                  : 'Efectivo a cobrar al entregar: suma a la caja cuando el pedido pase a «Entregado».'}
+              </p>
+            )}
           </div>
 
           {/* ---------- Cancelar o borrar: aparte y con menos peso ---------- */}

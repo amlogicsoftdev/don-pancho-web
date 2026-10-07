@@ -73,7 +73,7 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
         </div>
         <p className="pn-muted text-xs font-medium">
           Solo figuran las ventas cobradas: efectivo de pedidos entregados, transferencias confirmadas y ventas de
-          mostrador. Un pedido aparece acá cuando se cobra.
+          mostrador (si son delivery en efectivo, al entregarlas). Un pedido aparece acá cuando se cobra.
         </p>
         {(filtro.origen !== 'todos' || filtro.metodo !== 'todos') && (
           <p className="pn-muted text-xs font-medium">

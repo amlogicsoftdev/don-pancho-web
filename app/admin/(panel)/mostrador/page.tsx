@@ -11,7 +11,7 @@ export default async function MostradorPage() {
     <section className="mx-auto max-w-5xl">
       <Encabezado
         titulo="Venta de mostrador"
-        descripcion="Cargá lo que se vende en el local. Queda como entregado y cobrado, y suma a las ventas y al cierre de caja."
+        descripcion="Cargá lo que se vende en el local. Queda en preparación y suma a las ventas y al cierre de caja; un delivery en efectivo suma recién cuando se entrega."
       />
       <VentaMostrador menu={menu} />
     </section>
