@@ -8,6 +8,13 @@
       "when": 1791318945562,
       "tag": "0000_petite_maginty",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791380794868,
+      "tag": "0001_limite_pedidos_ip",
+      "breakpoints": true
     }
   ]
 }
