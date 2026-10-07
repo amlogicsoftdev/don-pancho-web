@@ -101,6 +101,8 @@ export function textoParaCliente(
       return { titulo: 'Recibido', detalle: 'El local está revisando tu pedido. Te lo confirmamos por WhatsApp.' }
     case 'en_preparacion':
       return { titulo: 'En preparación', detalle: 'Ya lo estamos cocinando.' }
+    case 'listo':
+      return { titulo: 'Listo para retirar', detalle: '¡Tu pedido ya está listo! Podés pasar a buscarlo por el local.' }
     case 'en_camino':
       return { titulo: 'En camino', detalle: 'Tu pedido salió para tu dirección.' }
     case 'entregado':

@@ -62,11 +62,20 @@ export default async function SeguimientoPage({ params }: { params: Promise<{ to
           {pedido.nombreCliente && <p className="mt-4 text-neutral-300">¡Hola {pedido.nombreCliente}!</p>}
           <h1 className={`mt-1 text-6xl ${cancelado ? 'text-pancho-red' : 'text-white'}`}>{texto.titulo}</h1>
           <p className="mt-3 text-neutral-300">{texto.detalle}</p>
-          {enCurso && pedido.estado !== 'pendiente' && pedido.entregaEstimada && (
+          {(pedido.estado === 'en_preparacion' || pedido.estado === 'en_camino') && pedido.entregaEstimada && (
             <p className="mt-4 inline-block bg-pancho-orange px-3 py-1.5 font-bold text-pancho-black">
               {pedido.modalidad === 'delivery' ? 'Llega' : 'Listo para retirar'} aprox. a las{' '}
               {formatearHora(pedido.entregaEstimada)}
             </p>
+          )}
+          {/* Hasta que el local confirma que llegó la transferencia */}
+          {esTransferencia && !pedido.pagoConfirmado && !cancelado && (
+            <div className="mx-auto mt-5 max-w-md border-2 border-pancho-orange px-4 py-3 text-left">
+              <p className="font-bold text-pancho-orange">Estamos esperando tu transferencia</p>
+              <p className="mt-1 text-sm text-neutral-300">
+                Más abajo tenés los datos para transferir. Mandanos el comprobante por WhatsApp y te lo confirmamos.
+              </p>
+            </div>
           )}
         </section>
 
@@ -212,11 +221,6 @@ export default async function SeguimientoPage({ params }: { params: Promise<{ to
         </section>
 
         <footer className="space-y-4 text-center">
-          {enCurso && (
-            <p className="text-xs text-neutral-500">
-              Esta página se actualiza sola cada {ACTUALIZAR_CADA_SEGUNDOS} segundos.
-            </p>
-          )}
           <div className="flex flex-wrap justify-center gap-3">
             <PanchoButton href={`https://wa.me/${local.whatsapp}`} target="_blank" rel="noopener noreferrer" variant="orange">
               Escribinos por WhatsApp

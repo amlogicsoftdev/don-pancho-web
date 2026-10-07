@@ -21,6 +21,8 @@ export const origenEnum = pgEnum('origen_pedido', ['web', 'mostrador'])
 export const estadoEnum = pgEnum('estado_pedido', [
   'pendiente',
   'en_preparacion',
+  // Solo retiro: ya se puede pasar a buscar
+  'listo',
   'en_camino',
   'entregado',
   'cancelado',

@@ -1789,6 +1789,12 @@ html:has(.panel) {
     background: var(--color-pancho-yellow);
   }
 
+  .pn-tag[data-estado='listo'] {
+    border-color: var(--color-pancho-red-deep);
+    background: var(--color-pancho-red-deep);
+    color: var(--color-pancho-white);
+  }
+
   .pn-tag[data-estado='en_camino'] {
     background: var(--color-pancho-black);
     color: var(--color-pancho-white);

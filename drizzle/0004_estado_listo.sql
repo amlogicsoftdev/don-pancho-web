@@ -1,0 +1,1 @@
+ALTER TYPE "public"."estado_pedido" ADD VALUE 'listo' BEFORE 'en_camino';
