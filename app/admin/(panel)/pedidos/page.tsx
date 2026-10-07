@@ -1,4 +1,4 @@
-import { MapPin, Phone } from 'lucide-react'
+import { MapPin, Phone, Search, X } from 'lucide-react'
 import Link from 'next/link'
 import { requerirUsuario } from '@/lib/auth/guards'
 import {
@@ -11,7 +11,7 @@ import {
   formatearPrecio,
   formatearSoloFecha,
 } from '@/lib/orders/estados'
-import { esFiltro, listarPedidos, type FiltroPedidos } from '@/lib/orders/queries'
+import { buscarPedidos, esFiltro, listarPedidos, type FiltroPedidos } from '@/lib/orders/queries'
 import { Encabezado } from '../encabezado'
 import { HaceCuanto } from './hace-cuanto'
 import { InsigniaEstado } from './insignia-estado'
@@ -84,12 +84,18 @@ function FilaPedido({ p, activos }: { p: Pedido; activos: boolean }) {
   )
 }
 
-export default async function PedidosPage({ searchParams }: { searchParams: Promise<{ filtro?: string }> }) {
+export default async function PedidosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filtro?: string; q?: string }>
+}) {
   await requerirUsuario()
-  const { filtro: filtroCrudo } = await searchParams
+  const { filtro: filtroCrudo, q } = await searchParams
   const filtro: FiltroPedidos = esFiltro(filtroCrudo) ? filtroCrudo : 'activos'
-  const pedidos = await listarPedidos(filtro)
-  const activos = filtro === 'activos'
+  const busqueda = typeof q === 'string' ? q.trim().slice(0, 80) : ''
+  // Con búsqueda se mira en todos los estados; sin búsqueda, la pestaña elegida
+  const pedidos = busqueda ? await buscarPedidos(busqueda) : await listarPedidos(filtro)
+  const activos = !busqueda && filtro === 'activos'
 
   return (
     <section className="mx-auto max-w-4xl">
@@ -99,7 +105,7 @@ export default async function PedidosPage({ searchParams }: { searchParams: Prom
             <Link
               key={p.filtro}
               href={p.filtro === 'activos' ? '/admin/pedidos' : `/admin/pedidos?filtro=${p.filtro}`}
-              aria-current={p.filtro === filtro ? 'page' : undefined}
+              aria-current={!busqueda && p.filtro === filtro ? 'page' : undefined}
               className="pn-option"
             >
               {p.titulo}
@@ -108,8 +114,39 @@ export default async function PedidosPage({ searchParams }: { searchParams: Prom
         </nav>
       </Encabezado>
 
+      {/* Buscador: número, nombre, teléfono o dirección, en todos los estados */}
+      <form method="get" role="search" className="mt-6 flex gap-2">
+        <label className="relative min-w-0 flex-1">
+          <span className="sr-only">Buscar pedidos</span>
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" aria-hidden="true" />
+          <input
+            type="search"
+            name="q"
+            defaultValue={busqueda}
+            maxLength={80}
+            placeholder="Buscar por N°, nombre, teléfono o dirección"
+            className="pn-field pl-9"
+          />
+        </label>
+        <button type="submit" className="pn-option">
+          Buscar
+        </button>
+      </form>
+
+      {busqueda && (
+        <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-semibold">
+          {pedidos.length === 0
+            ? `No encontramos pedidos con «${busqueda}».`
+            : `${pedidos.length === 50 ? 'Primeros 50 resultados' : `${pedidos.length} ${pedidos.length === 1 ? 'resultado' : 'resultados'}`} para «${busqueda}»`}
+          <Link href="/admin/pedidos" className="pn-link inline-flex items-center gap-1">
+            <X className="size-3.5" aria-hidden="true" />
+            Limpiar búsqueda
+          </Link>
+        </p>
+      )}
+
       {pedidos.length === 0 ? (
-        <p className="pn-card pn-muted mt-6 p-8 text-center font-semibold">No hay pedidos en esta lista.</p>
+        !busqueda && <p className="pn-card pn-muted mt-6 p-8 text-center font-semibold">No hay pedidos en esta lista.</p>
       ) : activos ? (
         // Activos: un bloque por estado, los pendientes primero (son los que hay que atender)
         <div className="mt-6 space-y-8">

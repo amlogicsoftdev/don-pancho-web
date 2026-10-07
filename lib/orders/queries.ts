@@ -1,6 +1,7 @@
 import 'server-only'
-import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, inArray, isNull, or } from 'drizzle-orm'
 import { db, schema } from '@/lib/db'
+import { leerDatosLocal } from '@/lib/local/queries'
 import { ESTADOS_ACTIVOS, type EstadoPedido } from './estados'
 
 // Consultas del panel. No verifican permisos: quien las llama (páginas y route handlers del
@@ -33,6 +34,36 @@ export async function listarPedidos(filtro: FiltroPedidos) {
     )
     .orderBy(desc(schema.pedidos.creadoEn))
     .limit(200)
+}
+
+/**
+ * Busca pedidos (sin los borrados, en cualquier estado) por número, nombre, teléfono o
+ * dirección. El texto se usa como dato, nunca como SQL: va parametrizado y sin comodines.
+ */
+export async function buscarPedidos(texto: string) {
+  const limpio = texto.trim().slice(0, 80)
+  if (!limpio) return []
+
+  // Los comodines de LIKE (% y _) se escapan: se busca el texto tal cual
+  const patron = `%${limpio.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
+  const digitos = limpio.replace(/\D/g, '')
+  const condiciones = [
+    ilike(schema.pedidos.clienteNombre, patron),
+    ilike(schema.pedidos.direccion, patron),
+    // El teléfono se guarda solo con dígitos: "3442 66-8413" encuentra "3442668413"
+    ...(digitos.length >= 3 ? [ilike(schema.pedidos.clienteTelefono, `%${digitos}%`)] : []),
+    // Número de pedido: "152" o "0152"
+    ...(digitos.length > 0 && digitos.length <= 9 && digitos === limpio.replace(/^#/, '')
+      ? [eq(schema.pedidos.numero, Number(digitos))]
+      : []),
+  ]
+
+  return db
+    .select()
+    .from(schema.pedidos)
+    .where(and(isNull(schema.pedidos.borradoEn), or(...condiciones)))
+    .orderBy(desc(schema.pedidos.creadoEn))
+    .limit(50)
 }
 
 /** Cantidad de pedidos por estado, para las pestañas de la lista. */
@@ -94,13 +125,9 @@ export async function obtenerPedido(id: number) {
   }
 }
 
-/** Nombre del local para los mensajes (configuración), con un valor por defecto. */
+/** Nombre del local para mensajes y comandas: el mismo que se edita en Ajustes → Datos del local. */
 export async function leerNombreLocal(): Promise<string> {
-  const [fila] = await db
-    .select({ valor: schema.configuracion.valor })
-    .from(schema.configuracion)
-    .where(eq(schema.configuracion.clave, 'nombre'))
-  return fila?.valor ?? 'Don Pancho & Burger'
+  return (await leerDatosLocal()).nombre
 }
 
 /** Menú vigente (categorías y productos activos) para cargar ventas de mostrador. */
