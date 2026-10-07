@@ -10,6 +10,14 @@ import { leerCorteHora, rangoDias } from './dia'
 /** Una venta es todo pedido que no está cancelado ni borrado (CLAUDE.md, sección 7). */
 const esVenta = and(isNull(schema.pedidos.borradoEn), ne(schema.pedidos.estado, 'cancelado'))
 
+/**
+ * Venta cobrada: la plata ya está en el local. Una transferencia, cuando se confirmó que llegó;
+ * el efectivo, cuando se entregó el pedido (se cobra al entregar). Las ventas de mostrador se
+ * registran cobradas (pago_confirmado). Ventas y caja solo suman lo cobrado.
+ */
+const cobrado = sql`(${schema.pedidos.pagoConfirmado} or (${schema.pedidos.metodoPago} = 'efectivo' and ${schema.pedidos.estado} = 'entregado'))`
+const esCobrada = and(esVenta, cobrado)
+
 export interface ResumenCaja {
   dia: string
   cantidadVentas: number
@@ -33,10 +41,10 @@ export async function resumenDia(dia: string): Promise<ResumenCaja> {
 
   const [ventas] = await db
     .select({
-      // Ventas cobradas: no cuenta las transferencias sin confirmar (van aparte)
-      cantidad: sql<number>`count(*) filter (where not (${schema.pedidos.metodoPago} = 'transferencia' and not ${schema.pedidos.pagoConfirmado}))::int`,
-      efectivo: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${schema.pedidos.metodoPago} = 'efectivo'), 0)::int`,
-      transfConfirmadas: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${schema.pedidos.metodoPago} = 'transferencia' and ${schema.pedidos.pagoConfirmado}), 0)::int`,
+      // Solo lo cobrado (ver `cobrado`): lo que todavía no se cobró no entra a la caja
+      cantidad: sql<number>`count(*) filter (where ${cobrado})::int`,
+      efectivo: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${cobrado} and ${schema.pedidos.metodoPago} = 'efectivo'), 0)::int`,
+      transfConfirmadas: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${cobrado} and ${schema.pedidos.metodoPago} = 'transferencia'), 0)::int`,
       transfPorConfirmar: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${schema.pedidos.metodoPago} = 'transferencia' and not ${schema.pedidos.pagoConfirmado}), 0)::int`,
       cantPorConfirmar: sql<number>`count(*) filter (where ${schema.pedidos.metodoPago} = 'transferencia' and not ${schema.pedidos.pagoConfirmado})::int`,
       sinEntregar: sql<number>`count(*) filter (where ${schema.pedidos.estado} in (${sql.join(ESTADOS_ACTIVOS.map((e) => sql`${e}`), sql`, `)}))::int`,
@@ -120,23 +128,19 @@ export async function reporteVentas(filtro: FiltroVentas) {
   const corte = await leerCorteHora()
   const { inicio, fin } = rangoDias(filtro.desde, filtro.hasta, corte)
 
+  // Solo ventas cobradas: lo que todavía no se cobró no figura ni en la lista ni en los totales
   const condiciones = and(
-    esVenta,
+    esCobrada,
     gte(schema.pedidos.creadoEn, inicio),
     lt(schema.pedidos.creadoEn, fin),
     filtro.origen === 'todos' ? undefined : eq(schema.pedidos.origen, filtro.origen),
     filtro.metodo === 'todos' ? undefined : eq(schema.pedidos.metodoPago, filtro.metodo),
   )
 
-  // Una transferencia sin confirmar todavía no es plata cobrada: no entra al total, va aparte
-  const sinConfirmar = sql`${schema.pedidos.metodoPago} = 'transferencia' and not ${schema.pedidos.pagoConfirmado}`
   const [totales] = await db
     .select({
       cantidad: sql<number>`count(*)::int`,
-      cantidadCobradas: sql<number>`count(*) filter (where not (${sinConfirmar}))::int`,
-      total: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where not (${sinConfirmar})), 0)::int`,
-      cantidadPorConfirmar: sql<number>`count(*) filter (where ${sinConfirmar})::int`,
-      porConfirmar: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${sinConfirmar}), 0)::int`,
+      total: sql<number>`coalesce(sum(${schema.pedidos.total}), 0)::int`,
     })
     .from(schema.pedidos)
     .where(condiciones)
@@ -167,12 +171,7 @@ export async function reporteVentas(filtro: FiltroVentas) {
     filas,
     hayMas: totales.cantidad > filas.length,
     cantidad: totales.cantidad,
-    // Solo lo cobrado: efectivo y transferencias confirmadas
-    cantidadCobradas: totales.cantidadCobradas,
     totalVentas: totales.total,
-    // Transferencias sin confirmar: se muestran aparte, no se suman
-    cantidadPorConfirmar: totales.cantidadPorConfirmar,
-    totalPorConfirmar: totales.porConfirmar,
     totalGastos: gastos.total,
   }
 }

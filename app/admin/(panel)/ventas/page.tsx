@@ -67,18 +67,14 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
         </form>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Cifra rotulo={`Ventas cobradas (${reporte.cantidadCobradas})`} valor={formatearPrecio(reporte.totalVentas)} destacada />
+          <Cifra rotulo={`Ventas (${reporte.cantidad})`} valor={formatearPrecio(reporte.totalVentas)} destacada />
           <Cifra rotulo="Gastos del período" valor={formatearPrecio(reporte.totalGastos)} />
           <Cifra rotulo="Ventas menos gastos" valor={formatearPrecio(reporte.totalVentas - reporte.totalGastos)} />
         </div>
-        {reporte.cantidadPorConfirmar > 0 && (
-          <p className="pn-alert pn-alert--warn">
-            {reporte.cantidadPorConfirmar === 1
-              ? 'Hay 1 transferencia sin confirmar'
-              : `Hay ${reporte.cantidadPorConfirmar} transferencias sin confirmar`}{' '}
-            por {formatearPrecio(reporte.totalPorConfirmar)}: no se suman hasta que se marquen como recibidas en el pedido.
-          </p>
-        )}
+        <p className="pn-muted text-xs font-medium">
+          Solo figuran las ventas cobradas: efectivo de pedidos entregados, transferencias confirmadas y ventas de
+          mostrador. Un pedido aparece acá cuando se cobra.
+        </p>
         {(filtro.origen !== 'todos' || filtro.metodo !== 'todos') && (
           <p className="pn-muted text-xs font-medium">
             Con filtros de origen o pago, el total de gastos sigue siendo el de todo el período.
@@ -116,9 +112,6 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
                     <td>{v.origen === 'web' ? 'Web' : 'Mostrador'}</td>
                     <td>
                       {ETIQUETA_PAGO[v.metodoPago]}
-                      {v.metodoPago === 'transferencia' && !v.pagoConfirmado && (
-                        <strong className="font-bold text-pancho-red-deep"> (sin confirmar)</strong>
-                      )}
                     </td>
                     <td>
                       <InsigniaEstado estado={v.estado} />

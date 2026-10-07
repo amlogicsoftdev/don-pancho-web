@@ -52,8 +52,8 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
       <div className="mt-6 space-y-6">
         {resumen.sinEntregar > 0 && (
           <p className="pn-alert pn-alert--warn">
-            Hay {resumen.sinEntregar} {resumen.sinEntregar === 1 ? 'pedido' : 'pedidos'} de este día sin entregar. El
-            efectivo recién se cobra al entregarlos: conviene cerrar la caja cuando estén todos resueltos.
+            Hay {resumen.sinEntregar} {resumen.sinEntregar === 1 ? 'pedido' : 'pedidos'} de este día sin entregar. Se
+            suman a la caja recién cuando se cobran: conviene cerrarla cuando estén todos resueltos.
           </p>
         )}
 
@@ -64,13 +64,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
             destacado
           />
           <Fila etiqueta="Efectivo" valor={formatearPrecio(resumen.ventasEfectivo)} />
-          <Fila etiqueta="Transferencias confirmadas" valor={formatearPrecio(resumen.transferenciasConfirmadas)} />
-          {resumen.cantidadPorConfirmar > 0 && (
-            <Fila
-              etiqueta={`Transferencias por confirmar (${resumen.cantidadPorConfirmar}, no suman)`}
-              valor={formatearPrecio(resumen.transferenciasPorConfirmar)}
-            />
-          )}
+          <Fila etiqueta="Transferencias" valor={formatearPrecio(resumen.transferenciasConfirmadas)} />
           <Fila etiqueta="Gastos en efectivo" valor={`-${formatearPrecio(resumen.gastosEfectivo)}`} />
           {resumen.gastosTransferencia > 0 && (
             <Fila
