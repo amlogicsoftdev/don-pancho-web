@@ -15,9 +15,10 @@ interface Resumen {
   ultimoId: number
 }
 
-// Timbre "din-don" con la Web Audio API (sin archivos). Los navegadores no dejan sonar nada
-// hasta que la persona toca la página: el audio se habilita con el primer clic o tecla. Si no
-// se puede, el aviso visual igual aparece.
+// Campanilla de mostrador ("¡ding, ding!", la de recepción o la de "¡pedido!" en la cocina),
+// hecha con la Web Audio API (sin archivos). Los navegadores no dejan sonar nada hasta que la
+// persona toca la página: el audio se habilita con el primer clic o tecla. Si no se puede, el
+// aviso visual igual aparece.
 let contexto: AudioContext | null = null
 
 function audio(): AudioContext | null {
@@ -29,37 +30,61 @@ function audio(): AudioContext | null {
   }
 }
 
-/** Una nota de campana: golpe rápido y apagado largo, con un armónico que le da el metal. */
-function nota(ctx: AudioContext, frecuencia: number, inicio: number) {
-  const volumen = ctx.createGain()
-  volumen.gain.setValueAtTime(0.0001, inicio)
-  volumen.gain.exponentialRampToValueAtTime(0.3, inicio + 0.01)
-  volumen.gain.exponentialRampToValueAtTime(0.0001, inicio + 1.4)
-  volumen.connect(ctx.destination)
+// Una campanilla no es una nota pura: suenan varios parciales que no son múltiplos exactos de la
+// fundamental (eso le da el metal), y los agudos se apagan antes que el grave.
+const FUNDAMENTAL = 1320
+const PARCIALES = [
+  { multiplo: 1, volumen: 1, dura: 1.8 },
+  { multiplo: 2.42, volumen: 0.45, dura: 0.9 },
+  { multiplo: 3.9, volumen: 0.2, dura: 0.5 },
+  { multiplo: 5.4, volumen: 0.1, dura: 0.3 },
+]
 
-  for (const [multiplo, peso] of [
-    [1, 1],
-    [2.76, 0.18],
-  ] as const) {
+/** Un golpe de campanilla: el "tic" del martillo y el metal que queda sonando. */
+function golpe(ctx: AudioContext, salida: AudioNode, inicio: number) {
+  for (const p of PARCIALES) {
     const osc = ctx.createOscillator()
-    const parcial = ctx.createGain()
+    const volumen = ctx.createGain()
     osc.type = 'sine'
-    osc.frequency.value = frecuencia * multiplo
-    parcial.gain.value = peso
-    osc.connect(parcial)
-    parcial.connect(volumen)
+    osc.frequency.value = FUNDAMENTAL * p.multiplo
+    volumen.gain.setValueAtTime(0.0001, inicio)
+    volumen.gain.exponentialRampToValueAtTime(p.volumen, inicio + 0.003)
+    volumen.gain.exponentialRampToValueAtTime(0.0001, inicio + p.dura)
+    osc.connect(volumen)
+    volumen.connect(salida)
     osc.start(inicio)
-    osc.stop(inicio + 1.5)
+    osc.stop(inicio + p.dura + 0.05)
   }
+
+  // El "tic": ruido muy corto y agudo
+  const muestras = Math.floor(ctx.sampleRate * 0.012)
+  const buffer = ctx.createBuffer(1, muestras, ctx.sampleRate)
+  const datos = buffer.getChannelData(0)
+  for (let i = 0; i < muestras; i++) datos[i] = (Math.random() * 2 - 1) * (1 - i / muestras)
+  const ruido = ctx.createBufferSource()
+  const agudos = ctx.createBiquadFilter()
+  const volumenRuido = ctx.createGain()
+  ruido.buffer = buffer
+  agudos.type = 'highpass'
+  agudos.frequency.value = 3000
+  volumenRuido.gain.value = 0.25
+  ruido.connect(agudos)
+  agudos.connect(volumenRuido)
+  volumenRuido.connect(salida)
+  ruido.start(inicio)
 }
 
 function sonarTimbre() {
   const ctx = audio()
   // Si el navegador todavía no habilitó el audio, no se encola nada (sonaría todo junto después)
   if (!ctx || ctx.state !== 'running') return
+  const salida = ctx.createGain()
+  salida.gain.value = 0.28
+  salida.connect(ctx.destination)
   const ahora = ctx.currentTime + 0.02
-  nota(ctx, 659.25, ahora) // mi
-  nota(ctx, 523.25, ahora + 0.45) // do
+  // Dos golpes, como cuando se toca la campanilla del mostrador
+  golpe(ctx, salida, ahora)
+  golpe(ctx, salida, ahora + 0.3)
 }
 
 /** Enlace a Pedidos con el contador de pendientes; avisa y refresca cuando entra un pedido nuevo. */
