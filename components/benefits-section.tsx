@@ -65,7 +65,7 @@ export function BenefitsSection() {
     rootMargin: '0px 0px -40px 0px',
   })
 
-  // Cada contador arranca cuando su cifra empieza a subir desde atrás de la máscara
+  // Cada contador arranca cuando su ticket se pega
   const countBurgers = useAnimatedCount(50, isGridInView, 1300, 0)
   const countCarne = useAnimatedCount(100, isGridInView, 1300, 110)
   const countRating = useAnimatedCount(49, isGridInView, 1300, 220)
@@ -76,76 +76,74 @@ export function BenefitsSection() {
       title: 'Burgers servidas',
       pill: '★ 100% artesanal',
       delay: 0,
+      tilt: -3,
     },
     {
       metric: `${countCarne}%`,
       title: 'Carne fresca vacuna',
       pill: 'Novillo seleccionado',
       delay: 110,
+      tilt: 2,
     },
     {
       metric: `${(countRating / 10).toFixed(1)} ★`,
       title: 'Calificación clientes',
       pill: '+10.000 reseñas reales',
       delay: 220,
+      tilt: -1.5,
     },
     {
       metric: 'Express',
       title: 'Envíos a tu puerta',
       pill: 'Directo y caliente',
       delay: 330,
+      tilt: 3,
     },
   ]
 
   return (
-    <section className="py-20 sm:py-28 border-t border-neutral-900 bg-pancho-black relative overflow-hidden">
+    <section className="relative overflow-hidden bg-pancho-paper bg-[url('/images/fondo-papel-crema.webp')] bg-cover bg-center py-20 text-pancho-black sm:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* Encabezado de un solo color: sube línea por línea */}
+        {/* Encabezado de un solo color: las letras se paran una por una */}
         <div
           ref={headerRef}
           data-inview={isHeaderInView}
-          className="text-center max-w-3xl mx-auto mb-16 sm:mb-24"
+          className="text-center max-w-3xl mx-auto mb-14 sm:mb-20"
         >
-          <h2 className="rv-lines text-4xl sm:text-6xl lg:text-7xl text-white leading-[0.95]">
+          <h2 className="rv-chars text-4xl sm:text-6xl lg:text-7xl text-pancho-black leading-[0.95]">
             <SplitLines lines={['La diferencia de hacer', 'una burger de verdad']} />
           </h2>
         </div>
 
-        {/* Tira de cifras: cada una sube desde atrás de su máscara, una después de la otra */}
+        {/* Cada cifra en un ticket de comanda: se pegan uno después del otro, torcidos,
+            y se enderezan al pasarles el mouse */}
         <div
           ref={gridRef}
           data-inview={isGridInView}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-8 lg:gap-6 divide-y sm:divide-y-0 sm:divide-x divide-neutral-900/90 pt-4"
+          className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-8 lg:grid-cols-4"
         >
           {items.map((item) => {
             return (
               <div
                 key={item.title}
-                className="flex flex-col items-center text-center px-4 pt-6 pb-8 sm:py-0"
+                className="rv-slap"
+                style={{ '--d': `${item.delay}ms` } as React.CSSProperties}
               >
-                {/* Cifra en tipografía display */}
-                <div
-                  className="rv-lines select-none"
-                  style={{ '--d': `${item.delay}ms` } as React.CSSProperties}
-                >
-                  <span className="line-mask">
-                    <span className="line font-display text-6xl sm:text-7xl lg:text-8xl leading-none text-pancho-orange">
+                <div className="ticket h-full" style={{ '--tilt': `${item.tilt}deg` } as React.CSSProperties}>
+                  <div className="ticket__paper flex h-full flex-col items-center px-3 pt-6 pb-9 text-center sm:px-5 sm:pt-8 sm:pb-11">
+                    {/* Cifra en tipografía display */}
+                    <span className="font-display text-4xl leading-none whitespace-nowrap text-pancho-red-deep select-none sm:text-6xl lg:text-5xl xl:text-7xl">
                       {item.metric}
                     </span>
-                  </span>
-                </div>
 
-                {/* Título y micro-etiqueta: aparecen apenas después de su cifra */}
-                <div
-                  className="rv-up mt-3.5"
-                  style={{ '--d': `${item.delay + 260}ms` } as React.CSSProperties}
-                >
-                  <h3 className="font-heading text-xl sm:text-2xl text-white leading-tight">
-                    {item.title}
-                  </h3>
+                    <h3 className="mt-3 mb-3 font-heading text-lg leading-tight text-pancho-black sm:text-2xl lg:text-xl xl:text-2xl">
+                      {item.title}
+                    </h3>
 
-                  <div className="mt-2">
-                    <span className="inline-block text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-400">
+                    {/* Línea de corte, como en una comanda */}
+                    <span aria-hidden="true" className="mt-auto mb-3 w-full border-t-2 border-dashed border-black/20 pt-0 sm:mb-4" />
+
+                    <span className="text-[11px] font-bold uppercase leading-snug tracking-[0.1em] text-pancho-black/65">
                       {item.pill}
                     </span>
                   </div>

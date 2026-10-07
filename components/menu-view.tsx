@@ -256,7 +256,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
         <header className="text-center mb-10">
           <h1
             style={{ '--d': '150ms' } as React.CSSProperties}
-            className="load-lines text-6xl sm:text-8xl leading-[0.9] text-white"
+            className="load-chars text-6xl sm:text-8xl leading-[0.9] text-white"
           >
             <SplitLines lines={['Nuestro menú']} />
           </h1>

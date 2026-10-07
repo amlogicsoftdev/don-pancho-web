@@ -8,6 +8,7 @@ import { BurgerTraveler } from '@/components/burger-traveler'
 import { MarqueeBand } from '@/components/marquee-band'
 import { BenefitsSection } from '@/components/benefits-section'
 import { AboutSection } from '@/components/about-section'
+import { SecretSection } from '@/components/secret-section'
 import { FinalCTA } from '@/components/final-cta'
 import { Footer } from '@/components/footer'
 import { CartDrawer } from '@/components/cart-drawer'
@@ -25,7 +26,7 @@ export function LandingView({ products }: LandingViewProps) {
   const [cartOpen, setCartOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-pancho-black text-pancho-cream selection:bg-pancho-orange selection:text-pancho-black">
+    <div className="page-home min-h-screen bg-pancho-paper text-pancho-black selection:bg-pancho-orange selection:text-pancho-black">
       {/* Encabezado fijo / Barra de navegación */}
       <Navbar cartCount={totalCartCount} onOpenCart={() => setCartOpen(true)} />
 
@@ -42,13 +43,16 @@ export function LandingView({ products }: LandingViewProps) {
           <BurgerTraveler />
         </div>
 
-        {/* Cinta blanca con las palabras de la marca en movimiento */}
+        {/* Cinta bordó con las palabras de la marca en movimiento */}
         <MarqueeBand />
 
-        {/* Sección Sobre nosotros con animación de entrada guiada por scroll */}
+        {/* Sobre nosotros, en papel crema */}
         <AboutSection />
 
-        {/* Propuesta de valor y beneficios de la marca */}
+        {/* Nuestro secreto artesanal: la hamburguesa con sus tres notas, en papel naranja */}
+        <SecretSection />
+
+        {/* Cifras de la marca, en tickets sobre papel crema */}
         <BenefitsSection />
 
         {/* Banner final de conversión */}
