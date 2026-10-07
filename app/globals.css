@@ -1243,6 +1243,22 @@ html:has(.page-menu) {
   --btn-chip-bg: var(--color-pancho-orange);
 }
 
+/* Botón de «Sobre nosotros»: cuerpo negro y cuadrado bordó con la flecha blanca, el mismo
+   bordó de los números de los pasos. Al pasarle el mouse el texto se rellena de blanco, el
+   cuadrado se vuelve blanco con la flecha bordó y el botón se levanta un poco. */
+.btn-pancho.btn-pancho--flyer {
+  --btn-chip-bg: var(--color-pancho-red-deep);
+  --btn-chip-fg: var(--color-pancho-white);
+  --btn-chip-hover-bg: var(--color-pancho-white);
+  --btn-chip-hover-fg: var(--color-pancho-red-deep);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-pancho.btn-pancho--flyer:hover {
+    transform: translateY(-3px);
+  }
+}
+
 /* Sello redondo con el texto girando alrededor (components/stamp.tsx) */
 .stamp {
   position: relative;
