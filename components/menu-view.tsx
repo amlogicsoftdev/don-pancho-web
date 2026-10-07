@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Check, Plus } from 'lucide-react'
@@ -43,11 +43,24 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     handleClearCart,
   } = useCart(products)
   const mounted = useMounted()
+  // Alto real de la barra de navegación (cambia entre celular y escritorio y al scrollear):
+  // las categorías quedan fijas justo debajo, sin dejar un hueco en el medio
+  const [navHeight, setNavHeight] = useState(88)
   const [cartOpen, setCartOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>(initialCategory)
   const [hoveredProduct, setHoveredProduct] = useState<Product | null>(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [justAddedId, setJustAddedId] = useState<number | null>(null)
+
+  useEffect(() => {
+    const nav = document.querySelector('header')
+    if (!nav) return
+    const measure = () => setNavHeight(nav.offsetHeight)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(nav)
+    return () => observer.disconnect()
+  }, [])
 
   const filterOptions: CategoryFilter[] = [TODAS, ...categories.map((c) => c.name)]
   const quantityOf = (id: number) => cart.find((item) => item.id === id)?.quantity ?? 0
@@ -205,7 +218,10 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
         </section>
 
         {/* Categorías: quedan fijas debajo del encabezado al scrollear */}
-        <div className="sticky top-22 z-20 mt-6 border-b-2 border-pancho-black bg-pancho-paper/95 backdrop-blur-sm sm:mt-10">
+        <div
+          style={{ top: navHeight }}
+          className="sticky z-20 mt-6 border-b-2 border-pancho-black bg-pancho-paper/95 backdrop-blur-sm sm:mt-10"
+        >
           <div
             role="tablist"
             aria-label="Categorías del menú"
