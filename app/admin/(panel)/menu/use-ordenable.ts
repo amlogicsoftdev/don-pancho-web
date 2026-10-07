@@ -23,6 +23,10 @@ interface Arrastre {
 // barra fija del panel.
 const BORDE_ARRIBA = 140
 const BORDE_ABAJO = 80
+// Los demás se corren y el que se suelta se acomoda con la misma curva, suave al final
+const CURVA = '220ms cubic-bezier(0.2, 0, 0, 1)'
+
+const menosMovimiento = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /**
  * Ordenar una lista arrastrando la manija de cada elemento (como en Spotify): con el mouse o
@@ -47,6 +51,8 @@ export function useOrdenable(
   const asas = useRef(new Map<number, HTMLElement>())
   const arrastre = useRef<Arrastre | null>(null)
   const enfocar = useRef<number | null>(null)
+  // Al soltar: dónde se veía el elemento, para que se deslice hasta su lugar en vez de saltar
+  const asentar = useRef<{ id: number; top: number } | null>(null)
 
   // Lo que escucha en window llama siempre a las funciones del último render (que conocen la
   // lista y `guardar` actuales); se actualizan más abajo. Las escuchas son estables para poder
@@ -107,7 +113,7 @@ export function useOrdenable(
       let corrimiento = 0
       if (a.desde < i && i <= hasta) corrimiento = -a.paso
       else if (hasta <= i && i < a.desde) corrimiento = a.paso
-      nodo.style.transition = 'transform 160ms ease-out'
+      nodo.style.transition = menosMovimiento() ? '' : `transform ${CURVA}`
       nodo.style.transform = corrimiento ? `translateY(${corrimiento}px)` : ''
     })
   }
@@ -123,7 +129,10 @@ export function useOrdenable(
     window.removeEventListener('keydown', escuchas.tecla)
     document.body.style.userSelect = ''
 
-    // Los estilos se sacan en el mismo momento en que React reordena: no hay salto
+    // Los estilos se sacan en el mismo momento en que React reordena: no hay salto. El que se
+    // soltó arranca desde donde se veía y se desliza hasta su lugar (ver el efecto de abajo).
+    const soltado = nodos.current.get(a.id)
+    if (soltado && !menosMovimiento()) asentar.current = { id: a.id, top: soltado.getBoundingClientRect().top }
     limpiarEstilos(a.ids)
     setArrastrando(null)
     if (soltar && a.hasta !== a.desde) {
@@ -136,6 +145,32 @@ export function useOrdenable(
 
   useLayoutEffect(() => {
     ultimo.current = { mover, terminar }
+  })
+
+  // Después de soltar (ya reordenado), el elemento se desliza desde donde quedó hasta su lugar
+  useLayoutEffect(() => {
+    const s = asentar.current
+    if (!s) return
+    asentar.current = null
+    const nodo = nodos.current.get(s.id)
+    if (!nodo) return
+    const delta = s.top - nodo.getBoundingClientRect().top
+    if (Math.abs(delta) < 1) return
+    nodo.style.transition = 'none'
+    nodo.style.transform = `translateY(${delta}px)`
+    nodo.style.position = 'relative'
+    nodo.style.zIndex = '20'
+    void nodo.offsetHeight // fuerza a dibujarlo en el punto de partida antes de animar
+    nodo.style.transition = `transform ${CURVA}`
+    nodo.style.transform = ''
+    const fin = () => {
+      nodo.style.transition = ''
+      nodo.style.position = ''
+      nodo.style.zIndex = ''
+    }
+    nodo.addEventListener('transitionend', fin, { once: true })
+    // Por si la transición no llega a terminar (por ejemplo, si se vuelve a arrastrar)
+    setTimeout(fin, 400)
   })
 
   function empezar(id: number, e: React.PointerEvent) {

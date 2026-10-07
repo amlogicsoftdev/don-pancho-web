@@ -11,7 +11,7 @@ export default async function MenuAdminPage() {
     <section className="mx-auto max-w-4xl">
       <Encabezado
         titulo="Menú"
-        descripcion="Cambiá productos, precios, categorías e imágenes. Lo que das de baja deja de verse en la carta, pero no se borra: los pedidos viejos conservan sus precios. Para cambiar el orden, arrastrá la manija ≡."
+        descripcion="Categorías, productos y precios de la carta."
       />
       <div className="mt-6">
         <ListaMenu menu={menu} />

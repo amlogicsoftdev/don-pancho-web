@@ -1568,12 +1568,12 @@ html:has(.panel) {
     }
   }
 
-  /* El elemento que se arrastra queda por encima de los demás y sigue al puntero */
+  /* El elemento que se arrastra queda por encima de los demás y sigue al puntero, apenas
+     resaltado (sin sombra) */
   .pn-ordenable[data-arrastrando='true'] {
     position: relative;
     z-index: 20;
-    background: var(--color-pancho-white);
-    box-shadow: 0 10px 28px rgb(13 13 13 / 0.22);
+    background: color-mix(in srgb, var(--color-pancho-paper) 60%, var(--color-pancho-white));
     cursor: grabbing;
   }
 
