@@ -1,3 +1,4 @@
+import 'server-only'
 import { randomBytes } from 'node:crypto'
 import { and, count, eq, gte, inArray } from 'drizzle-orm'
 import { db, schema } from '@/lib/db'

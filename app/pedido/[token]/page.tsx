@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { Check } from 'lucide-react'
 import { Logo } from '@/components/logo'
 import { PanchoButton } from '@/components/pancho-button'
-import { SITE_CONFIG } from '@/lib/data'
+import { leerDatosLocal } from '@/lib/local/queries'
 import {
   ESTADOS_ACTIVOS,
   ETIQUETA_MODALIDAD,
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 
 export default async function SeguimientoPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
-  const pedido = await obtenerPedidoPorToken(token)
+  const [pedido, local] = await Promise.all([obtenerPedidoPorToken(token), leerDatosLocal()])
   if (!pedido) notFound()
 
   const enCurso = ESTADOS_ACTIVOS.includes(pedido.estado)
@@ -212,7 +212,7 @@ export default async function SeguimientoPage({ params }: { params: Promise<{ to
             </p>
           )}
           <div className="flex flex-wrap justify-center gap-3">
-            <PanchoButton href={`https://wa.me/${SITE_CONFIG.whatsappNumber}`} target="_blank" rel="noopener noreferrer" variant="orange">
+            <PanchoButton href={`https://wa.me/${local.whatsapp}`} target="_blank" rel="noopener noreferrer" variant="orange">
               Escribinos por WhatsApp
             </PanchoButton>
             <PanchoButton href="/menu" variant="orange">

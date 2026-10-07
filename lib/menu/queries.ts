@@ -1,3 +1,4 @@
+import 'server-only'
 import { connection } from 'next/server'
 import { and, asc, eq } from 'drizzle-orm'
 import { db, schema } from '@/lib/db'

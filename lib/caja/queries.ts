@@ -1,3 +1,4 @@
+import 'server-only'
 import { and, desc, eq, gte, isNull, lt, ne, sql } from 'drizzle-orm'
 import { db, schema } from '@/lib/db'
 import { ESTADOS_ACTIVOS } from '@/lib/orders/estados'
