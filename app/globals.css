@@ -1651,6 +1651,15 @@ html:has(.panel) {
     transition: box-shadow 0.15s ease-out;
   }
 
+  /* Campo de fecha: el calendario se abre con el ícono propio (CampoFecha), no con el del navegador */
+  .pn-field--fecha::-webkit-calendar-picker-indicator {
+    display: none;
+  }
+
+  .pn-field--fecha {
+    cursor: pointer;
+  }
+
   textarea.pn-field {
     height: auto;
     padding-block: 0.625rem;

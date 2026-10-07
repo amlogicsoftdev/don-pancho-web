@@ -33,7 +33,8 @@ export async function resumenDia(dia: string): Promise<ResumenCaja> {
 
   const [ventas] = await db
     .select({
-      cantidad: sql<number>`count(*)::int`,
+      // Ventas cobradas: no cuenta las transferencias sin confirmar (van aparte)
+      cantidad: sql<number>`count(*) filter (where not (${schema.pedidos.metodoPago} = 'transferencia' and not ${schema.pedidos.pagoConfirmado}))::int`,
       efectivo: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${schema.pedidos.metodoPago} = 'efectivo'), 0)::int`,
       transfConfirmadas: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${schema.pedidos.metodoPago} = 'transferencia' and ${schema.pedidos.pagoConfirmado}), 0)::int`,
       transfPorConfirmar: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${schema.pedidos.metodoPago} = 'transferencia' and not ${schema.pedidos.pagoConfirmado}), 0)::int`,
@@ -127,10 +128,15 @@ export async function reporteVentas(filtro: FiltroVentas) {
     filtro.metodo === 'todos' ? undefined : eq(schema.pedidos.metodoPago, filtro.metodo),
   )
 
+  // Una transferencia sin confirmar todavía no es plata cobrada: no entra al total, va aparte
+  const sinConfirmar = sql`${schema.pedidos.metodoPago} = 'transferencia' and not ${schema.pedidos.pagoConfirmado}`
   const [totales] = await db
     .select({
       cantidad: sql<number>`count(*)::int`,
-      total: sql<number>`coalesce(sum(${schema.pedidos.total}), 0)::int`,
+      cantidadCobradas: sql<number>`count(*) filter (where not (${sinConfirmar}))::int`,
+      total: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where not (${sinConfirmar})), 0)::int`,
+      cantidadPorConfirmar: sql<number>`count(*) filter (where ${sinConfirmar})::int`,
+      porConfirmar: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${sinConfirmar}), 0)::int`,
     })
     .from(schema.pedidos)
     .where(condiciones)
@@ -161,7 +167,12 @@ export async function reporteVentas(filtro: FiltroVentas) {
     filas,
     hayMas: totales.cantidad > filas.length,
     cantidad: totales.cantidad,
+    // Solo lo cobrado: efectivo y transferencias confirmadas
+    cantidadCobradas: totales.cantidadCobradas,
     totalVentas: totales.total,
+    // Transferencias sin confirmar: se muestran aparte, no se suman
+    cantidadPorConfirmar: totales.cantidadPorConfirmar,
+    totalPorConfirmar: totales.porConfirmar,
     totalGastos: gastos.total,
   }
 }

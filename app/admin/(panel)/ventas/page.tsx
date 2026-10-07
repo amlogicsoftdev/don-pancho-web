@@ -4,6 +4,7 @@ import { requerirDueno } from '@/lib/auth/guards'
 import { diaOperativo, esDiaValido, leerCorteHora, mostrarDia } from '@/lib/caja/dia'
 import { reporteVentas, type FiltroVentas } from '@/lib/caja/queries'
 import { ETIQUETA_PAGO, formatearHora, formatearNumero, formatearPrecio, formatearSoloFecha } from '@/lib/orders/estados'
+import { CampoFecha } from '../campo-fecha'
 import { Encabezado } from '../encabezado'
 import { InsigniaEstado } from '../pedidos/insignia-estado'
 
@@ -42,14 +43,8 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
 
       <div className="mt-6 space-y-6">
         <form method="get" className="flex flex-wrap items-end gap-3">
-          <label>
-            <span className="pn-label">Desde</span>
-            <input type="date" name="desde" defaultValue={filtro.desde} className="pn-field w-auto" />
-          </label>
-          <label>
-            <span className="pn-label">Hasta</span>
-            <input type="date" name="hasta" defaultValue={filtro.hasta} className="pn-field w-auto" />
-          </label>
+          <CampoFecha etiqueta="Desde" name="desde" defaultValue={filtro.desde} className="w-44" />
+          <CampoFecha etiqueta="Hasta" name="hasta" defaultValue={filtro.hasta} className="w-44" />
           <label>
             <span className="pn-label">Origen</span>
             <select name="origen" defaultValue={filtro.origen} className="pn-field w-auto">
@@ -72,10 +67,18 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
         </form>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Cifra rotulo={`Ventas (${reporte.cantidad})`} valor={formatearPrecio(reporte.totalVentas)} destacada />
+          <Cifra rotulo={`Ventas cobradas (${reporte.cantidadCobradas})`} valor={formatearPrecio(reporte.totalVentas)} destacada />
           <Cifra rotulo="Gastos del período" valor={formatearPrecio(reporte.totalGastos)} />
           <Cifra rotulo="Ventas menos gastos" valor={formatearPrecio(reporte.totalVentas - reporte.totalGastos)} />
         </div>
+        {reporte.cantidadPorConfirmar > 0 && (
+          <p className="pn-alert pn-alert--warn">
+            {reporte.cantidadPorConfirmar === 1
+              ? 'Hay 1 transferencia sin confirmar'
+              : `Hay ${reporte.cantidadPorConfirmar} transferencias sin confirmar`}{' '}
+            por {formatearPrecio(reporte.totalPorConfirmar)}: no se suman hasta que se marquen como recibidas en el pedido.
+          </p>
+        )}
         {(filtro.origen !== 'todos' || filtro.metodo !== 'todos') && (
           <p className="pn-muted text-xs font-medium">
             Con filtros de origen o pago, el total de gastos sigue siendo el de todo el período.

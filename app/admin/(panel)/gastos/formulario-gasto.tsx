@@ -5,6 +5,7 @@ import { useState, useTransition, type FormEvent } from 'react'
 import { PanchoButton } from '@/components/pancho-button'
 import { cargarGasto } from '@/lib/caja/actions'
 import { CATEGORIAS_GASTO } from '@/lib/caja/categorias'
+import { CampoFecha } from '../campo-fecha'
 
 export function FormularioGasto({ diaPorDefecto }: { diaPorDefecto: string }) {
   const router = useRouter()
@@ -50,10 +51,7 @@ export function FormularioGasto({ diaPorDefecto }: { diaPorDefecto: string }) {
           <span className="pn-label">Monto ($)</span>
           <input name="monto" type="number" required min={1} step={1} inputMode="numeric" className="pn-field" />
         </label>
-        <label className="block lg:col-span-2">
-          <span className="pn-label">Fecha</span>
-          <input type="date" name="fecha" required defaultValue={diaPorDefecto} className="pn-field" />
-        </label>
+        <CampoFecha etiqueta="Fecha" name="fecha" required defaultValue={diaPorDefecto} className="lg:col-span-2" />
         <label className="block lg:col-span-2">
           <span className="pn-label">Categoría</span>
           <select name="categoria" required defaultValue="Insumos" className="pn-field">

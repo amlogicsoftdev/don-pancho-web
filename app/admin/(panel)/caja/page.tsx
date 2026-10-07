@@ -59,7 +59,7 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
 
         <dl className="pn-card pn-rows tabular-nums px-5 py-2 sm:px-6">
           <Fila
-            etiqueta={`Ventas del día (${resumen.cantidadVentas})`}
+            etiqueta={`Ventas cobradas del día (${resumen.cantidadVentas})`}
             valor={formatearPrecio(resumen.ventasEfectivo + resumen.transferenciasConfirmadas)}
             destacado
           />
