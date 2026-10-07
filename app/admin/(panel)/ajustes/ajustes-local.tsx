@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, type FormEvent } from 'react'
-import { PanchoButton } from '@/components/pancho-button'
+import { Button } from '@/components/ui/button'
 import {
   guardarCorteCaja,
   guardarCuentaTransferencia,
@@ -56,9 +56,9 @@ function Hoja({ titulo, descripcion, onGuardar, suave = false, children }: HojaP
       {descripcion && <p className="pn-muted mt-2 text-sm font-medium">{descripcion}</p>}
       <div className="mt-5">{children}</div>
       <div className="mt-5 flex flex-wrap items-center gap-4 border-t-2 border-dotted border-pancho-black/25 pt-5">
-        <PanchoButton type="submit" disabled={enCurso}>
+        <Button type="submit" variant="default" size="lg" disabled={enCurso}>
           {enCurso ? 'Guardando…' : 'Guardar'}
-        </PanchoButton>
+        </Button>
         {mensaje && (
           <p role={mensaje.ok ? 'status' : 'alert'} className={`pn-alert ${mensaje.ok ? 'pn-alert--ok' : 'pn-alert--error'}`}>
             {mensaje.texto}

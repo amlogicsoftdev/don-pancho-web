@@ -3,7 +3,6 @@
 import { Check, Printer } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { IconoWhatsApp } from '@/components/icono-whatsapp'
-import { PanchoButton } from '@/components/pancho-button'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { TIEMPOS_ENTREGA, etiquetaTiempo, formatearNumero } from '@/lib/orders/estados'
 import { imprimirComandas } from './imprimir-comandas'
@@ -170,9 +169,9 @@ export function CuadroConfirmar({ abierto, titulo, textoConfirmar, onConfirmar, 
           )}
 
           <div className="flex flex-wrap items-center gap-2">
-            <PanchoButton disabled={enCurso} onClick={confirmar}>
+            <Button variant="default" size="lg" disabled={enCurso} onClick={confirmar}>
               {enCurso ? 'Confirmando…' : textoConfirmar}
-            </PanchoButton>
+            </Button>
             <Button variant="ghost" disabled={enCurso} onClick={cerrar}>
               Volver
             </Button>
