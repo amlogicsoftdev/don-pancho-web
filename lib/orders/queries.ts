@@ -1,3 +1,4 @@
+import 'server-only'
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { db, schema } from '@/lib/db'
 import { ESTADOS_ACTIVOS, type EstadoPedido } from './estados'

@@ -1,5 +1,8 @@
 import { Product, SiteConfig } from './types'
 
+// VALORES INICIALES Y POR DEFECTO de los datos del local. El sitio los lee de la base
+// (`configuracion`, ver lib/local/) y el dueño los edita en el panel: esto solo lo usa el
+// seed y, si la base no tiene un dato, como respaldo.
 export const SITE_CONFIG: SiteConfig = {
   name: 'Don Pancho & Burger',
   slogan: 'El verdadero sabor de la felicidad',
@@ -116,28 +119,5 @@ export const PRODUCTS: Product[] = [
     image: '/images/pancho-recortado.webp',
   },
 ]
-
-export const BENEFITS = [
-  {
-    icon: 'Utensils',
-    title: 'Ingredientes de primera',
-    description: 'Productos frescos y de la mejor calidad.',
-  },
-  {
-    icon: 'Star',
-    title: 'Recetas únicas',
-    description: 'Combinaciones que te van a sorprender.',
-  },
-  {
-    icon: 'Bike',
-    title: 'Envíos rápidos',
-    description: 'Tu pedido, en la puerta de tu casa.',
-  },
-  {
-    icon: 'Heart',
-    title: 'Clientes felices',
-    description: 'Más de 10.000 pedidos nos respaldan.',
-  },
-] as const
 
 export const formatPrice = (value: number): string => `$${value.toLocaleString('es-AR')}`

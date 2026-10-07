@@ -1,6 +1,8 @@
+import 'server-only'
 import { asc, eq, inArray } from 'drizzle-orm'
 import { db, schema } from '@/lib/db'
 import { CLAVES_TRANSFERENCIA } from '@/lib/pagos/transferencia'
+import { leerDatosLocal } from '@/lib/local/queries'
 
 // Lecturas del panel de gestión del menú. Incluyen lo inactivo (el menú público no).
 // No verifican permisos: las páginas que las usan deben llamar antes a requerirDueno().
@@ -25,8 +27,10 @@ export async function listarCategorias() {
   return db.select().from(schema.categorias).orderBy(asc(schema.categorias.orden), asc(schema.categorias.id))
 }
 
-/** Ajustes editables: descuento, hora de corte del día de caja y datos de la cuenta para transferir. */
+/** Ajustes editables: descuento, hora de corte, cuenta para transferir y datos públicos del local. */
 export async function leerAjustes() {
+  // Los datos del local se muestran como los ve hoy el cliente (con los valores por defecto aplicados)
+  const local = await leerDatosLocal()
   const filas = await db
     .select()
     .from(schema.configuracion)
@@ -45,5 +49,6 @@ export async function leerAjustes() {
       titular: texto(CLAVES_TRANSFERENCIA.titular),
       banco: texto(CLAVES_TRANSFERENCIA.banco),
     },
+    local,
   }
 }

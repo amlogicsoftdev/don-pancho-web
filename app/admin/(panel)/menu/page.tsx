@@ -21,6 +21,7 @@ export default async function MenuAdminPage() {
         descuentoPorcentaje={ajustes.descuentoPorcentaje}
         corteHora={ajustes.corteHora}
         transferencia={ajustes.transferencia}
+        local={ajustes.local}
       />
       <ListaMenu menu={menu} />
     </section>

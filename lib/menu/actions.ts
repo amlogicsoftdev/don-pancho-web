@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { requerirDueno } from '@/lib/auth/guards'
 import { db, schema } from '@/lib/db'
 import { CLAVES_TRANSFERENCIA } from '@/lib/pagos/transferencia'
+import { CLAVES_LOCAL } from '@/lib/local/datos'
+import { telefonoParaWhatsApp } from '@/lib/whatsapp'
 import { esUrlDeCloudinary, firmarSubida as firmarSubidaCloudinary, type FirmaSubida } from './cloudinary'
 
 // Gestión del menú: solo el dueño (CLAUDE.md, sección 9). Cada acción verifica sesión y rol en
@@ -27,6 +29,17 @@ function texto(v: unknown, limite: number): string | null {
   if (typeof v !== 'string') return null
   const limpio = v.trim()
   return limpio.length <= limite ? limpio : null
+}
+
+/** Link de una red social: vacío (no tienen esa red) o una URL https válida. null = inválido. */
+function urlDeRed(v: unknown): string | null {
+  const valor = texto(v ?? '', 200)
+  if (valor === null || valor === '') return valor
+  try {
+    return new URL(valor).protocol === 'https:' ? valor : null
+  } catch {
+    return null
+  }
 }
 
 // --- Subida de imágenes ---
@@ -231,6 +244,25 @@ export async function guardarAjustes(entrada: unknown): Promise<ResultadoAccion>
   if (titular === null) return { ok: false, error: 'El nombre del titular es demasiado largo (máximo 80 caracteres).' }
   if (banco === null) return { ok: false, error: 'El nombre del banco es demasiado largo (máximo 60 caracteres).' }
 
+  // Datos públicos del local (los ve el cliente en el sitio)
+  const nombre = texto(d.nombre ?? '', 60)
+  const whatsappCrudo = texto(d.whatsapp ?? '', 30)
+  const direccion = texto(d.direccion ?? '', 120)
+  const horario = texto(d.horario ?? '', 80)
+  if (!nombre) return { ok: false, error: 'Ingresá el nombre del local (máximo 60 caracteres).' }
+  const whatsapp = whatsappCrudo ? telefonoParaWhatsApp(whatsappCrudo) : ''
+  if (!/^549\d{10}$/.test(whatsapp)) {
+    return { ok: false, error: 'El WhatsApp debe ser un celular argentino con código de área, por ejemplo 3442 66-8413.' }
+  }
+  if (!direccion) return { ok: false, error: 'Ingresá la dirección del local (máximo 120 caracteres).' }
+  if (!horario) return { ok: false, error: 'Ingresá el horario de atención (máximo 80 caracteres).' }
+  const redes = { instagram: urlDeRed(d.instagram), facebook: urlDeRed(d.facebook), tiktok: urlDeRed(d.tiktok) }
+  for (const [red, valor] of Object.entries(redes)) {
+    if (valor === null) {
+      return { ok: false, error: `El link de ${red} debe empezar con https:// (o dejalo vacío si no tienen).` }
+    }
+  }
+
   await db.transaction(async (tx) => {
     // Un dato de transferencia vacío se guarda como texto vacío: el sitio lo trata como "no cargado".
     for (const [clave, valor] of [
@@ -240,6 +272,13 @@ export async function guardarAjustes(entrada: unknown): Promise<ResultadoAccion>
       [CLAVES_TRANSFERENCIA.cbu, cbu],
       [CLAVES_TRANSFERENCIA.titular, titular],
       [CLAVES_TRANSFERENCIA.banco, banco],
+      [CLAVES_LOCAL.nombre, nombre],
+      [CLAVES_LOCAL.whatsapp, whatsapp],
+      [CLAVES_LOCAL.direccion, direccion],
+      [CLAVES_LOCAL.horario, horario],
+      [CLAVES_LOCAL.instagram, redes.instagram ?? ''],
+      [CLAVES_LOCAL.facebook, redes.facebook ?? ''],
+      [CLAVES_LOCAL.tiktok, redes.tiktok ?? ''],
     ] as const) {
       await tx
         .insert(schema.configuracion)
@@ -250,5 +289,7 @@ export async function guardarAjustes(entrada: unknown): Promise<ResultadoAccion>
   refrescar()
   revalidatePath('/admin/caja')
   revalidatePath('/admin/pedidos', 'layout')
+  // Nombre, WhatsApp, dirección y redes se muestran en todo el sitio
+  revalidatePath('/', 'layout')
   return { ok: true }
 }
