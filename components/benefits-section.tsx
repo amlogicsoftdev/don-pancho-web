@@ -1,57 +1,8 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { useInView } from '@/hooks/use-in-view'
 import { SplitLines } from './split-lines'
-
-// Hook para conteo numérico animado suave con soporte de delay
-function useAnimatedCount(
-  target: number,
-  isTriggered: boolean,
-  duration: number = 1300,
-  delay: number = 0
-) {
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    if (!isTriggered) return
-
-    const prefersReducedMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-    let start: number | null = null
-    let rafId: number
-
-    const timeoutId = setTimeout(() => {
-      if (prefersReducedMotion) {
-        setCount(target)
-        return
-      }
-
-      const step = (timestamp: number) => {
-        if (!start) start = timestamp
-        const elapsed = timestamp - start
-        const progress = Math.min(elapsed / duration, 1)
-        const easeOut = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress)
-        setCount(Math.round(easeOut * target))
-
-        if (progress < 1) {
-          rafId = requestAnimationFrame(step)
-        }
-      }
-
-      rafId = requestAnimationFrame(step)
-    }, delay)
-
-    return () => {
-      clearTimeout(timeoutId)
-      if (rafId) cancelAnimationFrame(rafId)
-    }
-  }, [target, isTriggered, duration, delay])
-
-  return count
-}
 
 export function BenefitsSection() {
   // Observador para el encabezado
@@ -65,40 +16,12 @@ export function BenefitsSection() {
     rootMargin: '0px 0px -40px 0px',
   })
 
-  // Cada contador arranca cuando su ticket se pega
-  const countBurgers = useAnimatedCount(50, isGridInView, 1300, 0)
-  const countCarne = useAnimatedCount(100, isGridInView, 1300, 110)
-  const countRating = useAnimatedCount(49, isGridInView, 1300, 220)
-
+  // Las reglas de la casa: cada una va en su ticket (grande, título y bajada)
   const items = [
-    {
-      metric: `+${countBurgers}K`,
-      title: 'Burgers servidas',
-      pill: '★ 100% artesanal',
-      delay: 0,
-      tilt: -3,
-    },
-    {
-      metric: `${countCarne}%`,
-      title: 'Carne fresca vacuna',
-      pill: 'Novillo seleccionado',
-      delay: 110,
-      tilt: 2,
-    },
-    {
-      metric: `${(countRating / 10).toFixed(1)} ★`,
-      title: 'Calificación clientes',
-      pill: '+10.000 reseñas reales',
-      delay: 220,
-      tilt: -1.5,
-    },
-    {
-      metric: 'Express',
-      title: 'Envíos a tu puerta',
-      pill: 'Directo y caliente',
-      delay: 330,
-      tilt: 3,
-    },
+    { metric: 'Ley #1', title: 'Se come con las manos', pill: 'Sin cubiertos, sin culpa', delay: 0, tilt: -3 },
+    { metric: 'No apto', title: 'Para dietas', pill: 'Hoy no se cuentan calorías', delay: 110, tilt: 2 },
+    { metric: 'Siempre', title: 'Hay lugar para una más', pill: 'Pedí la segunda', delay: 220, tilt: -1.5 },
+    { metric: 'Advertencia', title: 'Crea adicción', pill: 'Probás una y volvés', delay: 330, tilt: 3 },
   ]
 
   return (
@@ -111,7 +34,7 @@ export function BenefitsSection() {
           className="text-center max-w-3xl mx-auto mb-14 sm:mb-20"
         >
           <h2 className="rv-chars text-4xl sm:text-6xl lg:text-7xl text-pancho-black leading-[0.95]">
-            <SplitLines lines={['La diferencia de hacer', 'una burger de verdad']} />
+            <SplitLines lines={['Las reglas', 'de la casa']} />
           </h2>
         </div>
 
@@ -132,7 +55,7 @@ export function BenefitsSection() {
                 <div className="ticket h-full" style={{ '--tilt': `${item.tilt}deg` } as React.CSSProperties}>
                   <div className="ticket__paper flex h-full flex-col items-center px-3 pt-6 pb-9 text-center sm:px-5 sm:pt-8 sm:pb-11">
                     {/* Cifra en tipografía display */}
-                    <span className="font-display text-4xl leading-none whitespace-nowrap text-pancho-red-deep select-none sm:text-6xl lg:text-5xl xl:text-7xl">
+                    <span className="font-display text-3xl leading-none uppercase text-pancho-red-deep select-none sm:text-5xl lg:text-4xl xl:text-5xl">
                       {item.metric}
                     </span>
 

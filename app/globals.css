@@ -644,6 +644,7 @@ html:has(.page-home) {
   inset: 0;
   z-index: -1;
   background: var(--color-pancho-red);
+  box-shadow: 3px 3px 0 var(--color-pancho-black);
   transform-origin: 0 50%;
   animation: dpTagGrow var(--print) linear var(--d, 0ms) backwards;
 }
@@ -651,6 +652,15 @@ html:has(.page-home) {
 .hero-tag__char {
   animation: dpFade 90ms linear backwards;
   animation-delay: calc(var(--d, 0ms) + (var(--i, 0) + 0.8) / var(--n, 1) * var(--print));
+}
+
+/* Línea del encabezado del hero: se dibuja cuando la etiqueta ya quedó pegada */
+.hero-rule {
+  flex: 1;
+  min-width: 1.5rem;
+  border-top: 2px solid var(--color-pancho-black);
+  transform-origin: 0 50%;
+  animation: dpTagGrow 900ms var(--ease-in-out) calc(var(--d, 200ms) + 900ms) backwards;
 }
 
 @keyframes dpTagGrow {
@@ -797,15 +807,14 @@ html:has(.page-home) {
    que viaja desde el hero llegue a su lugar: recién ahí la sección recibe data-inview.
 ========================================================= */
 
-/* Mitad roja: un rectángulo de papel que ocupa la mitad izquierda, de borde recto */
+/* Mitad roja: un rectángulo de papel de diario bordó (el mismo del pie) que ocupa la mitad izquierda, de borde recto */
 .versus-red {
   position: absolute;
   inset: 0 50% 0 0;
-  background: var(--color-pancho-red) url('/images/fondo-eleccion-rojo.webp') center / cover no-repeat;
+  background: var(--color-pancho-red-deep) url('/images/fondo-footer-bordo.webp') center / cover no-repeat;
 }
 
-/* Velos que oscurecen la mitad no elegida. El del lado naranja arranca transparente
-   arriba para no marcar una línea contra el hero, que comparte el mismo papel. */
+/* Velos que oscurecen la mitad no elegida, parejos de arriba a abajo. */
 .versus-red::after,
 .versus-veil {
   content: '';
@@ -821,7 +830,7 @@ html:has(.page-home) {
 
 .versus-veil {
   left: 50%;
-  background: linear-gradient(180deg, rgb(0 0 0 / 0), rgb(0 0 0 / 0.66) 26%);
+  background: rgb(0 0 0 / 0.66);
 }
 
 .versus:has(.versus-side[data-side='hamburguesa']:is(:hover, :focus-visible)) .versus-red::after,
@@ -864,7 +873,7 @@ html:has(.page-home) {
   gap: 0.875rem;
 }
 
-/* Nombre de cada jugador: letras grandes directo sobre el papel, con sombra dura */
+/* Nombre de cada jugador: letras grandes directo sobre el papel, sin sombra, como el titular del hero */
 .versus-name {
   font-family: var(--font-display);
   font-size: clamp(1.75rem, 6.6vw, 6rem);
@@ -872,7 +881,6 @@ html:has(.page-home) {
   line-height: 0.9;
   text-transform: uppercase;
   color: var(--color-pancho-white);
-  text-shadow: 0.055em 0.055em 0 var(--color-pancho-black);
   transform-origin: 50% 100%;
   transition:
     scale 0.45s var(--ease-pop),
@@ -1007,23 +1015,22 @@ html:has(.page-home) {
   --t: clamp(0, calc((var(--p) - var(--i)) / var(--spread, 1)), 1);
 }
 
-/* Rótulo chico del encabezado */
-.about-eyebrow {
-  flex: none;
+/* Rótulo chico en rojo («Pedí en 3 pasos», «Dónde», «Cuándo») */
+.about-label {
   font-family: var(--font-sans);
   font-size: 0.6875rem;
   font-weight: 800;
   line-height: 1;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgb(13 13 13 / 0.7);
+  color: var(--color-pancho-red-deep);
 }
 
-/* Línea de puntos entre la etiqueta y la zona: se dibuja de izquierda a derecha */
+/* Línea del encabezado: sigue hasta el borde y se dibuja de izquierda a derecha */
 .about-rule {
   flex: 1;
   min-width: 1.5rem;
-  border-top: 2px dotted rgb(13 13 13 / 0.35);
+  border-top: 2px solid var(--color-pancho-black);
   transform: scaleX(0);
   transform-origin: 0 50%;
   transition: transform 1s var(--ease-in-out) 0.1s;
@@ -1036,8 +1043,8 @@ html:has(.page-home) {
 /* --- Título --- */
 
 .about-title {
-  /* a este tamaño «que se comparte», con su bloque, entra en un solo renglón en cualquier ancho */
-  font-size: min(12.4vw, 9.5rem);
+  /* tres renglones: el más ancho («una pasión») entra en la columna de la derecha */
+  font-size: min(17vw, 5.75rem);
   line-height: 0.92;
 }
 
@@ -1077,124 +1084,101 @@ html:has(.page-home) {
   transform-origin: 0 50%;
 }
 
-/* --- Fotos pegadas con cinta --- */
+/* --- Fotos con sombra dura --- */
 
 .about-photos {
   position: relative;
   width: 100%;
-  max-width: 27rem;
+  max-width: 33rem;
   margin-inline: auto;
   aspect-ratio: 10 / 11;
 }
 
-/* La foto cae girando y se endereza hasta su inclinación (--tilt) */
+/* La foto cae y se asienta */
 .about-photo {
   position: absolute;
   opacity: min(1, calc(var(--t) * 2.5));
-  scale: calc(0.72 + 0.28 * var(--t));
-  rotate: calc(var(--tilt) + (1 - var(--t)) * var(--spin));
-  translate: 0 calc((1 - var(--t)) * 3.5rem);
+  scale: calc(0.8 + 0.2 * var(--t));
+  translate: 0 calc((1 - var(--t)) * 3rem);
 }
 
 .about-photo--big {
-  --tilt: -4deg;
-  --spin: -14deg;
   top: 0;
   left: 0;
-  width: 66%;
+  width: 70%;
 }
 
 .about-photo--small {
-  --tilt: 4deg;
-  --spin: 16deg;
   right: 0;
   bottom: 0;
   z-index: 1;
-  width: 50%;
+  width: 52%;
 }
 
 .about-photo__card {
   position: relative;
-  padding: 0.55rem 0.55rem 0;
-  background: var(--color-pancho-white);
-  box-shadow: 0 22px 34px -14px rgb(0 0 0 / 0.45);
+  border: 2px solid var(--color-pancho-black);
+  background: var(--color-pancho-black);
+  box-shadow: 0.75rem 0.75rem 0 var(--color-pancho-black);
   transition:
-    rotate 0.5s var(--ease-out),
-    translate 0.5s var(--ease-out),
-    box-shadow 0.5s var(--ease-out);
+    translate 0.4s var(--ease-out),
+    box-shadow 0.4s var(--ease-out);
 }
 
-.about-photo__tape {
+
+/* Etiqueta pegada en la esquina de cada foto */
+.about-photo__tag {
   position: absolute;
-  top: -0.7rem;
-  left: 50%;
-  z-index: 1;
-  width: 34%;
-  height: 1.4rem;
-  translate: -50% 0;
-  rotate: -2deg;
-  background: rgb(240 226 196 / 0.88);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
-}
-
-.about-photo--small .about-photo__tape {
-  left: 68%;
-  rotate: 3deg;
-}
-
-.about-photo__cutout {
-  padding: 9%;
-  filter: drop-shadow(0 10px 12px rgb(0 0 0 / 0.3));
-}
-
-.about-photo__caption {
-  padding: 0.6rem 0.2rem 0.7rem;
-  font-family: var(--font-heading);
-  font-size: clamp(0.8rem, 2.9vw, 1rem);
+  left: -2px;
+  padding: 0.45rem 0.65rem;
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 800;
   line-height: 1;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
+  color: var(--color-pancho-white);
 }
 
-/* Al pasarle el mouse, la foto se endereza y se levanta */
+.about-photo__tag--dark {
+  top: 0.5rem;
+  background: var(--color-pancho-black);
+}
+
+.about-photo__tag--red {
+  bottom: 0.5rem;
+  background: var(--color-pancho-red);
+}
+
+/* Al pasarle el mouse, la foto se corre hacia su sombra */
 @media (hover: hover) and (pointer: fine) {
-  .about-photo:hover {
-    z-index: 2;
-  }
-
   .about-photo:hover .about-photo__card {
-    rotate: calc(var(--tilt) * -1);
-    translate: 0 -6px;
-    box-shadow: 0 30px 44px -16px rgb(0 0 0 / 0.5);
+    translate: 4px 4px;
+    box-shadow: 0.35rem 0.35rem 0 var(--color-pancho-black);
   }
 }
 
-/* Sello: se pega girando en la esquina de la foto grande */
+/* Sello: se pega girando en la esquina de arriba de la foto grande */
 .about-stamp {
   position: absolute;
-  top: 3%;
-  left: 55%;
+  top: -5%;
+  left: 59%;
   z-index: 2;
-  width: 25%;
+  width: 23%;
   aspect-ratio: 1;
   opacity: min(1, calc(var(--t) * 3));
   scale: calc(0.3 + 0.7 * var(--t));
   rotate: calc((1 - var(--t)) * -90deg);
 }
 
-/* --- Texto y valores --- */
+/* --- Texto y pasos --- */
 
 .about-text {
   max-width: 26rem;
   font-size: 1rem;
   font-weight: 500;
   line-height: 1.75;
-}
-
-@media (min-width: 40rem) {
-  .about-text {
-    font-size: 1.125rem;
-  }
 }
 
 .about-text__word {
@@ -1211,35 +1195,44 @@ html:has(.page-home) {
   background: linear-gradient(rgb(255 115 0 / 0.6), rgb(255 115 0 / 0.6)) 0 92% / calc(var(--t) * 100%) 0.36em no-repeat;
 }
 
+/* Tres pasos en columnas, separados por rayas verticales */
 .about-values {
-  border-block: 2px solid var(--color-pancho-black);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 2px solid var(--color-pancho-black);
 }
 
 .about-value {
   display: flex;
-  align-items: baseline;
-  gap: 1.75rem;
-  padding: 0.95rem 0.25rem 0.8rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.9rem 0.5rem 0.5rem 0.85rem;
   opacity: calc(0.16 + 0.84 * var(--t));
-  translate: calc((1 - var(--t)) * -1.25rem) 0;
+  translate: 0 calc((1 - var(--t)) * 0.75rem);
+}
+
+.about-value:first-child {
+  padding-left: 0;
 }
 
 .about-value + .about-value {
-  border-top: 2px dotted rgb(13 13 13 / 0.3);
+  border-left: 2px solid var(--color-pancho-black);
 }
 
+/* Número grande en rojo, sin cuadrado, arriba de cada paso */
 .about-value__num {
   flex: none;
-  font-family: var(--font-heading);
-  font-size: 1.125rem;
-  line-height: 1;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 8vw, 3.25rem);
+  line-height: 0.85;
   color: var(--color-pancho-red-deep);
 }
 
 .about-value__text {
   font-family: var(--font-display);
-  font-size: clamp(1.5rem, 6vw, 2rem);
-  line-height: 1;
+  font-size: clamp(1.05rem, 4.6vw, 1.5rem);
+  line-height: 1.05;
   text-transform: uppercase;
 }
 
@@ -1413,6 +1406,7 @@ html:has(.page-home) {
   .stamp-ring,
   .hero-tag,
   .hero-tag::before,
+  .hero-rule,
   .block-line::after,
   .btn-in .btn-pancho,
   .btn-in .btn-pancho__arrow--out,

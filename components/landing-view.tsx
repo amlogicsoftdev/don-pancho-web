@@ -7,7 +7,6 @@ import { VersusSection } from '@/components/versus-section'
 import { BurgerTraveler } from '@/components/burger-traveler'
 import { BenefitsSection } from '@/components/benefits-section'
 import { AboutSection } from '@/components/about-section'
-import { FinalCTA } from '@/components/final-cta'
 import { Footer } from '@/components/footer'
 import { CartDrawer } from '@/components/cart-drawer'
 import { useCart } from '@/lib/cart'
@@ -54,9 +53,6 @@ export function LandingView({ products }: LandingViewProps) {
           {/* Cifras de la marca, en tickets de comanda */}
           <BenefitsSection />
         </div>
-
-        {/* Banner final de conversión */}
-        <FinalCTA hasItems={cart.length > 0} onOpenCart={() => setCartOpen(true)} />
       </main>
 
       {/* Pie de página */}
