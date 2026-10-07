@@ -13,6 +13,7 @@ import { TODAS } from '@/lib/menu/categoria'
 import { useCart } from '@/lib/cart'
 import { useMounted } from '@/hooks/use-mounted'
 import { SplitLines } from '@/components/split-lines'
+import { FotoFlotante } from '@/components/foto-flotante'
 
 interface MenuViewProps {
   /** Categorías activas, en orden (vienen de la base). */
@@ -49,7 +50,6 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   const [cartOpen, setCartOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>(initialCategory)
   const [hoveredProduct, setHoveredProduct] = useState<Product | null>(null)
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
   const [justAddedId, setJustAddedId] = useState<number | null>(null)
 
   useEffect(() => {
@@ -99,13 +99,11 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     setTimeout(() => setJustAddedId(null), 900)
   }
 
+  // Solo dice sobre qué plato está el mouse: la posición la sigue <FotoFlotante> por su cuenta,
+  // así mover el mouse no vuelve a dibujar toda la carta
   const hoverProps = (product: Product) => ({
-    onMouseEnter: (e: React.MouseEvent) => {
-      setHoveredProduct(product)
-      setMousePos({ x: e.clientX, y: e.clientY })
-    },
-    onMouseMove: (e: React.MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY }),
-    onMouseLeave: () => setHoveredProduct(null),
+    onMouseEnter: () => setHoveredProduct(product),
+    onMouseLeave: () => setHoveredProduct((actual) => (actual?.id === product.id ? null : actual)),
   })
 
   /** Botón cuadrado de agregar; cuando el producto ya está en el pedido, pasa a −  n  + */
@@ -310,8 +308,15 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                     key={product.id}
                     {...hoverProps(product)}
                     style={{ '--i': index + 1 } as React.CSSProperties}
-                    className="menu-row grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4.5 gap-y-1.5 border-b border-pancho-black/20 py-5"
+                    className="menu-row grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4.5 gap-y-1.5 border-b border-pancho-black/20 py-5 [@media(hover:none)]:grid-cols-[auto_minmax(0,1fr)] [@media(hover:none)]:gap-x-4"
                   >
+                    {/* Sin mouse no hay foto que siga al puntero: va al lado de cada plato, y el
+                        precio pasa abajo de la descripción para que el nombre tenga lugar */}
+                    <div className="foto-plato row-span-3 mt-1 hidden self-start [@media(hover:none)]:block">
+                      <div className="relative size-16 overflow-hidden bg-neutral-900">
+                        <Image src={product.image} alt="" fill sizes="64px" className="object-cover" />
+                      </div>
+                    </div>
                     <div className="flex min-w-0 items-baseline gap-2.5">
                       <h3 className="font-heading text-[clamp(22px,2vw,26px)] leading-[1.05]">{product.name}</h3>
                       {product.badge && (
@@ -321,7 +326,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                       )}
                       <span className="min-w-4 flex-1 -translate-y-1.25 border-b-2 border-dotted border-pancho-black/35" />
                     </div>
-                    <div className="row-span-2 flex items-center gap-3.5">
+                    <div className="row-span-2 flex items-center gap-3.5 [@media(hover:none)]:order-last [@media(hover:none)]:row-span-1 [@media(hover:none)]:mt-1 [@media(hover:none)]:justify-between">
                       <span className="font-heading text-[26px] leading-none text-pancho-red-deep">
                         {formatPrice(product.price)}
                       </span>
@@ -350,6 +355,11 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
               className="menu-row relative grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] items-center gap-x-14 gap-y-6 overflow-hidden bg-pancho-red-deep bg-[url('/images/fondo-footer-bordo.webp')] bg-cover bg-center p-7 text-white sm:p-12"
             >
               <div className="flex flex-col gap-3.5">
+                <div className="foto-plato mb-1 hidden w-32 rotate-6! self-end [@media(hover:none)]:block">
+                  <div className="relative aspect-square w-full overflow-hidden bg-neutral-900">
+                    <Image src={combo.image} alt="" fill sizes="128px" className="object-cover" />
+                  </div>
+                </div>
                 <span className="-rotate-2 self-start bg-white px-2.5 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-pancho-red-deep">
                   Promo · Combo
                 </span>
@@ -368,21 +378,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
       </div>
 
       {/* Foto que sigue al mouse sobre cada plato (solo con mouse) */}
-      {mounted && hoveredProduct && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none fixed z-40 hidden w-45 -rotate-4 bg-[#f4efe6] p-2 pb-7.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.7)] [@media(hover:hover)]:block"
-          style={{ left: mousePos.x + 28, top: mousePos.y - 110 }}
-        >
-          <div className="absolute -top-2.5 left-1/2 -ml-8 h-5 w-16 rotate-3 bg-[rgba(230,215,185,0.9)]" />
-          <div className="relative aspect-square w-full overflow-hidden bg-neutral-900">
-            <Image src={hoveredProduct.image} alt="" fill sizes="180px" className="object-cover" />
-          </div>
-          <span className="absolute inset-x-0 bottom-2 text-center font-heading text-[13px] uppercase leading-none text-pancho-black">
-            {hoveredProduct.name}
-          </span>
-        </div>
-      )}
+      {mounted && <FotoFlotante producto={hoveredProduct} />}
 
       {/* Barra con el pedido: abre el carrito */}
       {mounted && totalCartCount > 0 && (

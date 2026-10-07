@@ -1337,6 +1337,57 @@ html:has(.page-menu) {
   animation-delay: calc(var(--row-base, 0ms) + min(var(--i, 0), 9) * 45ms);
 }
 
+/* Polaroid que sigue al mouse (components/foto-flotante.tsx). Entra con un pequeño rebote,
+   sale con un fundido y, al pasar de un plato a otro, la foto cambia sin que desaparezca. */
+.foto-flotante {
+  position: relative;
+  width: 11.25rem;
+  padding: 0.5rem 0.5rem 1.875rem;
+  background: #f4efe6;
+  box-shadow: 0 20px 40px -10px rgb(0 0 0 / 0.55);
+  opacity: 0;
+  transform: translate3d(0, 10px, 0) scale(0.86);
+  transform-origin: 30% 90%;
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out;
+}
+
+.foto-flotante[data-visible='true'] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.22s ease-out,
+    transform 0.42s var(--ease-pop);
+}
+
+@starting-style {
+  .foto-flotante[data-visible='true'] {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.86);
+  }
+}
+
+@keyframes dpFotoCambio {
+  from {
+    opacity: 0.25;
+    scale: 1.06;
+  }
+}
+
+.foto-flotante__foto {
+  animation: dpFotoCambio 0.32s var(--ease-out);
+}
+
+/* Foto de cada plato en pantallas táctiles (sin mouse no hay foto que siga al puntero) */
+.foto-plato {
+  rotate: -3deg;
+  border: 2px solid var(--color-pancho-black);
+  background: var(--color-pancho-white);
+  padding: 3px;
+  box-shadow: 3px 3px 0 var(--color-pancho-black);
+}
+
 /* =========================================================
    CIFRAS (components/benefits-section.tsx)
    Cada cifra es un ticket de comanda: papel blanco, torcido, con el borde de
