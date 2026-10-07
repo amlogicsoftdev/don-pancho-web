@@ -99,6 +99,15 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     setTimeout(() => setJustAddedId(null), 900)
   }
 
+  // La foto se abre hacia el lado del plato: a la derecha si el plato está en la columna derecha,
+  // a la izquierda si está en la izquierda (así no tapa el resto de la carta).
+  const PHOTO_WIDTH = 180
+  const PHOTO_GAP = 28
+  const photoOnLeft = mounted && mousePos.x < window.innerWidth / 2
+  const photoLeft = photoOnLeft
+    ? Math.max(8, mousePos.x - PHOTO_GAP - PHOTO_WIDTH)
+    : Math.min(mousePos.x + PHOTO_GAP, (mounted ? window.innerWidth : 0) - PHOTO_WIDTH - 8)
+
   const hoverProps = (product: Product) => ({
     onMouseEnter: (e: React.MouseEvent) => {
       setHoveredProduct(product)
@@ -371,8 +380,8 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
       {mounted && hoveredProduct && (
         <div
           aria-hidden="true"
-          className="pointer-events-none fixed z-40 hidden w-45 -rotate-4 bg-[#f4efe6] p-2 pb-7.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.7)] [@media(hover:hover)]:block"
-          style={{ left: mousePos.x + 28, top: mousePos.y - 110 }}
+          className={`pointer-events-none fixed z-40 hidden w-45 bg-[#f4efe6] p-2 pb-7.5 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.7)] [@media(hover:hover)]:block ${photoOnLeft ? 'rotate-4' : '-rotate-4'}`}
+          style={{ left: photoLeft, top: mousePos.y - 110 }}
         >
           <div className="absolute -top-2.5 left-1/2 -ml-8 h-5 w-16 rotate-3 bg-[rgba(230,215,185,0.9)]" />
           <div className="relative aspect-square w-full overflow-hidden bg-neutral-900">
