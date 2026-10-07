@@ -74,7 +74,7 @@ h1, h2, h3, h4, .font-display {
   letter-spacing: 0.01em;
 }
 
-/* Scrollbar personalizado: oscuro en la carta y el panel, claro en el inicio */
+/* Scrollbar personalizado: oscuro en la carta, claro en el inicio y en el panel */
 html {
   --scrollbar-track: var(--color-pancho-black);
   --scrollbar-thumb: #2a2a2a;
@@ -1391,6 +1391,565 @@ html:has(.page-home) {
 }
 
 /* =========================================================
+   PANEL DE ADMINISTRACIÓN (app/admin)
+   La misma estética del inicio, pero pensada para trabajar: papel crema de fondo,
+   hojas blancas con una raya negra arriba, tipografía de afiche en los títulos y
+   bordes rectos. El botón principal es el del sitio (<PanchoButton>); los
+   secundarios son los de components/ui/button.tsx.
+   Casi no hay movimiento: solo la respuesta de los botones al apretarlos.
+
+   Estas clases van en la capa «components» para que las utilidades de Tailwind
+   puedan ajustarlas en cada pantalla (p-5, w-28, mt-4…).
+========================================================= */
+
+/* El papel queda quieto detrás mientras la pantalla scrollea: así no hay cortes
+   por más larga que sea la lista. */
+.panel {
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  background-color: var(--color-pancho-paper);
+  color: var(--color-pancho-black);
+}
+
+.panel::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: url('/images/fondo-secciones-crema.webp') center top / cover no-repeat;
+  pointer-events: none;
+}
+
+html:has(.panel) {
+  --scrollbar-track: var(--color-pancho-paper);
+  --scrollbar-thumb: #d8b98f;
+}
+
+/* En el panel el botón principal lleva el cuadrado naranja, como en «Nosotros».
+   Nunca se sale de su hoja: en pantallas angostas, un texto largo pasa a dos renglones. */
+.panel .btn-pancho {
+  --btn-chip-bg: var(--color-pancho-orange);
+  --btn-shadow: 0 12px 22px -14px rgb(0 0 0 / 0.55);
+  max-width: 100%;
+}
+
+.panel .btn-pancho__label {
+  min-width: 0;
+}
+
+.panel .btn-pancho__face {
+  padding-block: 0.5rem;
+  line-height: 1.15;
+  text-align: center;
+  white-space: normal;
+}
+
+.btn-pancho:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+/* Al imprimir (comandas) no va el papel de fondo */
+@media print {
+  .panel {
+    background: #fff;
+  }
+
+  .panel::before {
+    display: none;
+  }
+}
+
+@layer components {
+  /* --- Barra de arriba --- */
+
+  .pn-bar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    border-bottom: 2px solid var(--color-pancho-black);
+    background: rgb(255 238 214 / 0.94);
+    backdrop-filter: blur(10px);
+  }
+
+  .pn-nav-link {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2.75rem;
+    padding-inline: 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: background-color 0.2s ease-out;
+  }
+
+  .pn-nav-link:hover {
+    background: rgb(13 13 13 / 0.07);
+  }
+
+  .pn-nav-link:focus-visible {
+    outline: 2px solid var(--color-pancho-black);
+    outline-offset: -2px;
+  }
+
+  /* Sección en la que se está: bloque negro, como una etiqueta */
+  .pn-nav-link[aria-current='page'] {
+    background: var(--color-pancho-black);
+    color: var(--color-pancho-white);
+  }
+
+  /* Contador de pedidos pendientes */
+  .pn-count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.375rem;
+    height: 1.375rem;
+    padding-inline: 0.3rem;
+    background: var(--color-pancho-red);
+    color: var(--color-pancho-white);
+    font-size: 0.75rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  /* --- Textos --- */
+
+  /* Rótulo chico en mayúsculas: arriba de un título o de un dato */
+  .pn-eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgb(13 13 13 / 0.68);
+  }
+
+  /* Texto de apoyo */
+  .pn-muted {
+    color: rgb(13 13 13 / 0.68);
+  }
+
+  /* Enlace dentro de un texto o de una tabla */
+  .pn-link {
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--color-pancho-orange);
+    transition: text-decoration-color 0.2s ease-out;
+  }
+
+  .pn-link:hover {
+    text-decoration-color: var(--color-pancho-black);
+  }
+
+  /* «← Volver» */
+  .pn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(13 13 13 / 0.7);
+    transition: color 0.2s ease-out;
+  }
+
+  .pn-back:hover {
+    color: var(--color-pancho-black);
+  }
+
+  /* Etiqueta roja torcida, la de los flyers */
+  .pn-sticker {
+    display: inline-block;
+    rotate: -3deg;
+    background: var(--color-pancho-red);
+    padding: 0.3rem 0.5rem;
+    color: var(--color-pancho-white);
+    font-size: 0.75rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* --- Hojas --- */
+
+  /* Hoja blanca con una raya negra arriba */
+  .pn-card {
+    border: 1px solid rgb(13 13 13 / 0.16);
+    border-top: 3px solid var(--color-pancho-black);
+    border-radius: 2px;
+    background: var(--color-pancho-white);
+    box-shadow: 0 18px 28px -24px rgb(0 0 0 / 0.55);
+  }
+
+  /* Hoja de menos peso: para lo que no es parte del trabajo de todos los días */
+  .pn-card--soft {
+    border: 2px dashed rgb(13 13 13 / 0.3);
+    background: rgb(255 255 255 / 0.55);
+    box-shadow: none;
+  }
+
+  /* Línea de puntos entre renglones de una lista */
+  .pn-rows > * + * {
+    border-top: 2px dotted rgb(13 13 13 / 0.22);
+  }
+
+  /* --- Formularios --- */
+
+  .pn-label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    line-height: 1.3;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(13 13 13 / 0.72);
+  }
+
+  .pn-field {
+    height: 2.75rem;
+    width: 100%;
+    border: 2px solid var(--color-pancho-black);
+    border-radius: 2px;
+    background: var(--color-pancho-white);
+    padding-inline: 0.75rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-pancho-black);
+    outline: none;
+    transition: box-shadow 0.15s ease-out;
+  }
+
+  textarea.pn-field {
+    height: auto;
+    padding-block: 0.625rem;
+    line-height: 1.5;
+  }
+
+  .pn-field::placeholder {
+    font-weight: 500;
+    color: rgb(13 13 13 / 0.45);
+  }
+
+  .pn-field:focus-visible {
+    box-shadow: 0 0 0 3px var(--color-pancho-orange);
+  }
+
+  /* Casilla cuadrada: negra con la tilde blanca cuando está marcada */
+  .pn-check {
+    appearance: none;
+    display: inline-grid;
+    flex: none;
+    place-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid var(--color-pancho-black);
+    border-radius: 2px;
+    background: var(--color-pancho-white);
+    cursor: pointer;
+    transition: background-color 0.15s ease-out;
+  }
+
+  .pn-check::before {
+    content: '';
+    width: 0.8rem;
+    height: 0.8rem;
+    background: var(--color-pancho-white);
+    clip-path: polygon(14% 52%, 0 66%, 38% 100%, 100% 22%, 86% 9%, 37% 70%);
+    scale: 0;
+    transition: scale 0.15s var(--ease-out);
+  }
+
+  .pn-check:checked {
+    background: var(--color-pancho-black);
+  }
+
+  .pn-check:checked::before {
+    scale: 1;
+  }
+
+  .pn-check:focus-visible {
+    box-shadow: 0 0 0 3px var(--color-pancho-orange);
+    outline: none;
+  }
+
+  .pn-check:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  /* Opción dentro de un grupo de dos o tres (método de pago, filtros): la elegida va en negro */
+  .pn-option {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    border: 2px solid var(--color-pancho-black);
+    border-radius: 2px;
+    background: var(--color-pancho-white);
+    padding-inline: 1rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color 0.2s ease-out,
+      color 0.2s ease-out,
+      transform 0.16s var(--ease-out);
+  }
+
+  .pn-option:hover {
+    background: rgb(13 13 13 / 0.08);
+  }
+
+  .pn-option:active {
+    transform: scale(0.97);
+  }
+
+  .pn-option:focus-visible {
+    outline: 2px solid var(--color-pancho-black);
+    outline-offset: 2px;
+  }
+
+  .pn-option:is([aria-current='page'], [aria-pressed='true']) {
+    background: var(--color-pancho-black);
+    color: var(--color-pancho-white);
+  }
+
+  /* --- Estado de un pedido: etiqueta recta, de color pleno --- */
+
+  .pn-tag {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    border: 2px solid var(--color-pancho-black);
+    background: var(--color-pancho-white);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--color-pancho-black);
+  }
+
+  .pn-tag--lg {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8125rem;
+  }
+
+  .pn-tag[data-estado='pendiente'] {
+    background: var(--color-pancho-orange);
+  }
+
+  .pn-tag[data-estado='en_preparacion'] {
+    background: var(--color-pancho-yellow);
+  }
+
+  .pn-tag[data-estado='en_camino'] {
+    background: var(--color-pancho-black);
+    color: var(--color-pancho-white);
+  }
+
+  .pn-tag[data-estado='entregado'] {
+    border-color: #166534;
+    background: #166534;
+    color: var(--color-pancho-white);
+  }
+
+  .pn-tag[data-estado='cancelado'] {
+    border-color: var(--color-pancho-red-deep);
+    background: var(--color-pancho-white);
+    color: var(--color-pancho-red-deep);
+  }
+
+  /* --- Avisos --- */
+
+  .pn-alert {
+    --pn-alert: var(--color-pancho-black);
+    border: 1px solid rgb(13 13 13 / 0.16);
+    border-left: 6px solid var(--pn-alert);
+    border-radius: 2px;
+    background: var(--color-pancho-white);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .pn-alert--warn {
+    --pn-alert: var(--color-pancho-orange);
+  }
+
+  .pn-alert--ok {
+    --pn-alert: #166534;
+  }
+
+  .pn-alert--error {
+    --pn-alert: var(--color-pancho-red-deep);
+    color: var(--color-pancho-red-deep);
+  }
+
+  /* --- Tablas --- */
+
+  /* En pantallas angostas la tabla no se aprieta: se desliza de costado dentro de su hoja */
+  .pn-table {
+    width: 100%;
+    min-width: 36rem;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pn-table th {
+    border-bottom: 2px solid var(--color-pancho-black);
+    padding: 0.75rem 0.875rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: rgb(13 13 13 / 0.72);
+  }
+
+  .pn-table td {
+    padding: 0.75rem 0.875rem;
+    font-weight: 500;
+  }
+
+  .pn-table tbody tr + tr td {
+    border-top: 2px dotted rgb(13 13 13 / 0.2);
+  }
+
+  /* --- Pasos del pedido --- */
+
+  .pn-steps {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .pn-step {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+  }
+
+  /* Tramo que une cada paso con el anterior */
+  .pn-step + .pn-step::before {
+    content: '';
+    position: absolute;
+    top: 1.125rem;
+    right: calc(50% + 1.25rem);
+    left: calc(-50% + 1.25rem);
+    border-top: 2px dotted rgb(13 13 13 / 0.35);
+  }
+
+  /* El tramo queda lleno cuando el pedido ya llegó a ese paso */
+  .pn-step + .pn-step:is([data-paso='hecho'], [data-paso='actual'])::before {
+    border-top-style: solid;
+    border-top-color: var(--color-pancho-black);
+  }
+
+  .pn-step__num {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 2.375rem;
+    height: 2.375rem;
+    border: 2px solid rgb(13 13 13 / 0.35);
+    background: var(--color-pancho-white);
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    line-height: 1;
+    color: rgb(13 13 13 / 0.5);
+  }
+
+  .pn-step__name {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgb(13 13 13 / 0.6);
+  }
+
+  @media (max-width: 40rem) {
+    .pn-step__name {
+      font-size: 0.625rem;
+      letter-spacing: 0.02em;
+    }
+  }
+
+  .pn-step[data-paso='hecho'] .pn-step__num {
+    border-color: var(--color-pancho-black);
+    background: var(--color-pancho-black);
+    color: var(--color-pancho-white);
+  }
+
+  .pn-step[data-paso='actual'] .pn-step__num {
+    border-color: var(--color-pancho-black);
+    background: var(--color-pancho-orange);
+    box-shadow: 3px 3px 0 var(--color-pancho-black);
+    color: var(--color-pancho-black);
+  }
+
+  .pn-step:is([data-paso='hecho'], [data-paso='actual']) .pn-step__name {
+    color: var(--color-pancho-black);
+  }
+
+  /* --- Historial: una línea de tiempo --- */
+
+  .pn-timeline > li {
+    position: relative;
+    padding: 0 0 1rem 1.5rem;
+  }
+
+  .pn-timeline > li:last-child {
+    padding-bottom: 0;
+  }
+
+  .pn-timeline > li::before {
+    content: '';
+    position: absolute;
+    top: 0.35rem;
+    left: 0;
+    width: 0.625rem;
+    height: 0.625rem;
+    background: var(--color-pancho-black);
+  }
+
+  .pn-timeline > li:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 1.1rem;
+    bottom: 0.1rem;
+    left: 0.25rem;
+    border-left: 2px dotted rgb(13 13 13 / 0.35);
+  }
+}
+
+/* =========================================================
    MENOS MOVIMIENTO
    Si el usuario lo pidió en su sistema: nada se desplaza, gira ni se recorta.
    Las entradas quedan como un fundido corto, para que el orden se siga leyendo.
@@ -1466,6 +2025,8 @@ html:has(.page-home) {
   .btn-pancho,
   .btn-pancho__arrow,
   .about-photo__card,
+  .pn-option,
+  .pn-check::before,
   .ticket {
     transition: none;
   }

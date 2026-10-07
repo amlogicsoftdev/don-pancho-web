@@ -1,15 +1,12 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
+import { Printer } from 'lucide-react'
+import { PanchoButton } from '@/components/pancho-button'
 
 export function BotonImprimir() {
   return (
-    <Button
-      size="lg"
-      onClick={() => window.print()}
-      className="h-10 bg-pancho-orange px-4 text-pancho-black hover:bg-pancho-orange-deep"
-    >
-      Imprimir las dos comandas
-    </Button>
+    <PanchoButton onClick={() => window.print()} icon={<Printer className="size-5" aria-hidden="true" />}>
+      Imprimir comandas
+    </PanchoButton>
   )
 }

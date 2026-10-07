@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
-import { Button } from '@/components/ui/button'
+import { PanchoButton } from '@/components/pancho-button'
 import { authClient } from '@/lib/auth/client'
 
 export function LoginForm() {
@@ -32,35 +32,23 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1.5 text-sm">
-        Correo
-        <input
-          name="email"
-          type="email"
-          required
-          autoComplete="username"
-          className="h-10 rounded-lg border border-white/15 bg-pancho-black px-3 outline-none focus:border-pancho-orange"
-        />
+    <form onSubmit={onSubmit} className="flex flex-col gap-5">
+      <label className="block">
+        <span className="pn-label">Correo</span>
+        <input name="email" type="email" required autoComplete="username" className="pn-field" />
       </label>
-      <label className="flex flex-col gap-1.5 text-sm">
-        Contraseña
-        <input
-          name="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          className="h-10 rounded-lg border border-white/15 bg-pancho-black px-3 outline-none focus:border-pancho-orange"
-        />
+      <label className="block">
+        <span className="pn-label">Contraseña</span>
+        <input name="password" type="password" required autoComplete="current-password" className="pn-field" />
       </label>
       {error && (
-        <p role="alert" className="text-sm text-red-400">
+        <p role="alert" className="pn-alert pn-alert--error">
           {error}
         </p>
       )}
-      <Button type="submit" size="lg" disabled={enviando} className="h-10 bg-pancho-orange text-pancho-black hover:bg-pancho-orange-deep">
+      <PanchoButton type="submit" block disabled={enviando}>
         {enviando ? 'Ingresando…' : 'Ingresar'}
-      </Button>
+      </PanchoButton>
     </form>
   )
 }

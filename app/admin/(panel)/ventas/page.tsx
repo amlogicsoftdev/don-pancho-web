@@ -1,19 +1,20 @@
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 import { requerirDueno } from '@/lib/auth/guards'
 import { diaOperativo, esDiaValido, leerCorteHora, mostrarDia } from '@/lib/caja/dia'
 import { reporteVentas, type FiltroVentas } from '@/lib/caja/queries'
-import {
-  ETIQUETA_ESTADO,
-  ETIQUETA_PAGO,
-  formatearHora,
-  formatearNumero,
-  formatearPrecio,
-  formatearSoloFecha,
-} from '@/lib/orders/estados'
+import { ETIQUETA_PAGO, formatearHora, formatearNumero, formatearPrecio, formatearSoloFecha } from '@/lib/orders/estados'
+import { Encabezado } from '../encabezado'
+import { InsigniaEstado } from '../pedidos/insignia-estado'
 
 type Parametros = { desde?: string; hasta?: string; origen?: string; metodo?: string }
 
-const CAMPO = 'h-9 rounded-lg border border-white/15 bg-pancho-black px-2 text-sm'
+const Cifra = ({ rotulo, valor, destacada }: { rotulo: string; valor: string; destacada?: boolean }) => (
+  <div className="pn-card p-5">
+    <p className="pn-eyebrow">{rotulo}</p>
+    <p className={`mt-2 font-display text-4xl leading-none tabular-nums ${destacada ? 'text-pancho-red-deep' : ''}`}>{valor}</p>
+  </div>
+)
 
 export default async function VentasPage({ searchParams }: { searchParams: Promise<Parametros> }) {
   await requerirDueno()
@@ -32,111 +33,106 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
   const reporte = await reporteVentas(filtro)
 
   return (
-    <section className="mx-auto max-w-5xl space-y-6">
-      <h1 className="text-3xl">Ventas</h1>
+    <section className="mx-auto max-w-5xl">
+      <Encabezado
+        titulo="Ventas"
+        rotulo={`Del ${mostrarDia(filtro.desde)} al ${mostrarDia(filtro.hasta)}`}
+        descripcion="No incluye pedidos cancelados ni borrados."
+      />
 
-      <form method="get" className="flex flex-wrap items-end gap-3 rounded-xl border border-white/10 bg-pancho-surface p-4">
-        <label className="text-sm">
-          <span className="mb-1 block text-pancho-muted">Desde</span>
-          <input type="date" name="desde" defaultValue={filtro.desde} className={CAMPO} />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-pancho-muted">Hasta</span>
-          <input type="date" name="hasta" defaultValue={filtro.hasta} className={CAMPO} />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-pancho-muted">Origen</span>
-          <select name="origen" defaultValue={filtro.origen} className={CAMPO}>
-            <option value="todos">Todos</option>
-            <option value="web">Web</option>
-            <option value="mostrador">Mostrador</option>
-          </select>
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-pancho-muted">Pago</span>
-          <select name="metodo" defaultValue={filtro.metodo} className={CAMPO}>
-            <option value="todos">Todos</option>
-            <option value="efectivo">Efectivo</option>
-            <option value="transferencia">Transferencia</option>
-          </select>
-        </label>
-        <button className="h-9 rounded-lg bg-pancho-orange px-4 text-sm font-bold text-pancho-black">Filtrar</button>
-      </form>
+      <div className="mt-6 space-y-6">
+        <form method="get" className="flex flex-wrap items-end gap-3">
+          <label>
+            <span className="pn-label">Desde</span>
+            <input type="date" name="desde" defaultValue={filtro.desde} className="pn-field w-auto" />
+          </label>
+          <label>
+            <span className="pn-label">Hasta</span>
+            <input type="date" name="hasta" defaultValue={filtro.hasta} className="pn-field w-auto" />
+          </label>
+          <label>
+            <span className="pn-label">Origen</span>
+            <select name="origen" defaultValue={filtro.origen} className="pn-field w-auto">
+              <option value="todos">Todos</option>
+              <option value="web">Web</option>
+              <option value="mostrador">Mostrador</option>
+            </select>
+          </label>
+          <label>
+            <span className="pn-label">Pago</span>
+            <select name="metodo" defaultValue={filtro.metodo} className="pn-field w-auto">
+              <option value="todos">Todos</option>
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
+            </select>
+          </label>
+          <Button type="submit" variant="default">
+            Filtrar
+          </Button>
+        </form>
 
-      <p className="text-sm text-pancho-muted">
-        Período: {mostrarDia(filtro.desde)} al {mostrarDia(filtro.hasta)}. No incluye pedidos cancelados ni borrados.
-      </p>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-white/10 bg-pancho-surface p-4">
-          <p className="text-sm text-pancho-muted">Ventas ({reporte.cantidad})</p>
-          <p className="font-display text-2xl text-pancho-orange">{formatearPrecio(reporte.totalVentas)}</p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Cifra rotulo={`Ventas (${reporte.cantidad})`} valor={formatearPrecio(reporte.totalVentas)} destacada />
+          <Cifra rotulo="Gastos del período" valor={formatearPrecio(reporte.totalGastos)} />
+          <Cifra rotulo="Ventas menos gastos" valor={formatearPrecio(reporte.totalVentas - reporte.totalGastos)} />
         </div>
-        <div className="rounded-xl border border-white/10 bg-pancho-surface p-4">
-          <p className="text-sm text-pancho-muted">Gastos del período</p>
-          <p className="font-display text-2xl">{formatearPrecio(reporte.totalGastos)}</p>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-pancho-surface p-4">
-          <p className="text-sm text-pancho-muted">Ventas menos gastos</p>
-          <p className="font-display text-2xl">{formatearPrecio(reporte.totalVentas - reporte.totalGastos)}</p>
-        </div>
-      </div>
-      {(filtro.origen !== 'todos' || filtro.metodo !== 'todos') && (
-        <p className="text-xs text-pancho-muted">
-          Con filtros de origen o pago, el total de gastos sigue siendo el de todo el período.
-        </p>
-      )}
+        {(filtro.origen !== 'todos' || filtro.metodo !== 'todos') && (
+          <p className="pn-muted text-xs font-medium">
+            Con filtros de origen o pago, el total de gastos sigue siendo el de todo el período.
+          </p>
+        )}
 
-      {reporte.filas.length === 0 ? (
-        <p className="rounded-xl border border-white/10 bg-pancho-surface p-6 text-center text-pancho-muted">
-          No hay ventas con estos filtros.
-        </p>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/10 bg-pancho-surface">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/10 text-pancho-muted">
-              <tr>
-                <th className="p-3">N°</th>
-                <th className="p-3">Fecha</th>
-                <th className="p-3">Cliente</th>
-                <th className="p-3">Origen</th>
-                <th className="p-3">Pago</th>
-                <th className="p-3">Estado</th>
-                <th className="p-3 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/10">
-              {reporte.filas.map((v) => (
-                <tr key={v.id}>
-                  <td className="p-3 font-semibold">
-                    <Link href={`/admin/pedidos/${v.id}`} className="text-pancho-orange hover:underline">
-                      {formatearNumero(v.numero)}
-                    </Link>
-                  </td>
-                  <td className="p-3">
-                    {formatearSoloFecha(v.creadoEn)} {formatearHora(v.creadoEn)}
-                  </td>
-                  <td className="p-3">{v.clienteNombre}</td>
-                  <td className="p-3">{v.origen === 'web' ? 'Web' : 'Mostrador'}</td>
-                  <td className="p-3">
-                    {ETIQUETA_PAGO[v.metodoPago]}
-                    {v.metodoPago === 'transferencia' && !v.pagoConfirmado && (
-                      <span className="text-amber-300"> (sin confirmar)</span>
-                    )}
-                  </td>
-                  <td className="p-3">{ETIQUETA_ESTADO[v.estado]}</td>
-                  <td className="p-3 text-right font-semibold">{formatearPrecio(v.total)}</td>
+        {reporte.filas.length === 0 ? (
+          <p className="pn-card pn-muted p-8 text-center font-semibold">No hay ventas con estos filtros.</p>
+        ) : (
+          <div className="pn-card overflow-x-auto">
+            <table className="pn-table">
+              <thead>
+                <tr>
+                  <th>N°</th>
+                  <th>Fecha</th>
+                  <th>Cliente</th>
+                  <th>Origen</th>
+                  <th>Pago</th>
+                  <th>Estado</th>
+                  <th className="text-right">Total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {reporte.hayMas && (
-        <p className="text-sm text-amber-300">
-          Se muestran las primeras {reporte.filas.length} de {reporte.cantidad} ventas. Los totales son de todas.
-        </p>
-      )}
+              </thead>
+              <tbody>
+                {reporte.filas.map((v) => (
+                  <tr key={v.id}>
+                    <td>
+                      <Link href={`/admin/pedidos/${v.id}`} className="pn-link">
+                        {formatearNumero(v.numero)}
+                      </Link>
+                    </td>
+                    <td className="whitespace-nowrap">
+                      {formatearSoloFecha(v.creadoEn)} {formatearHora(v.creadoEn)}
+                    </td>
+                    <td className="font-bold">{v.clienteNombre}</td>
+                    <td>{v.origen === 'web' ? 'Web' : 'Mostrador'}</td>
+                    <td>
+                      {ETIQUETA_PAGO[v.metodoPago]}
+                      {v.metodoPago === 'transferencia' && !v.pagoConfirmado && (
+                        <strong className="font-bold text-pancho-red-deep"> (sin confirmar)</strong>
+                      )}
+                    </td>
+                    <td>
+                      <InsigniaEstado estado={v.estado} />
+                    </td>
+                    <td className="text-right font-extrabold">{formatearPrecio(v.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {reporte.hayMas && (
+          <p className="pn-alert pn-alert--warn">
+            Se muestran las primeras {reporte.filas.length} de {reporte.cantidad} ventas. Los totales son de todas.
+          </p>
+        )}
+      </div>
     </section>
   )
 }

@@ -32,7 +32,7 @@ function pitar() {
 }
 
 /** Enlace a Pedidos con el contador de pendientes; avisa y refresca cuando entra un pedido nuevo. */
-export function AvisoPedidos({ pendientesIniciales }: { pendientesIniciales: number }) {
+export function AvisoPedidos({ pendientesIniciales, activo }: { pendientesIniciales: number; activo: boolean }) {
   const router = useRouter()
   const [pendientes, setPendientes] = useState(pendientesIniciales)
   const [hayNuevo, setHayNuevo] = useState(false)
@@ -72,14 +72,12 @@ export function AvisoPedidos({ pendientesIniciales }: { pendientesIniciales: num
     <Link
       href="/admin/pedidos"
       onClick={() => setHayNuevo(false)}
-      className="relative flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold hover:bg-white/5"
+      className="pn-nav-link"
+      aria-current={activo ? 'page' : undefined}
     >
       Pedidos
       {pendientes > 0 && (
-        <span
-          className={`rounded-full bg-pancho-orange px-2 py-0.5 text-xs font-bold text-pancho-black ${hayNuevo ? 'animate-pulse' : ''}`}
-          aria-label={`${pendientes} pedidos pendientes`}
-        >
+        <span className={`pn-count ${hayNuevo ? 'animate-pulse' : ''}`} aria-label={`${pendientes} pedidos pendientes`}>
           {pendientes}
         </span>
       )}

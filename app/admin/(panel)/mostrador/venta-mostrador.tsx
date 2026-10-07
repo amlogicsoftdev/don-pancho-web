@@ -1,7 +1,9 @@
 'use client'
 
+import { Minus, Plus, Printer } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
+import { PanchoButton } from '@/components/pancho-button'
 import { Button } from '@/components/ui/button'
 import { registrarVentaMostrador } from '@/lib/orders/actions'
 import { formatearNumero, formatearPrecio } from '@/lib/orders/estados'
@@ -64,38 +66,38 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-      <div className="space-y-4">
-        {menu.length === 0 && (
-          <p className="rounded-xl border border-white/10 bg-pancho-surface p-4 text-pancho-muted">
-            No hay productos activos en el menú.
-          </p>
-        )}
+    <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      {/* La carta: se suma o se quita con los botones de cada renglón */}
+      <div className="space-y-6">
+        {menu.length === 0 && <p className="pn-card pn-muted p-6 font-semibold">No hay productos activos en el menú.</p>}
         {menu.map((categoria) => (
-          <div key={categoria.id} className="rounded-xl border border-white/10 bg-pancho-surface p-4">
-            <h2 className="mb-2 text-lg">{categoria.nombre}</h2>
-            <ul className="divide-y divide-white/10">
+          <div key={categoria.id} className="pn-card p-5 sm:p-6">
+            <h2 className="text-2xl leading-none">{categoria.nombre}</h2>
+            <ul className="pn-rows mt-3">
               {categoria.productos.map((p) => {
                 const cantidad = cantidades[p.id] ?? 0
                 return (
-                  <li key={p.id} className="flex items-center justify-between gap-3 py-2">
+                  <li key={p.id} className="flex items-center justify-between gap-3 py-2.5">
                     <div className="min-w-0">
-                      <p className="truncate">{p.nombre}</p>
-                      <p className="text-sm text-pancho-muted">{formatearPrecio(p.precio)}</p>
+                      <p className="truncate text-base leading-snug font-bold">{p.nombre}</p>
+                      <p className="pn-muted text-sm font-semibold tabular-nums">{formatearPrecio(p.precio)}</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-none items-center gap-1.5">
                       <Button
-                        variant="outline"
                         size="icon"
                         onClick={() => cambiar(p.id, -1)}
                         disabled={cantidad === 0}
                         aria-label={`Quitar ${p.nombre}`}
                       >
-                        −
+                        <Minus strokeWidth={3} />
                       </Button>
-                      <span className="w-6 text-center font-bold">{cantidad}</span>
-                      <Button variant="outline" size="icon" onClick={() => cambiar(p.id, 1)} aria-label={`Agregar ${p.nombre}`}>
-                        +
+                      <span
+                        className={`grid h-11 w-10 place-items-center font-heading text-2xl leading-none tabular-nums ${cantidad > 0 ? 'bg-pancho-black text-white' : ''}`}
+                      >
+                        {cantidad}
+                      </span>
+                      <Button size="icon" onClick={() => cambiar(p.id, 1)} aria-label={`Agregar ${p.nombre}`}>
+                        <Plus strokeWidth={3} />
                       </Button>
                     </div>
                   </li>
@@ -106,28 +108,34 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
         ))}
       </div>
 
-      <aside className="h-fit space-y-4 rounded-xl border border-white/10 bg-pancho-surface p-4 lg:sticky lg:top-4">
-        <h2 className="text-lg">Venta</h2>
+      {/* La venta: queda a la vista mientras se recorre la carta */}
+      <aside className="pn-card space-y-5 p-5 lg:sticky lg:top-20">
+        <h2 className="text-2xl leading-none">Venta</h2>
 
         {registrada && (
-          <div role="status" className="rounded-lg border border-emerald-400/40 bg-emerald-400/10 p-3 text-sm text-emerald-200">
+          <div role="status" className="pn-alert pn-alert--ok">
             <p>
               Venta N° {formatearNumero(registrada.numero)} registrada por {formatearPrecio(registrada.total)}.
             </p>
-            <Link href={`/admin/pedidos/${registrada.id}/comandas`} target="_blank" className="font-semibold underline">
+            <Link
+              href={`/admin/pedidos/${registrada.id}/comandas`}
+              target="_blank"
+              className="pn-link mt-1 inline-flex items-center gap-1.5"
+            >
+              <Printer className="size-4" aria-hidden="true" />
               Imprimir comanda
             </Link>
           </div>
         )}
 
         {lineas.length === 0 ? (
-          <p className="text-sm text-pancho-muted">Todavía no agregaste productos.</p>
+          <p className="pn-muted text-sm font-semibold">Todavía no agregaste productos.</p>
         ) : (
-          <ul className="space-y-1 text-sm">
+          <ul className="space-y-1.5 text-sm font-semibold tabular-nums">
             {lineas.map((p) => (
-              <li key={p.id} className="flex justify-between gap-2">
+              <li key={p.id} className="flex justify-between gap-3">
                 <span>
-                  {cantidades[p.id]}x {p.nombre}
+                  <strong className="font-extrabold">{cantidades[p.id]}x</strong> {p.nombre}
                 </span>
                 <span>{formatearPrecio(p.precio * cantidades[p.id])}</span>
               </li>
@@ -135,13 +143,13 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
           </ul>
         )}
 
-        <div className="flex items-baseline justify-between border-t border-white/10 pt-3">
-          <span className="text-pancho-muted">Total</span>
-          <span className="font-display text-2xl text-pancho-orange">{formatearPrecio(total)}</span>
+        <div className="flex items-baseline justify-between border-t-2 border-pancho-black pt-3">
+          <span className="font-display text-2xl leading-none">Total</span>
+          <span className="font-display text-4xl leading-none tabular-nums">{formatearPrecio(total)}</span>
         </div>
 
         <fieldset>
-          <legend className="mb-1 text-sm font-semibold">Método de pago</legend>
+          <legend className="pn-label">Método de pago</legend>
           <div className="grid grid-cols-2 gap-2">
             {(['efectivo', 'transferencia'] as const).map((metodo) => (
               <button
@@ -149,11 +157,7 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
                 type="button"
                 onClick={() => setMetodoPago(metodo)}
                 aria-pressed={metodoPago === metodo}
-                className={`rounded-lg border px-3 py-2 text-sm font-semibold capitalize ${
-                  metodoPago === metodo
-                    ? 'border-pancho-orange bg-pancho-orange text-pancho-black'
-                    : 'border-white/15 text-pancho-muted hover:text-pancho-cream'
-                }`}
+                className="pn-option"
               >
                 {metodo}
               </button>
@@ -161,35 +165,27 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
           </div>
         </fieldset>
 
-        <label className="block text-sm">
-          <span className="mb-1 block font-semibold">Nombre (opcional)</span>
-          <input
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            maxLength={80}
-            className="h-9 w-full rounded-lg border border-white/15 bg-pancho-black px-3 outline-none focus:border-pancho-orange"
-          />
+        <label className="block">
+          <span className="pn-label">Nombre (opcional)</span>
+          <input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={80} className="pn-field" />
         </label>
 
         {error && (
-          <p role="alert" className="text-sm text-rose-300">
+          <p role="alert" className="pn-alert pn-alert--error">
             {error}
           </p>
         )}
 
-        <Button
-          size="lg"
-          disabled={enCurso || lineas.length === 0}
-          onClick={registrar}
-          className="h-10 w-full bg-pancho-orange text-pancho-black hover:bg-pancho-orange-deep"
-        >
-          {enCurso ? 'Registrando…' : 'Registrar venta'}
-        </Button>
-        {lineas.length > 0 && (
-          <Button variant="ghost" size="lg" className="h-9 w-full" onClick={limpiar} disabled={enCurso}>
-            Vaciar
-          </Button>
-        )}
+        <div className="space-y-2">
+          <PanchoButton block disabled={enCurso || lineas.length === 0} onClick={registrar}>
+            {enCurso ? 'Registrando…' : 'Registrar venta'}
+          </PanchoButton>
+          {lineas.length > 0 && (
+            <Button variant="ghost" className="w-full" onClick={limpiar} disabled={enCurso}>
+              Vaciar
+            </Button>
+          )}
+        </div>
       </aside>
     </div>
   )

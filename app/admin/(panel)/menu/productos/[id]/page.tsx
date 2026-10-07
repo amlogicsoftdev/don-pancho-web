@@ -1,8 +1,10 @@
+import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requerirDueno } from '@/lib/auth/guards'
 import { cloudinaryConfigurado } from '@/lib/menu/cloudinary'
 import { listarCategorias, obtenerProducto } from '@/lib/menu/admin-queries'
+import { Encabezado } from '../../../encabezado'
 import { FormularioProducto } from './formulario-producto'
 
 export default async function ProductoPage({
@@ -30,15 +32,16 @@ export default async function ProductoPage({
   const categoriaInicial = esNuevo ? Number(categoria) || categorias[0]?.id : producto!.categoriaId
 
   return (
-    <section className="mx-auto max-w-2xl space-y-4">
-      <Link href="/admin/menu" className="text-sm text-pancho-muted hover:text-pancho-cream">
-        ← Volver al menú
+    <section className="mx-auto max-w-2xl">
+      <Link href="/admin/menu" className="pn-back">
+        <ArrowLeft className="size-4" />
+        Volver al menú
       </Link>
-      <h1 className="text-3xl">{esNuevo ? 'Nuevo producto' : 'Editar producto'}</h1>
+      <div className="mt-2 mb-6">
+        <Encabezado titulo={esNuevo ? 'Nuevo producto' : 'Editar producto'} rotulo={producto?.nombre} />
+      </div>
       {categorias.length === 0 ? (
-        <p className="rounded-xl border border-white/10 bg-pancho-surface p-4 text-pancho-muted">
-          Primero creá una categoría desde el menú.
-        </p>
+        <p className="pn-alert pn-alert--warn">Primero creá una categoría desde el menú.</p>
       ) : (
         <FormularioProducto
           categorias={categorias.map((c) => ({ id: c.id, nombre: c.nombre }))}

@@ -3,10 +3,10 @@
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition, type FormEvent } from 'react'
+import { PanchoButton } from '@/components/pancho-button'
 import { Button } from '@/components/ui/button'
 import { guardarProducto, pedirFirmaSubida } from '@/lib/menu/actions'
 
-const CAMPO = 'h-10 w-full rounded-lg border border-white/15 bg-pancho-black px-3 outline-none focus:border-pancho-orange'
 const FORMATOS = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_MB = 5
 
@@ -93,31 +93,34 @@ export function FormularioProducto({ categorias, cloudinaryListo, inicial }: Pro
   }
 
   return (
-    <form onSubmit={enviar} className="space-y-4 rounded-xl border border-white/10 bg-pancho-surface p-4">
-      <label className="block text-sm">
-        <span className="mb-1 block text-pancho-muted">Nombre</span>
-        <input name="nombre" required maxLength={80} defaultValue={inicial.nombre} className={CAMPO} />
+    <form onSubmit={enviar} className="pn-card space-y-5 p-5 sm:p-6">
+      <label className="block">
+        <span className="pn-label">Nombre</span>
+        <input name="nombre" required maxLength={80} defaultValue={inicial.nombre} className="pn-field" />
       </label>
 
-      <label className="block text-sm">
-        <span className="mb-1 block text-pancho-muted">Descripción</span>
-        <textarea
-          name="descripcion"
-          rows={3}
-          maxLength={300}
-          defaultValue={inicial.descripcion}
-          className="w-full rounded-lg border border-white/15 bg-pancho-black p-3 outline-none focus:border-pancho-orange"
-        />
+      <label className="block">
+        <span className="pn-label">Descripción</span>
+        <textarea name="descripcion" rows={3} maxLength={300} defaultValue={inicial.descripcion} className="pn-field" />
       </label>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <label className="block text-sm">
-          <span className="mb-1 block text-pancho-muted">Precio ($)</span>
-          <input name="precio" type="number" required min={1} step={1} inputMode="numeric" defaultValue={inicial.precio || ''} className={CAMPO} />
+        <label className="block">
+          <span className="pn-label">Precio ($)</span>
+          <input
+            name="precio"
+            type="number"
+            required
+            min={1}
+            step={1}
+            inputMode="numeric"
+            defaultValue={inicial.precio || ''}
+            className="pn-field"
+          />
         </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-pancho-muted">Categoría</span>
-          <select name="categoriaId" defaultValue={inicial.categoriaId} className={CAMPO}>
+        <label className="block">
+          <span className="pn-label">Categoría</span>
+          <select name="categoriaId" defaultValue={inicial.categoriaId} className="pn-field">
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nombre}
@@ -125,66 +128,74 @@ export function FormularioProducto({ categorias, cloudinaryListo, inicial }: Pro
             ))}
           </select>
         </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-pancho-muted">Etiqueta (opcional)</span>
-          <input name="etiqueta" maxLength={30} defaultValue={inicial.etiqueta} placeholder="Ej.: Más pedida" className={CAMPO} />
+        <label className="block">
+          <span className="pn-label">Etiqueta (opcional)</span>
+          <input name="etiqueta" maxLength={30} defaultValue={inicial.etiqueta} placeholder="Ej.: Más pedida" className="pn-field" />
         </label>
       </div>
 
-      <div className="space-y-2 text-sm">
-        <span className="block text-pancho-muted">Imagen</span>
-        {imagenUrl ? (
-          <div className="relative h-40 w-40 overflow-hidden rounded-lg border border-white/15">
-            <Image src={imagenUrl} alt="Vista previa de la imagen del producto" fill sizes="160px" className="object-cover" />
-          </div>
-        ) : (
-          <p className="text-pancho-muted">Sin imagen: en la carta se muestra el logo.</p>
-        )}
-        {cloudinaryListo ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <input
-              type="file"
-              accept={FORMATOS.join(',')}
-              disabled={subiendo}
-              aria-label="Elegir imagen del producto"
-              onChange={(e) => {
-                const archivo = e.target.files?.[0]
-                if (archivo) void subirImagen(archivo)
-                e.target.value = ''
-              }}
-              className="text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-pancho-cream"
-            />
-            {subiendo && <span className="text-pancho-muted">Subiendo…</span>}
-            {imagenUrl && !subiendo && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setImagenUrl('')}>
-                Quitar imagen
-              </Button>
+      {/* Imagen: la vista previa a la izquierda y, al lado, cómo cambiarla */}
+      <div className="border-y-2 border-dotted border-pancho-black/25 py-5">
+        <span className="pn-label">Imagen</span>
+        <div className="flex flex-wrap items-start gap-5">
+          {imagenUrl ? (
+            <div className="relative size-36 flex-none overflow-hidden border-2 border-pancho-black bg-pancho-paper">
+              <Image src={imagenUrl} alt="Vista previa de la imagen del producto" fill sizes="144px" className="object-cover" />
+            </div>
+          ) : (
+            <div className="pn-muted grid size-36 flex-none place-items-center border-2 border-dashed border-pancho-black/35 p-3 text-center text-xs font-semibold">
+              Sin imagen: en la carta se muestra el logo.
+            </div>
+          )}
+
+          <div className="min-w-56 flex-1 space-y-3 text-sm">
+            {cloudinaryListo ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <input
+                  type="file"
+                  accept={FORMATOS.join(',')}
+                  disabled={subiendo}
+                  aria-label="Elegir imagen del producto"
+                  onChange={(e) => {
+                    const archivo = e.target.files?.[0]
+                    if (archivo) void subirImagen(archivo)
+                    e.target.value = ''
+                  }}
+                  className="max-w-full text-xs font-semibold file:mr-3 file:h-10 file:cursor-pointer file:rounded-xs file:border-2 file:border-solid file:border-pancho-black file:bg-white file:px-3 file:font-sans file:text-[0.6875rem] file:font-extrabold file:tracking-[0.06em] file:text-pancho-black file:uppercase"
+                />
+                {subiendo && <span className="pn-muted font-semibold">Subiendo…</span>}
+                {imagenUrl && !subiendo && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setImagenUrl('')}>
+                    Quitar imagen
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <p className="pn-alert pn-alert--warn">
+                La subida de imágenes todavía no está configurada (faltan las claves de Cloudinary en el servidor).
+              </p>
             )}
+            <p className="pn-muted text-xs font-medium">JPG, PNG o WebP, hasta {MAX_MB} MB. Se ve mejor una foto cuadrada.</p>
           </div>
-        ) : (
-          <p className="text-amber-300">
-            La subida de imágenes todavía no está configurada (faltan las claves de Cloudinary en el servidor).
-          </p>
-        )}
-        <p className="text-xs text-pancho-muted">JPG, PNG o WebP, hasta {MAX_MB} MB. Se ve mejor una foto cuadrada.</p>
+        </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="activo" defaultChecked={inicial.activo} className="size-4 accent-pancho-orange" />
+      <label className="flex cursor-pointer items-center gap-3 text-sm font-bold">
+        <input type="checkbox" name="activo" defaultChecked={inicial.activo} className="pn-check" />
         Activo (se muestra en la carta)
       </label>
 
       {error && (
-        <p role="alert" className="text-sm text-rose-300">
+        <p role="alert" className="pn-alert pn-alert--error">
           {error}
         </p>
       )}
 
-      <div className="flex gap-2">
-        <Button type="submit" size="lg" disabled={enCurso || subiendo} className="h-10 bg-pancho-orange px-4 text-pancho-black hover:bg-pancho-orange-deep">
+      <div className="flex flex-wrap items-center gap-3">
+        <PanchoButton type="submit" disabled={enCurso || subiendo}>
           {enCurso ? 'Guardando…' : 'Guardar producto'}
-        </Button>
-        <Button type="button" variant="ghost" size="lg" className="h-10" onClick={() => router.push('/admin/menu')} disabled={enCurso}>
+        </PanchoButton>
+        <Button type="button" variant="ghost" onClick={() => router.push('/admin/menu')} disabled={enCurso}>
           Cancelar
         </Button>
       </div>
