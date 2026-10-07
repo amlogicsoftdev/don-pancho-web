@@ -182,7 +182,7 @@ export function FormularioProducto({ categorias, cloudinaryListo, inicial }: Pro
 
       <label className="flex cursor-pointer items-center gap-3 text-sm font-bold">
         <input type="checkbox" name="activo" defaultChecked={inicial.activo} className="pn-check" />
-        Activo (se muestra en la carta)
+        Dado de alta (se muestra en la carta)
       </label>
 
       {error && (
