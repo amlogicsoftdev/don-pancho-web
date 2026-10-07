@@ -38,6 +38,9 @@ export function Hero() {
     let pointerX = 0
     let pointerY = 0
     let heroHeight = section.offsetHeight || 1
+    // Lo último que se escribió en las hamburguesas: solo se toca el estilo si cambia (en el
+    // celular no hay mouse y nunca cambia; escribirlo en cada cuadro del scroll era trabajo de más)
+    let ultimoDesplazamiento = ''
 
     const update = () => {
       rafId = null
@@ -53,7 +56,11 @@ export function Hero() {
       const follow = Math.max(0, 1 - scrollY / 120)
       const x = (pointerX * -18 * follow).toFixed(1)
       const y = (pointerY * -12 * follow).toFixed(1)
-      for (const burger of burgers) burger.style.translate = `${x}px ${y}px`
+      const desplazamiento = `${x}px ${y}px`
+      if (desplazamiento !== ultimoDesplazamiento) {
+        ultimoDesplazamiento = desplazamiento
+        for (const burger of burgers) burger.style.translate = desplazamiento
+      }
     }
 
     const requestUpdate = () => {
