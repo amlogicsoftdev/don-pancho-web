@@ -1,12 +1,13 @@
 'use server'
 
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { requerirUsuario } from '@/lib/auth/guards'
 import { db, schema } from '@/lib/db'
 import { crearVentaMostrador, ErrorPedido } from './create'
 import { ESTADOS_ACTIVOS, pasosDelPedido, sePuedeCancelar, siguienteEstado, type EstadoPedido } from './estados'
-import { validarVentaMostrador } from './validate'
+import { linkConfirmacion, linkRechazo } from './mensajes'
+import { esTiempoEntrega, validarVentaMostrador } from './validate'
 
 // Acciones del panel sobre un pedido. Cada una verifica sesión y rol en el servidor
 // (los Server Actions se pueden invocar con un POST directo, no solo desde los botones),
@@ -162,6 +163,78 @@ export async function aplicarDescuento(id: number, porcentaje: number): Promise<
   return { ok: true }
 }
 
+/** Resultado de las acciones que pueden abrir WhatsApp: el link, si hay que avisar al cliente. */
+export type ResultadoConAviso = { ok: true; linkWhatsApp: string | null } | { ok: false; error: string }
+
+/**
+ * Confirma un pedido pendiente: lo pasa a "en preparación" con el tiempo de entrega que se le
+ * informa al cliente. Si `notificar`, devuelve el link de WhatsApp con el mensaje armado.
+ */
+export async function confirmarPedido(id: number, minutos: number, notificar: boolean): Promise<ResultadoConAviso> {
+  const usuario = await requerirUsuario()
+  if (!idValido(id)) return { ok: false, error: 'Pedido inválido.' }
+  if (!esTiempoEntrega(minutos)) return { ok: false, error: 'Elegí el tiempo de entrega.' }
+
+  const pedido = await leerPedido(id)
+  if (!pedido) return { ok: false, error: 'El pedido no existe.' }
+  if (pedido.estado !== 'pendiente') return { ok: false, error: 'Este pedido ya estaba confirmado.' }
+
+  const entregaEstimada = new Date(Date.now() + minutos * 60_000)
+  const actualizado = await db.transaction(async (tx) => {
+    const [fila] = await tx
+      .update(schema.pedidos)
+      .set({ estado: 'en_preparacion', tiempoEstimadoMin: minutos, entregaEstimada, actualizadoEn: new Date() })
+      .where(and(eq(schema.pedidos.id, id), eq(schema.pedidos.estado, 'pendiente'), isNull(schema.pedidos.borradoEn)))
+      .returning()
+    if (!fila) return null
+
+    await tx.insert(schema.pedidoHistorial).values({
+      pedidoId: id,
+      estadoAnterior: 'pendiente',
+      estadoNuevo: 'en_preparacion',
+      usuarioId: usuario.id,
+    })
+    return fila
+  })
+
+  refrescar()
+  if (!actualizado) return { ok: false, error: 'El pedido cambió mientras lo mirabas. Se actualizó la pantalla.' }
+  return { ok: true, linkWhatsApp: notificar ? await linkConfirmacion(actualizado) : null }
+}
+
+/**
+ * Rechaza un pedido pendiente (queda cancelado, con el motivo en anulaciones). Si `notificar`,
+ * devuelve el link de WhatsApp con el aviso para el cliente.
+ */
+export async function rechazarPedido(id: number, motivoCrudo: string, notificar: boolean): Promise<ResultadoConAviso> {
+  const usuario = await requerirUsuario()
+  if (!idValido(id)) return { ok: false, error: 'Pedido inválido.' }
+
+  const validado = validarMotivo(motivoCrudo)
+  if ('error' in validado) return { ok: false, error: validado.error }
+
+  const pedido = await leerPedido(id)
+  if (!pedido) return { ok: false, error: 'El pedido no existe.' }
+  if (pedido.estado !== 'pendiente') return { ok: false, error: 'Solo se puede rechazar un pedido pendiente.' }
+
+  const resultado = await anularComoCancelado(pedido, validado.motivo, usuario.id)
+  if (!resultado.ok) return resultado
+  return { ok: true, linkWhatsApp: notificar ? await linkRechazo(pedido, validado.motivo) : null }
+}
+
+/** Suma una impresión de las comandas: desde la segunda, salen marcadas como REIMPRESIÓN. */
+export async function registrarImpresion(id: number): Promise<ResultadoAccion> {
+  await requerirUsuario()
+  if (!idValido(id)) return { ok: false, error: 'Pedido inválido.' }
+
+  await db
+    .update(schema.pedidos)
+    .set({ comandasImpresas: sql`${schema.pedidos.comandasImpresas} + 1` })
+    .where(and(eq(schema.pedidos.id, id), isNull(schema.pedidos.borradoEn)))
+  revalidatePath(`/admin/pedidos/${id}/comandas`)
+  return { ok: true }
+}
+
 /** Cancela el pedido. El motivo es obligatorio y queda en el registro de anulaciones. */
 export async function cancelarPedido(id: number, motivoCrudo: string): Promise<ResultadoAccion> {
   const usuario = await requerirUsuario()
@@ -174,26 +247,37 @@ export async function cancelarPedido(id: number, motivoCrudo: string): Promise<R
   if (!pedido) return { ok: false, error: 'El pedido no existe.' }
   if (!sePuedeCancelar(pedido.estado)) return { ok: false, error: 'Este pedido ya no se puede cancelar.' }
 
+  return anularComoCancelado(pedido, validado.motivo, usuario.id)
+}
+
+/** Pasa el pedido a cancelado y deja el motivo en anulaciones (cancelar y rechazar). */
+async function anularComoCancelado(
+  pedido: NonNullable<Awaited<ReturnType<typeof leerPedido>>>,
+  motivo: string,
+  usuarioId: string,
+): Promise<ResultadoAccion> {
   const cambiado = await db.transaction(async (tx) => {
     const filas = await tx
       .update(schema.pedidos)
       .set({ estado: 'cancelado', actualizadoEn: new Date() })
-      .where(and(eq(schema.pedidos.id, id), eq(schema.pedidos.estado, pedido.estado), isNull(schema.pedidos.borradoEn)))
+      .where(
+        and(eq(schema.pedidos.id, pedido.id), eq(schema.pedidos.estado, pedido.estado), isNull(schema.pedidos.borradoEn)),
+      )
       .returning({ id: schema.pedidos.id })
     if (filas.length === 0) return false
 
     await tx.insert(schema.pedidoHistorial).values({
-      pedidoId: id,
+      pedidoId: pedido.id,
       estadoAnterior: pedido.estado,
       estadoNuevo: 'cancelado',
-      usuarioId: usuario.id,
+      usuarioId,
     })
     await tx.insert(schema.anulaciones).values({
-      pedidoId: id,
+      pedidoId: pedido.id,
       numeroPedido: pedido.numero,
       accion: 'cancelado',
-      motivo: validado.motivo,
-      usuarioId: usuario.id,
+      motivo,
+      usuarioId,
     })
     return true
   })
@@ -260,10 +344,16 @@ export async function confirmarPago(id: number, confirmado: boolean): Promise<Re
   return { ok: true }
 }
 
-export type ResultadoVenta = { ok: true; id: number; numero: number; total: number } | { ok: false; error: string }
+export type ResultadoVenta =
+  | { ok: true; id: number; numero: number; total: number; linkWhatsApp: string | null }
+  | { ok: false; error: string }
 
-/** Carga una venta de mostrador (la hace tanto el empleado como el dueño). */
-export async function registrarVentaMostrador(entrada: unknown): Promise<ResultadoVenta> {
+/**
+ * Carga una venta de mostrador (la hace tanto el empleado como el dueño). Entra confirmada,
+ * "en preparación", con su tiempo de entrega. Si `notificar` y hay teléfono, devuelve el link
+ * de WhatsApp para avisarle al cliente.
+ */
+export async function registrarVentaMostrador(entrada: unknown, notificar = false): Promise<ResultadoVenta> {
   const usuario = await requerirUsuario()
 
   const validado = validarVentaMostrador(entrada)
@@ -272,7 +362,12 @@ export async function registrarVentaMostrador(entrada: unknown): Promise<Resulta
   try {
     const creado = await crearVentaMostrador(validado.venta, usuario.id)
     refrescar()
-    return { ok: true, id: creado.id, numero: creado.numero, total: creado.total }
+    let link: string | null = null
+    if (notificar === true && validado.venta.clienteTelefono) {
+      const pedido = await leerPedido(creado.id)
+      link = pedido ? await linkConfirmacion(pedido) : null
+    }
+    return { ok: true, id: creado.id, numero: creado.numero, total: creado.total, linkWhatsApp: link }
   } catch (error) {
     if (error instanceof ErrorPedido) return { ok: false, error: error.message }
     console.error('No se pudo guardar la venta de mostrador', error)

@@ -48,6 +48,24 @@ export function siguienteEstado(estado: EstadoPedido, modalidad: ModalidadPedido
   }
 }
 
+/** Tiempos de entrega que se pueden elegir al confirmar, en minutos. */
+export const TIEMPOS_ENTREGA = [10, 20, 30, 40, 50, 60, 75, 90, 120, 150, 180] as const
+
+/** 50 → "50 min", 60 → "1 h", 90 → "1 h 30 min". */
+export function etiquetaTiempo(minutos: number): string {
+  const horas = Math.floor(minutos / 60)
+  const resto = minutos % 60
+  if (horas === 0) return `${resto} min`
+  return resto === 0 ? `${horas} h` : `${horas} h ${resto} min`
+}
+
+/** Motivos rápidos para rechazar un pedido (se puede escribir otro). */
+export const MOTIVOS_RECHAZO = [
+  'Fuera de la zona de entrega',
+  'Sin stock de algún producto',
+  'El local está cerrado',
+] as const
+
 /** Un pedido se puede cancelar mientras no esté entregado ni cancelado. */
 export function sePuedeCancelar(estado: EstadoPedido): boolean {
   return ESTADOS_ACTIVOS.includes(estado)
