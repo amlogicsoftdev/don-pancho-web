@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, Check, Plus } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Plus } from 'lucide-react'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { CartDrawer } from '@/components/cart-drawer'
@@ -14,6 +14,7 @@ import { useCart } from '@/lib/cart'
 import { useMounted } from '@/hooks/use-mounted'
 import { SplitLines } from '@/components/split-lines'
 import { FotoFlotante } from '@/components/foto-flotante'
+import { ControlCantidad } from '@/components/control-cantidad'
 
 interface MenuViewProps {
   /** Categorías activas, en orden (vienen de la base). */
@@ -50,7 +51,6 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   const [cartOpen, setCartOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>(initialCategory)
   const [hoveredProduct, setHoveredProduct] = useState<Product | null>(null)
-  const [justAddedId, setJustAddedId] = useState<number | null>(null)
 
   useEffect(() => {
     const nav = document.querySelector('header')
@@ -95,12 +95,6 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     )
   }
 
-  const handleAddProduct = (product: Product) => {
-    handleAddToCart(product)
-    setJustAddedId(product.id)
-    setTimeout(() => setJustAddedId(null), 900)
-  }
-
   // Solo dice sobre qué plato está el mouse: la posición la sigue <FotoFlotante> por su cuenta,
   // así mover el mouse no vuelve a dibujar toda la carta
   const hoverProps = (product: Product) => ({
@@ -108,50 +102,15 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     onMouseLeave: () => setHoveredProduct((actual) => (actual?.id === product.id ? null : actual)),
   })
 
-  /** Botón cuadrado de agregar; cuando el producto ya está en el pedido, pasa a −  n  + */
-  const renderAdd = (product: Product) => {
-    const quantity = quantityOf(product.id)
-    if (quantity === 0) {
-      const justAdded = justAddedId === product.id
-      return (
-        <button
-          type="button"
-          onClick={() => handleAddProduct(product)}
-          aria-label={`Agregar ${product.name} al pedido`}
-          className={`flex size-11 cursor-pointer items-center justify-center border-2 transition-colors duration-200 ${
-            justAdded
-              ? 'border-pancho-orange bg-pancho-orange text-pancho-black'
-              : 'border-pancho-black bg-transparent text-pancho-black hover:bg-pancho-orange'
-          }`}
-        >
-          {justAdded ? <Check className="size-4.5 stroke-3" /> : <Plus className="size-4.5 stroke-3" />}
-        </button>
-      )
-    }
-    return (
-      <div className="flex h-11 items-stretch border-2 border-pancho-black bg-white text-pancho-black">
-        <button
-          type="button"
-          onClick={() => handleUpdateQuantity(product.id, -1)}
-          aria-label={`Quitar uno de ${product.name}`}
-          className="w-9 cursor-pointer text-xl font-extrabold transition-colors hover:bg-pancho-black hover:text-white"
-        >
-          −
-        </button>
-        <span className="box-border flex min-w-8 items-center justify-center border-x-2 border-pancho-black bg-white px-1 font-heading text-lg">
-          {quantity}
-        </span>
-        <button
-          type="button"
-          onClick={() => handleUpdateQuantity(product.id, 1)}
-          aria-label={`Agregar otro ${product.name}`}
-          className="w-9 cursor-pointer text-xl font-extrabold transition-colors hover:bg-pancho-black hover:text-white"
-        >
-          +
-        </button>
-      </div>
-    )
-  }
+  /** Botón cuadrado de agregar: cuando el producto ya está en el pedido se estira a −  n  + */
+  const renderAdd = (product: Product) => (
+    <ControlCantidad
+      nombre={product.name}
+      cantidad={quantityOf(product.id)}
+      onAgregar={() => handleAddToCart(product)}
+      onCambiar={(delta) => handleUpdateQuantity(product.id, delta)}
+    />
+  )
 
   /** Botón grande con dos bloques (texto + cruz), el de la favorita y el de los combos */
   const renderBigAdd = (product: Product, tone: 'orange' | 'black') => {
@@ -159,7 +118,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     return (
       <button
         type="button"
-        onClick={() => handleAddProduct(product)}
+        onClick={() => handleAddToCart(product)}
         className={`inline-flex cursor-pointer items-stretch transition-transform duration-200 ${
           tone === 'black'
             ? 'shadow-[6px_6px_0_#fff] hover:-translate-x-0.5 hover:-translate-y-0.5'
@@ -167,11 +126,12 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
         }`}
       >
         <span
-          className={`px-5.5 py-4 text-[13px] font-extrabold uppercase tracking-[0.08em] ${
-            'bg-pancho-black text-white'
-          }`}
+          className="overflow-hidden bg-pancho-black px-5.5 py-4 text-[13px] font-extrabold uppercase tracking-[0.08em] text-white"
         >
-          {quantity > 0 ? `En tu pedido · ${quantity}` : 'Agregar al pedido'}
+          {/* La key hace que el texto nuevo entre deslizándose, como el número del + */}
+          <span key={quantity} className="cantidad-texto block">
+            {quantity > 0 ? `En tu pedido · ${quantity}` : 'Agregar al pedido'}
+          </span>
         </span>
         <span
           className={`flex w-13.5 items-center justify-center ${

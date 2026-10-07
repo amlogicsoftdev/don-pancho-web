@@ -458,7 +458,6 @@ html:has(.page-menu) {
   justify-content: center;
   gap: 0.625rem;
   padding: 0 1.25rem;
-  background: var(--btn-bg);
   color: var(--btn-fg);
   white-space: nowrap;
 }
@@ -1387,6 +1386,181 @@ html:has(.page-menu) {
   height: 0.25rem;
   background: radial-gradient(circle, rgb(13 13 13 / 0.45) 1.15px, transparent 1.6px) center / 0.5rem 0.25rem repeat-x;
   pointer-events: none;
+}
+
+/* --- Cantidad (components/control-cantidad.tsx) ---
+   Un solo control: cerrado es el cuadrado con el +; al agregar se estira hasta −  n  +, con
+   el + siempre en el mismo lugar. Medidas por dentro del borde: − 36 px, número 40, + 40. */
+.cantidad {
+  position: relative;
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  overflow: hidden;
+  border: 2px solid var(--color-pancho-black);
+  background-color: rgb(255 255 255 / 0);
+  color: var(--color-pancho-black);
+  transition:
+    width 0.5s var(--ease-pop),
+    background-color 0.3s ease-out;
+}
+
+.cantidad[data-abierto='true'] {
+  width: 7.5rem;
+  background-color: var(--color-pancho-white);
+  /* al abrir se estira con un rebote suave; al cerrarse, sin rebote (regla de abajo) */
+  transition:
+    width 0.55s var(--ease-pop),
+    background-color 0.3s ease-out;
+}
+
+.cantidad:not([data-abierto='true']) {
+  transition:
+    width 0.38s var(--ease-out),
+    background-color 0.3s ease-out;
+}
+
+.cantidad__mas,
+.cantidad__menos {
+  position: absolute;
+  top: 0;
+  display: grid;
+  place-items: center;
+  height: 100%;
+  cursor: pointer;
+  transition: background-color 0.2s ease-out, color 0.2s ease-out;
+}
+
+.cantidad__mas {
+  right: 0;
+  width: 2.5rem;
+}
+
+.cantidad__menos {
+  left: 0;
+  width: 2.25rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+/* El − y el número entran desde atrás del +, un poquito después de que empieza a estirarse */
+.cantidad__menos,
+.cantidad__numero {
+  opacity: 0;
+  translate: 1.25rem 0;
+  transition:
+    opacity 0.18s ease-out,
+    translate 0.3s var(--ease-out),
+    background-color 0.2s ease-out,
+    color 0.2s ease-out;
+}
+
+.cantidad[data-abierto='true'] :is(.cantidad__menos, .cantidad__numero) {
+  opacity: 1;
+  translate: 0 0;
+  transition:
+    opacity 0.3s ease-out 0.08s,
+    translate 0.5s var(--ease-out) 0.04s,
+    background-color 0.2s ease-out,
+    color 0.2s ease-out;
+}
+
+.cantidad__numero {
+  position: absolute;
+  top: 0;
+  left: 2.25rem;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 100%;
+  overflow: hidden;
+  border-inline: 2px solid var(--color-pancho-black);
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+/* Cada número nuevo entra desde abajo al sumar y desde arriba al restar */
+@keyframes dpDigitoSube {
+  from {
+    opacity: 0;
+    translate: 0 85%;
+  }
+}
+
+@keyframes dpDigitoBaja {
+  from {
+    opacity: 0;
+    translate: 0 -85%;
+  }
+}
+
+.cantidad__digito {
+  animation: dpDigitoSube 0.36s var(--ease-out);
+}
+
+.cantidad__digito[data-sube='false'] {
+  animation-name: dpDigitoBaja;
+}
+
+/* El + da un giro corto al abrir: confirma que se agregó */
+@keyframes dpMasGiro {
+  from {
+    rotate: -90deg;
+    scale: 0.7;
+  }
+}
+
+.cantidad[data-abierto='true'] .cantidad__mas svg {
+  animation: dpMasGiro 0.5s var(--ease-pop);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cantidad:not([data-abierto='true']) .cantidad__mas:hover {
+    background: var(--color-pancho-orange);
+  }
+
+  .cantidad[data-abierto='true'] :is(.cantidad__mas, .cantidad__menos):hover {
+    background: var(--color-pancho-black);
+    color: var(--color-pancho-white);
+  }
+}
+
+.cantidad :is(.cantidad__mas, .cantidad__menos):focus-visible {
+  outline: 2px solid var(--color-pancho-black);
+  outline-offset: -4px;
+}
+
+/* Texto del botón grande (favorita y combos) al cambiar la cantidad */
+@keyframes dpCantidadTexto {
+  from {
+    opacity: 0;
+    translate: 0 60%;
+  }
+}
+
+.cantidad-texto {
+  animation: dpCantidadTexto 0.36s var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cantidad,
+  .cantidad[data-abierto='true'],
+  .cantidad:not([data-abierto='true']) {
+    transition: background-color 0.2s ease-out;
+  }
+
+  .cantidad__menos,
+  .cantidad__numero,
+  .cantidad[data-abierto='true'] :is(.cantidad__menos, .cantidad__numero) {
+    translate: none;
+  }
+
+  .cantidad__digito,
+  .cantidad[data-abierto='true'] .cantidad__mas svg,
+  .cantidad-texto {
+    animation: dpFade 0.2s ease-out;
+  }
 }
 
 /* Foto de cada plato en pantallas táctiles (sin mouse no hay foto que siga al puntero) */
