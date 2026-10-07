@@ -193,7 +193,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
         {/* Categorías: quedan fijas debajo del encabezado al scrollear */}
         <div
           style={{ top: navHeight }}
-          className="menu-filtros sticky z-20 mt-6 border-b-2 border-pancho-black bg-pancho-paper/95 backdrop-blur-sm sm:mt-10"
+          className="menu-filtros sticky z-20 mt-6 border-b border-pancho-black/20 bg-pancho-paper/95 backdrop-blur-sm sm:mt-10"
         >
           <div
             role="tablist"
