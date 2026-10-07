@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, Plus } from 'lucide-react'
+import { ArrowLeft, Plus } from 'lucide-react'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { CartDrawer } from '@/components/cart-drawer'
@@ -15,6 +15,7 @@ import { useMounted } from '@/hooks/use-mounted'
 import { SplitLines } from '@/components/split-lines'
 import { FotoFlotante } from '@/components/foto-flotante'
 import { ControlCantidad } from '@/components/control-cantidad'
+import { BarraPedido } from '@/components/barra-pedido'
 
 interface MenuViewProps {
   /** Categorías activas, en orden (vienen de la base). */
@@ -343,27 +344,8 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
       {/* Foto que sigue al mouse sobre cada plato (solo con mouse) */}
       {mounted && <FotoFlotante producto={hoveredProduct} />}
 
-      {/* Barra con el pedido: abre el carrito */}
-      {mounted && totalCartCount > 0 && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-3 sm:px-6 sm:pb-6">
-          <button
-            type="button"
-            onClick={() => setCartOpen(true)}
-            className="pointer-events-auto mx-auto flex w-full max-w-180 cursor-pointer items-stretch border-2 border-pancho-black bg-white text-left text-pancho-black shadow-[6px_6px_0_var(--color-pancho-black)] transition-transform duration-200 hover:-translate-x-0.5 hover:-translate-y-0.5"
-          >
-            <span className="flex min-w-14 items-center justify-center bg-pancho-red-deep px-4 font-heading text-[22px] text-white">
-              {totalCartCount}
-            </span>
-            <span className="flex flex-1 items-center justify-between gap-3 px-5 py-3.5">
-              <span className="text-[13px] font-extrabold uppercase tracking-[0.08em]">Tu pedido</span>
-              <span className="font-heading text-2xl leading-none text-pancho-red-deep">{formatPrice(cartTotal)}</span>
-            </span>
-            <span className="flex w-14.5 items-center justify-center bg-pancho-black text-white">
-              <ArrowRight className="size-5 stroke-[2.5]" />
-            </span>
-          </button>
-        </div>
-      )}
+      {/* Cartel con el pedido: abre el carrito */}
+      {mounted && <BarraPedido cantidad={totalCartCount} total={cartTotal} onAbrir={() => setCartOpen(true)} />}
 
       {/* Pie de página */}
       <Footer />

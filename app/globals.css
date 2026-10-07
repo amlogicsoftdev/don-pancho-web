@@ -1543,6 +1543,108 @@ html:has(.page-menu) {
   animation: dpCantidadTexto 0.36s var(--ease-out);
 }
 
+/* --- Cartel del pedido (components/barra-pedido.tsx) ---
+   Sale desde abajo como un ticket de la comandera, con un rebote suave; al vaciarse el
+   pedido vuelve a bajar, más rápido. */
+.barra-pedido {
+  translate: 0 0;
+  opacity: 1;
+  transition:
+    translate 0.6s var(--ease-pop),
+    opacity 0.25s ease-out;
+}
+
+.barra-pedido:not([data-visible='true']) {
+  translate: 0 140%;
+  opacity: 0;
+  transition:
+    translate 0.35s cubic-bezier(0.4, 0, 1, 1),
+    opacity 0.25s ease-in 0.1s;
+}
+
+/* También al cargar la carta con un pedido ya armado */
+@starting-style {
+  .barra-pedido[data-visible='true'] {
+    translate: 0 140%;
+    opacity: 0;
+  }
+}
+
+/* Cada vez que se agrega algo: el cartel da un saltito y el cuadro de la cantidad se infla.
+   Hay dos animaciones iguales (a / b) para que se repita en cada suma. */
+@keyframes dpPedidoSaltoA {
+  30% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes dpPedidoSaltoB {
+  30% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes dpPedidoInflaA {
+  35% {
+    scale: 1.18;
+  }
+}
+
+@keyframes dpPedidoInflaB {
+  35% {
+    scale: 1.18;
+  }
+}
+
+@keyframes dpPedidoFlechaA {
+  35% {
+    translate: 5px 0;
+  }
+}
+
+@keyframes dpPedidoFlechaB {
+  35% {
+    translate: 5px 0;
+  }
+}
+
+.barra-pedido__boton[data-pulso='a'] {
+  animation: dpPedidoSaltoA 0.5s var(--ease-out);
+}
+
+.barra-pedido__boton[data-pulso='b'] {
+  animation: dpPedidoSaltoB 0.5s var(--ease-out);
+}
+
+.barra-pedido__boton[data-pulso='a'] .barra-pedido__cantidad {
+  animation: dpPedidoInflaA 0.55s var(--ease-pop);
+}
+
+.barra-pedido__boton[data-pulso='b'] .barra-pedido__cantidad {
+  animation: dpPedidoInflaB 0.55s var(--ease-pop);
+}
+
+.barra-pedido__boton[data-pulso='a'] .barra-pedido__flecha svg {
+  animation: dpPedidoFlechaA 0.55s var(--ease-out);
+}
+
+.barra-pedido__boton[data-pulso='b'] .barra-pedido__flecha svg {
+  animation: dpPedidoFlechaB 0.55s var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barra-pedido,
+  .barra-pedido:not([data-visible='true']) {
+    translate: 0 0;
+    transition: opacity 0.2s ease-out;
+  }
+
+  .barra-pedido__boton[data-pulso],
+  .barra-pedido__boton[data-pulso] :is(.barra-pedido__cantidad, .barra-pedido__flecha svg) {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cantidad,
   .cantidad[data-abierto='true'],
