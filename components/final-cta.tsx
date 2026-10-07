@@ -43,7 +43,7 @@ export function FinalCTA({ hasItems, onOpenCart }: FinalCTAProps) {
 
           {/* Centro: botón principal sobre naranja */}
           <div
-            className="rv-up flex items-center justify-center select-none"
+            className="rv-btn flex items-center justify-center select-none"
             style={{ '--d': '140ms' } as React.CSSProperties}
           >
             <PanchoButton onClick={handleAction}>

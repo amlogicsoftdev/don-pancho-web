@@ -5,10 +5,13 @@ import Image from 'next/image'
 import { PanchoButton } from './pancho-button'
 import { SplitLines } from './split-lines'
 
+const TAG = 'Hamburguesas y panchos'
+
 /**
- * Primera pantalla. Al cargar, todo entra en orden: la banda roja desde el borde,
- * la etiqueta que se pega, el titular línea por línea, el texto, el botón y la
- * hamburguesa que cae girada (las entradas están en app/globals.css y corren sin JavaScript).
+ * Primera pantalla. Al cargar se arma como un afiche, en orden: la etiqueta se imprime
+ * y se pega torcida, las letras del titular se paran una por una, una tira negra destapa
+ * cada renglón de la bajada, el botón encaja sus dos bloques y la hamburguesa cae girada
+ * (las entradas están en app/globals.css y corren sin JavaScript).
  *
  * Después de la entrada, dos movimientos mantienen viva la pantalla:
  * - la hamburguesa sigue apenas al mouse, en sentido contrario;
@@ -94,41 +97,16 @@ export function Hero() {
         relative
         h-svh
         min-h-150
-        sm:min-h-170
+        md:min-h-170
         max-h-250
         overflow-hidden
         bg-pancho-orange
         bg-[url('/images/fondo-papel.webp')]
         bg-cover
         bg-center
-        sm:bg-[url('/images/fondo-papel-h.webp')]
+        md:bg-[url('/images/fondo-papel-h.webp')]
       "
     >
-      {/* =========================================================
-          BANDA VERTICAL ROJA (como el flyer de delivery) — solo en pantallas grandes
-      ========================================================= */}
-
-      <div
-        aria-hidden="true"
-        className="
-          hero-band
-          absolute
-          inset-y-0
-          right-0
-          z-10
-          hidden
-          w-18
-          items-center
-          justify-center
-          bg-pancho-red
-          lg:flex
-        "
-      >
-        <span className="hero-band-text rotate-180 whitespace-nowrap font-sans text-4xl font-black uppercase tracking-[0.04em] text-white [writing-mode:vertical-rl]">
-          Delivery y retiro
-        </span>
-      </div>
-
       {/* =========================================================
           CONTENEDOR DE CONTENIDO
       ========================================================= */}
@@ -147,13 +125,12 @@ export function Hero() {
           px-5
           pt-24
 
-          sm:flex-row
-          sm:items-center
-          sm:gap-8
           sm:px-6
-          sm:pt-0
-          lg:pl-8
-          lg:pr-28
+          md:flex-row
+          md:items-center
+          md:gap-8
+          md:pt-0
+          lg:px-8
         "
       >
         {/* =======================================================
@@ -161,15 +138,13 @@ export function Hero() {
             Sobre el naranja, el blanco es solo para el titular: todo el texto chico va en negro.
         ======================================================= */}
 
-        <div ref={textRef} className="relative z-30 w-full will-change-transform sm:max-w-155 lg:max-w-165">
-          {/* Etiqueta recta roja, girada como en los flyers: se pega de izquierda a derecha */}
+        <div ref={textRef} className="relative z-30 w-full will-change-transform md:max-w-155 lg:max-w-165">
+          {/* Etiqueta recta roja, como en los flyers: se imprime letra por letra y se pega torcida */}
           <span
-            style={{ '--d': '250ms' } as React.CSSProperties}
+            style={{ '--d': '200ms', '--n': TAG.length } as React.CSSProperties}
             className="
-              load-wipe
-              inline-block
+              hero-tag
               -rotate-4
-              bg-pancho-red
               px-2
               py-1
               font-sans
@@ -184,50 +159,59 @@ export function Hero() {
               sm:tracking-[0.02em]
             "
           >
-            Hamburguesas y panchos
+            <span className="sr-only">{TAG}</span>
+            <span aria-hidden="true">
+              {Array.from(TAG).map((char, index) => (
+                <span key={index} className="hero-tag__char" style={{ '--i': index } as React.CSSProperties}>
+                  {char}
+                </span>
+              ))}
+            </span>
           </span>
 
-          {/* Titular de un solo color: sube línea por línea */}
+          {/* Titular de un solo color: las letras se paran una por una */}
           <h1
             style={{ '--d': '380ms' } as React.CSSProperties}
             className="
-              load-lines
+              load-chars
               mt-5
               text-7xl
               leading-[0.9]
+              whitespace-nowrap
               text-white
 
               sm:mt-7
-              sm:text-8xl
               lg:mt-9
-              lg:text-9xl
+              lg:text-8xl
+              xl:text-9xl
             "
           >
             <SplitLines lines={['¿Qué vas', 'a pedir?']} />
           </h1>
 
+          {/* Bajada en dos renglones: una tira negra tapa cada uno y lo destapa */}
           <p
-            style={{ '--d': '720ms' } as React.CSSProperties}
             className="
-              load-up
               mt-4
-              max-w-70
-              text-balance
               text-base
               font-medium
               leading-relaxed
               text-pancho-black
 
               sm:mt-6
-              sm:max-w-110
               sm:text-lg
             "
           >
-            Armá tu pedido en el menú y elegí delivery o retiro.
+            <span className="block-line" style={{ '--d': '820ms' } as React.CSSProperties}>
+              <span className="block-line__text">Armá tu pedido en el menú</span>
+            </span>{' '}
+            <span className="block-line" style={{ '--d': '940ms' } as React.CSSProperties}>
+              <span className="block-line__text">y elegí delivery o retiro.</span>
+            </span>
           </p>
 
-          {/* Botón principal sobre naranja: bloque negro con la flecha en un cuadrado blanco */}
-          <div className="load-up mt-6 sm:mt-8" style={{ '--d': '840ms' } as React.CSSProperties}>
+          {/* Botón principal sobre naranja: sus dos bloques llegan por separado y encajan */}
+          <div className="btn-in mt-6 sm:mt-8" style={{ '--d': '1020ms' } as React.CSSProperties}>
             <PanchoButton href="/menu" size="lg">
               Hacer pedido
             </PanchoButton>
@@ -254,11 +238,12 @@ export function Hero() {
             w-[min(88%,46svh)]
             -translate-x-1/2
 
-            sm:static
-            sm:ml-auto
-            sm:w-[min(50vw,40rem)]
-            sm:shrink-0
-            sm:translate-x-0
+            md:static
+            md:ml-auto
+            md:w-[min(44vw,40rem)]
+            md:shrink-0
+            md:translate-x-0
+            lg:w-[min(50vw,40rem)]
           "
         >
           <div data-hero-parallax className="burger-art animate-float relative h-full w-full">
@@ -267,7 +252,7 @@ export function Hero() {
               alt="Hamburguesa de Don Pancho & Burger con cheddar, panceta, tomate y lechuga"
               fill
               priority
-              sizes="(max-width: 640px) 88vw, 640px"
+              sizes="(max-width: 768px) 88vw, 640px"
               className="object-contain"
             />
           </div>

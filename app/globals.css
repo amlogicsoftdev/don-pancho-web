@@ -19,6 +19,8 @@
   --color-pancho-yellow: #ffdf00;
   --color-pancho-cream: #ffe3bf;
   --color-pancho-white: #ffffff;
+  /* Papel crema, más claro que cream: fondo de las secciones de lectura del inicio */
+  --color-pancho-paper: #ffeed6;
 
   /* Fondo oscuro para leer: carta, carrito y pie */
   --color-pancho-black: #0d0d0d;
@@ -72,16 +74,26 @@ h1, h2, h3, h4, .font-display {
   letter-spacing: 0.01em;
 }
 
-/* Scrollbar Personalizado */
+/* Scrollbar personalizado: oscuro en la carta y el panel, claro en el inicio */
+html {
+  --scrollbar-track: var(--color-pancho-black);
+  --scrollbar-thumb: #2a2a2a;
+}
+
+html:has(.page-home) {
+  --scrollbar-track: var(--color-pancho-paper);
+  --scrollbar-thumb: #d8b98f;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-pancho-black);
+  background: var(--scrollbar-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -198,36 +210,14 @@ h1, h2, h3, h4, .font-display {
 
 /* =========================================================
    ENTRADAS
+   La página se arma como un afiche: las cosas se imprimen, se paran y se pegan.
+   Nada se recorta contra una caja: ningún texto aparece «cortado» a mitad de camino.
    Dos familias con el mismo dibujo:
    - load-*  al cargar la página. Son animaciones: corren solas, sin JavaScript.
    - rv-*    al entrar en pantalla. Son transiciones: se activan cuando el elemento
              o un contenedor suyo tiene data-inview="true" (hook useInView).
    El retraso de cada pieza se pasa con la variable --d (ej.: style="--d: 240ms").
 ========================================================= */
-
-/* Título que sube línea por línea desde atrás de una máscara.
-   Se arma con <SplitLines>: cada .line-mask recorta su .line. */
-.line-mask {
-  display: block;
-  overflow: hidden;
-  /* aire para que la máscara no corte acentos ni el «¿» */
-  padding-block: 0.1em 0.14em;
-  margin-block: -0.1em -0.14em;
-}
-
-.line {
-  display: block;
-  transform-origin: 0 100%;
-}
-
-@keyframes dpLineUp {
-  from {
-    transform: translate3d(0, 115%, 0) rotate(4deg);
-  }
-  to {
-    transform: none;
-  }
-}
 
 @keyframes dpFadeUp {
   from {
@@ -249,21 +239,61 @@ h1, h2, h3, h4, .font-display {
   }
 }
 
-@keyframes dpWipe {
-  from {
-    clip-path: inset(0 100% 0 0);
+/* --- Títulos: las letras se paran una por una ---
+   Se arman con <SplitLines>. Cada letra arranca acostada hacia atrás, apoyada en
+   su base, y se levanta. No hay máscara: la letra se ve entera todo el tiempo. */
+
+.tx-line {
+  display: block;
+}
+
+.tx-word {
+  display: inline-block;
+  white-space: nowrap;
+  /* profundidad para que la letra se vea «acostada» y no solo achatada */
+  perspective: 600px;
+}
+
+.tx-char {
+  display: inline-block;
+  transform-origin: 50% 100%;
+}
+
+@keyframes dpCharUp {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0.3em, 0) rotateX(-80deg);
   }
-  to {
-    clip-path: inset(0 0 0 0);
+  45% {
+    opacity: 1;
   }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.load-chars .tx-char {
+  animation: dpCharUp 0.85s var(--ease-out) backwards;
+  animation-delay: calc(var(--d, 0ms) + var(--i, 0) * 34ms);
+}
+
+.rv-chars .tx-char {
+  opacity: 0;
+  transform: translate3d(0, 0.3em, 0) rotateX(-80deg);
+  transition:
+    opacity 0.4s ease-out,
+    transform 0.85s var(--ease-out);
+  transition-delay: calc(var(--d, 0ms) + var(--i, 0) * 30ms);
+}
+
+[data-inview='true'] .rv-chars .tx-char,
+.rv-chars[data-inview='true'] .tx-char {
+  opacity: 1;
+  transform: none;
 }
 
 /* --- Al cargar --- */
-
-.load-lines .line {
-  animation: dpLineUp 1s var(--ease-out) both;
-  animation-delay: calc(var(--d, 0ms) + var(--i, 0) * 110ms);
-}
 
 .load-up {
   animation: dpFadeUp 0.8s var(--ease-out) var(--d, 0ms) both;
@@ -271,11 +301,6 @@ h1, h2, h3, h4, .font-display {
 
 .load-fade {
   animation: dpFade 0.6s ease-out var(--d, 0ms) both;
-}
-
-/* Etiqueta que se «pega» de izquierda a derecha */
-.load-wipe {
-  animation: dpWipe 0.6s var(--ease-out) var(--d, 0ms) both;
 }
 
 /* Barra de navegación */
@@ -309,12 +334,7 @@ h1, h2, h3, h4, .font-display {
   transition: opacity 0.8s ease-out var(--d, 0ms);
 }
 
-.rv-wipe {
-  clip-path: inset(0 100% 0 0);
-  transition: clip-path 0.7s var(--ease-out) var(--d, 0ms);
-}
-
-/* Sticker: aparece girando y asienta con un rebote corto */
+/* Sticker redondo: aparece girando y asienta con un rebote corto */
 .rv-pop {
   opacity: 0;
   transform: scale(0.7) rotate(-18deg);
@@ -323,25 +343,18 @@ h1, h2, h3, h4, .font-display {
     transform 0.7s var(--ease-pop) var(--d, 0ms);
 }
 
-.rv-lines .line {
-  transform: translate3d(0, 115%, 0) rotate(4deg);
-  transition: transform 1s var(--ease-out);
-  transition-delay: calc(var(--d, 0ms) + var(--i, 0) * 110ms);
+/* Etiqueta o ticket que se pega de un golpe: cae desde arriba, más grande y torcido */
+.rv-slap {
+  opacity: 0;
+  transform: translate3d(0, -16px, 0) rotate(7deg) scale(1.22);
+  transition:
+    opacity 0.2s ease-out var(--d, 0ms),
+    transform 0.55s var(--ease-pop) var(--d, 0ms);
 }
 
-[data-inview='true'] :is(.rv-up, .rv-fade, .rv-pop),
-:is(.rv-up, .rv-fade, .rv-pop)[data-inview='true'] {
+[data-inview='true'] :is(.rv-up, .rv-fade, .rv-pop, .rv-slap),
+:is(.rv-up, .rv-fade, .rv-pop, .rv-slap)[data-inview='true'] {
   opacity: 1;
-  transform: none;
-}
-
-[data-inview='true'] .rv-wipe,
-.rv-wipe[data-inview='true'] {
-  clip-path: inset(0 0 0 0);
-}
-
-[data-inview='true'] .rv-lines .line,
-.rv-lines[data-inview='true'] .line {
   transform: none;
 }
 
@@ -365,14 +378,14 @@ h1, h2, h3, h4, .font-display {
   --btn-chip-hover-fg: var(--color-pancho-white);
   --btn-focus: var(--color-pancho-black);
   --btn-h: 3.5rem;
+  --btn-shadow: 0 16px 32px -14px rgb(0 0 0 / 0.6);
 
   position: relative;
   display: inline-flex;
   align-items: stretch;
   min-height: var(--btn-h);
-  overflow: hidden;
   border-radius: 2px;
-  box-shadow: 0 16px 32px -14px rgb(0 0 0 / 0.6);
+  box-shadow: var(--btn-shadow);
   cursor: pointer;
   user-select: none;
   font-family: var(--font-sans);
@@ -396,6 +409,15 @@ h1, h2, h3, h4, .font-display {
   --btn-chip-hover-bg: var(--color-pancho-orange);
   --btn-chip-hover-fg: var(--color-pancho-black);
   --btn-focus: var(--color-pancho-yellow);
+}
+
+/* variante «paper»: para papel crema */
+.btn-pancho--paper {
+  --btn-fill: var(--color-pancho-orange);
+  --btn-fill-fg: var(--color-pancho-black);
+  --btn-chip-bg: var(--color-pancho-orange);
+  --btn-chip-fg: var(--color-pancho-black);
+  --btn-shadow: 0 16px 28px -14px rgb(0 0 0 / 0.45);
 }
 
 .btn-pancho--sm {
@@ -428,6 +450,8 @@ h1, h2, h3, h4, .font-display {
   position: relative;
   display: grid;
   flex: 1 1 auto;
+  overflow: hidden;
+  border-radius: 2px 0 0 2px;
 }
 
 .btn-pancho__face {
@@ -469,6 +493,7 @@ h1, h2, h3, h4, .font-display {
   place-items: center;
   width: var(--btn-h);
   overflow: hidden;
+  border-radius: 0 2px 2px 0;
   background: var(--btn-chip-bg);
   color: var(--btn-chip-fg);
   transition:
@@ -513,6 +538,78 @@ h1, h2, h3, h4, .font-display {
   }
 }
 
+/* --- Entrada del botón: se arma ---
+   El bloque del texto llega desde la izquierda, el cuadrado llega girando desde la
+   derecha y encaja, y recién ahí entra la flecha. Las animaciones no dejan nada
+   aplicado al terminar (fill «backwards»), así el hover y el apretar siguen andando.
+   - .btn-in  al cargar la página
+   - .rv-btn  al entrar en pantalla (data-inview) */
+
+@keyframes dpBtnLabelIn {
+  from {
+    opacity: 0;
+    transform: translate3d(-28px, 0, 0);
+  }
+}
+
+@keyframes dpBtnChipIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(64px, 0, 0) rotate(135deg) scale(0.5);
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+@keyframes dpBtnArrowIn {
+  from {
+    transform: translate3d(-260%, 0, 0);
+  }
+}
+
+@keyframes dpBtnShadowIn {
+  from {
+    box-shadow: 0 0 0 0 rgb(0 0 0 / 0);
+  }
+}
+
+.rv-btn .btn-pancho {
+  box-shadow: none;
+}
+
+.rv-btn :is(.btn-pancho__label, .btn-pancho__chip) {
+  opacity: 0;
+}
+
+[data-inview='true'] .rv-btn .btn-pancho {
+  box-shadow: var(--btn-shadow);
+}
+
+[data-inview='true'] .rv-btn :is(.btn-pancho__label, .btn-pancho__chip) {
+  opacity: 1;
+}
+
+.btn-in .btn-pancho,
+[data-inview='true'] .rv-btn .btn-pancho {
+  animation: dpBtnShadowIn 0.5s ease-out calc(var(--d, 0ms) + 560ms) backwards;
+}
+
+.btn-in .btn-pancho__label,
+[data-inview='true'] .rv-btn .btn-pancho__label {
+  animation: dpBtnLabelIn 0.55s var(--ease-out) var(--d, 0ms) backwards;
+}
+
+.btn-in .btn-pancho__chip,
+[data-inview='true'] .rv-btn .btn-pancho__chip {
+  animation: dpBtnChipIn 0.75s var(--ease-pop) calc(var(--d, 0ms) + 140ms) backwards;
+}
+
+.btn-in .btn-pancho__arrow--out,
+[data-inview='true'] .rv-btn .btn-pancho__arrow--out {
+  animation: dpBtnArrowIn 0.5s var(--ease-out) calc(var(--d, 0ms) + 600ms) backwards;
+}
+
 /* =========================================================
    HERO (components/hero.tsx)
 ========================================================= */
@@ -536,22 +633,102 @@ h1, h2, h3, h4, .font-display {
   animation: dpBurgerIn 1.15s var(--ease-out) 0.25s both;
 }
 
-/* Banda roja vertical: entra desde el borde derecho y después aparece su texto */
-@keyframes dpBandIn {
+/* --- Etiqueta que se imprime y se pega ---
+   Como una rotuladora: la tira roja sale derecha, de izquierda a derecha, a
+   velocidad constante, y las letras aparecen a medida que la tira las alcanza.
+   Cuando termina, la etiqueta se tuerce de golpe y queda pegada con su giro.
+   --n es la cantidad de letras y --i el número de cada una. */
+
+.hero-tag {
+  --print: 640ms;
+  position: relative;
+  isolation: isolate;
+  display: inline-block;
+  animation: dpTagStick calc(var(--print) + 360ms) linear var(--d, 0ms) backwards;
+}
+
+.hero-tag::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-pancho-red);
+  transform-origin: 0 50%;
+  animation: dpTagGrow var(--print) linear var(--d, 0ms) backwards;
+}
+
+.hero-tag__char {
+  animation: dpFade 90ms linear backwards;
+  animation-delay: calc(var(--d, 0ms) + (var(--i, 0) + 0.8) / var(--n, 1) * var(--print));
+}
+
+@keyframes dpTagGrow {
   from {
-    transform: translate3d(100%, 0, 0);
-  }
-  to {
-    transform: none;
+    transform: scaleX(0);
   }
 }
 
-.hero-band {
-  animation: dpBandIn 0.9s var(--ease-out) 0.15s both;
+/* El último tramo no tiene destino escrito: termina en el giro propio de la etiqueta */
+@keyframes dpTagStick {
+  0%,
+  64% {
+    rotate: 0deg;
+    scale: 1;
+    animation-timing-function: cubic-bezier(0.34, 1.45, 0.64, 1);
+  }
+  84% {
+    rotate: -7deg;
+    scale: 1.07;
+    animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  }
 }
 
-.hero-band-text {
-  animation: dpFade 0.6s ease-out 0.8s both;
+/* --- Bajada que se destapa ---
+   Una tira negra cubre cada renglón de izquierda a derecha y se retira por el
+   otro lado: el texto aparece cuando está tapado del todo, nunca a medias. */
+
+.block-line {
+  position: relative;
+  display: block;
+  width: fit-content;
+  white-space: nowrap;
+}
+
+.block-line__text {
+  animation: dpFade 1ms linear backwards;
+  animation-delay: calc(var(--d, 0ms) + 390ms);
+}
+
+.block-line::after {
+  content: '';
+  position: absolute;
+  inset: -1px -6px;
+  background: var(--color-pancho-black);
+  transform: scaleX(0);
+  pointer-events: none;
+  animation: dpBlockSweep 0.78s linear var(--d, 0ms) backwards;
+}
+
+@keyframes dpBlockSweep {
+  0% {
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  50% {
+    transform: scaleX(1);
+    transform-origin: 0 50%;
+    animation-timing-function: step-end;
+  }
+  50.5% {
+    transform: scaleX(1);
+    transform-origin: 100% 50%;
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  100% {
+    transform: scaleX(0);
+    transform-origin: 100% 50%;
+  }
 }
 
 /* =========================================================
@@ -740,7 +917,9 @@ h1, h2, h3, h4, .font-display {
 
 /* =========================================================
    CINTA DE TEXTO EN MOVIMIENTO (components/marquee-band.tsx)
-   Velocidad constante: es lo único de la página que usa «linear».
+   Sin JavaScript corre sola, a velocidad constante. Con JavaScript el componente
+   toma el control (data-driven) y la cinta acompaña al scroll: se acelera y se
+   inclina en el sentido en que se mueve la página.
 ========================================================= */
 
 @keyframes dpMarquee {
@@ -753,12 +932,11 @@ h1, h2, h3, h4, .font-display {
   display: flex;
   width: max-content;
   animation: dpMarquee 36s linear infinite;
+  will-change: transform;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .marquee:hover .marquee-track {
-    animation-play-state: paused;
-  }
+.marquee-track[data-driven='true'] {
+  animation: none;
 }
 
 /* =========================================================
@@ -915,6 +1093,256 @@ h1, h2, h3, h4, .font-display {
 }
 
 /* =========================================================
+   NUESTRO SECRETO ARTESANAL (components/secret-section.tsx)
+   La hamburguesa al centro y tres notas alrededor. De cada nota sale una línea
+   que se dibuja hasta su punto sobre la hamburguesa. El panel naranja entra
+   angosto y se abre a todo el ancho con el scroll (lo escribe el componente).
+========================================================= */
+
+.secret-panel {
+  will-change: clip-path;
+}
+
+/* La hamburguesa cae girada, como en la primera pantalla */
+.secret-burger {
+  opacity: 0;
+  transform: translate3d(0, 48px, 0) rotate(-9deg) scale(0.86);
+  transition:
+    opacity 0.4s ease-out,
+    transform 1.1s var(--ease-out),
+    scale 0.4s var(--ease-out);
+  filter: drop-shadow(0 22px 26px rgb(0 0 0 / 0.35));
+}
+
+[data-inview='true'] .secret-burger {
+  opacity: 1;
+  transform: none;
+}
+
+/* Punto sobre la hamburguesa. --x y --y son su posición dentro de la foto. */
+.secret-dot {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -0.875rem 0 0 -0.875rem;
+  border: 3px solid var(--color-pancho-black);
+  border-radius: 9999px;
+  background: var(--color-pancho-white);
+  color: var(--color-pancho-black);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1;
+  opacity: 0;
+  transform: scale(0.3);
+  transition:
+    opacity 0.2s ease-out var(--d, 0ms),
+    transform 0.5s var(--ease-pop) var(--d, 0ms),
+    scale 0.3s var(--ease-pop),
+    background-color 0.2s ease-out,
+    color 0.2s ease-out;
+}
+
+[data-inview='true'] .secret-dot {
+  opacity: 1;
+  transform: none;
+}
+
+/* En escritorio el punto no lleva número: lo une la línea */
+@media (min-width: 80rem) {
+  .secret-dot {
+    width: 1.125rem;
+    height: 1.125rem;
+    margin: -0.5625rem 0 0 -0.5625rem;
+    font-size: 0;
+  }
+}
+
+/* Onda que sale del punto de la nota señalada */
+@keyframes dpPing {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+}
+
+.secret-dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 2px solid var(--color-pancho-black);
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.secret-dot[data-on='true'] {
+  scale: 1.35;
+  background: var(--color-pancho-black);
+  color: var(--color-pancho-white);
+}
+
+.secret-dot[data-on='true']::after {
+  animation: dpPing 1.1s var(--ease-out) infinite;
+}
+
+/* Líneas que unen cada nota con su punto (solo escritorio) */
+.secret-lines {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.secret-line {
+  fill: none;
+  stroke: var(--color-pancho-black);
+  stroke-width: 2;
+  stroke-linecap: square;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition:
+    stroke-dashoffset 0.9s var(--ease-in-out) var(--d, 0ms),
+    stroke-width 0.2s ease-out;
+}
+
+[data-inview='true'] .secret-line {
+  stroke-dashoffset: 0;
+}
+
+.secret-line[data-on='true'] {
+  stroke-width: 4;
+}
+
+/* Raya debajo del título de cada nota: de su punta sale la línea */
+.secret-rule {
+  height: 2px;
+  background: var(--color-pancho-black);
+  transform: scaleX(0);
+  transition:
+    transform 0.6s var(--ease-out) var(--d, 0ms),
+    height 0.2s ease-out;
+}
+
+[data-inview='true'] .secret-rule {
+  transform: none;
+}
+
+.secret-note {
+  transition: opacity 0.3s ease-out;
+}
+
+/* Al señalar una nota, las otras dos se apagan un poco */
+.secret-stage[data-active] .secret-note:not([data-on='true']) {
+  opacity: 0.45;
+}
+
+.secret-stage[data-active] .secret-burger {
+  scale: 1.03;
+}
+
+/* =========================================================
+   CIFRAS (components/benefits-section.tsx)
+   Cada cifra es un ticket de comanda: papel blanco, torcido, con el borde de
+   abajo en serrucho. --tilt es el giro de cada uno.
+========================================================= */
+
+.ticket {
+  rotate: var(--tilt, 0deg);
+  filter: drop-shadow(0 16px 18px rgb(0 0 0 / 0.16));
+  transition:
+    rotate 0.35s var(--ease-pop),
+    translate 0.35s var(--ease-out),
+    filter 0.35s ease-out;
+}
+
+.ticket__paper {
+  --tooth: 9px;
+  background: var(--color-pancho-white);
+  /* serrucho: un triángulo por diente a lo largo del borde de abajo */
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(2 * var(--tooth)) 100%;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(2 * var(--tooth)) 100%;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ticket:hover {
+    rotate: 0deg;
+    translate: 0 -8px;
+    filter: drop-shadow(0 26px 24px rgb(0 0 0 / 0.2));
+  }
+}
+
+/* =========================================================
+   PIE (components/footer.tsx)
+   El nombre a todo el ancho. Las letras se reparten solas de borde a borde;
+   el tamaño sale del ancho del contenedor (cqw), no de la pantalla.
+========================================================= */
+
+.footer-mark-box {
+  container-type: inline-size;
+}
+
+.footer-mark {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-display);
+  /* «DON PANCHO» mide unas 4,6 veces el cuerpo en Anton: con 21cqw llega justo */
+  font-size: 21cqw;
+  font-weight: 400;
+  /* la caja queda al ras de las mayúsculas; el aire de abajo evita que parezcan cortadas */
+  line-height: 0.92;
+  padding-bottom: 2.2cqw;
+  text-transform: uppercase;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.footer-mark__gap {
+  width: 0.2em;
+  flex: none;
+}
+
+.footer-mark__char {
+  display: block;
+  opacity: 0;
+  transform: translate3d(0, 38%, 0) rotate(var(--lean, 0deg));
+  transition:
+    opacity 0.35s ease-out,
+    transform 0.9s var(--ease-out),
+    translate 0.3s var(--ease-pop),
+    rotate 0.3s var(--ease-pop),
+    color 0.2s ease-out;
+  transition-delay: calc(var(--i, 0) * 55ms), calc(var(--i, 0) * 55ms), 0ms, 0ms, 0ms;
+}
+
+[data-inview='true'] .footer-mark__char {
+  opacity: 1;
+  transform: none;
+}
+
+/* Cada letra salta al pasarle el mouse por encima */
+@media (hover: hover) and (pointer: fine) {
+  .footer-mark__char:hover {
+    translate: 0 -5%;
+    rotate: -3deg;
+    color: var(--color-pancho-white);
+  }
+}
+
+/* =========================================================
    MENOS MOVIMIENTO
    Si el usuario lo pidió en su sistema: nada se desplaza, gira ni se recorta.
    Las entradas quedan como un fundido corto, para que el orden se siga leyendo.
@@ -928,39 +1356,65 @@ h1, h2, h3, h4, .font-display {
   .animate-float,
   .animate-float-reverse,
   .stamp-ring,
-  .marquee-track {
+  .marquee-track,
+  .hero-tag,
+  .hero-tag::before,
+  .block-line::after,
+  .btn-in .btn-pancho,
+  .btn-in .btn-pancho__arrow--out,
+  [data-inview='true'] .rv-btn .btn-pancho,
+  [data-inview='true'] .rv-btn .btn-pancho__arrow--out,
+  .secret-dot[data-on='true']::after {
     animation: none;
   }
 
-  .load-lines .line,
+  .load-chars .tx-char,
   .load-up,
-  .load-wipe,
   .nav-in,
   .hero-burger-in,
-  .hero-band,
-  .menu-row {
+  .menu-row,
+  .btn-in .btn-pancho__label,
+  .btn-in .btn-pancho__chip,
+  [data-inview='true'] .rv-btn .btn-pancho__label,
+  [data-inview='true'] .rv-btn .btn-pancho__chip {
     animation-name: dpFade;
     animation-duration: 0.4s;
     animation-timing-function: ease-out;
   }
 
+  .hero-tag__char,
+  .block-line__text {
+    animation: dpFade 0.4s ease-out var(--d, 0ms) backwards;
+  }
+
   .rv-up,
   .rv-pop,
-  .rv-wipe,
+  .rv-slap,
   .rv-photo,
   .versus-pancho,
-  .rv-lines .line {
+  .secret-burger,
+  .secret-dot,
+  .rv-chars .tx-char,
+  .footer-mark__char {
     opacity: 0;
     transform: none;
-    clip-path: none;
     transition: opacity 0.4s ease-out var(--d, 0ms);
   }
 
-  [data-inview='true'] :is(.rv-wipe, .rv-photo, .versus-pancho),
-  .rv-wipe[data-inview='true'],
-  [data-inview='true'] .rv-lines .line,
-  .rv-lines[data-inview='true'] .line {
+  [data-inview='true'] :is(.rv-photo, .versus-pancho, .secret-burger, .secret-dot, .footer-mark__char),
+  [data-inview='true'] .rv-chars .tx-char,
+  .rv-chars[data-inview='true'] .tx-char {
     opacity: 1;
+  }
+
+  .secret-line {
+    stroke-dashoffset: 0;
+    transition: none;
+  }
+
+  .secret-rule {
+    transform: none;
+    transition: none;
   }
 
   .tilt-media {
@@ -979,7 +1433,8 @@ h1, h2, h3, h4, .font-display {
   .versus-go,
   .versus-dim,
   .btn-pancho,
-  .btn-pancho__arrow {
+  .btn-pancho__arrow,
+  .ticket {
     transition: none;
   }
 }
