@@ -2,9 +2,10 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useTransition, type FormEvent } from 'react'
-import { PanchoButton } from '@/components/pancho-button'
+import { Button } from '@/components/ui/button'
 import { cargarGasto } from '@/lib/caja/actions'
 import { CATEGORIAS_GASTO } from '@/lib/caja/categorias'
+import { CampoFecha } from '../campo-fecha'
 
 export function FormularioGasto({ diaPorDefecto }: { diaPorDefecto: string }) {
   const router = useRouter()
@@ -50,10 +51,7 @@ export function FormularioGasto({ diaPorDefecto }: { diaPorDefecto: string }) {
           <span className="pn-label">Monto ($)</span>
           <input name="monto" type="number" required min={1} step={1} inputMode="numeric" className="pn-field" />
         </label>
-        <label className="block lg:col-span-2">
-          <span className="pn-label">Fecha</span>
-          <input type="date" name="fecha" required defaultValue={diaPorDefecto} className="pn-field" />
-        </label>
+        <CampoFecha etiqueta="Fecha" name="fecha" required defaultValue={diaPorDefecto} className="lg:col-span-2" />
         <label className="block lg:col-span-2">
           <span className="pn-label">Categoría</span>
           <select name="categoria" required defaultValue="Insumos" className="pn-field">
@@ -83,9 +81,9 @@ export function FormularioGasto({ diaPorDefecto }: { diaPorDefecto: string }) {
       )}
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <PanchoButton type="submit" disabled={enCurso}>
+        <Button type="submit" variant="default" size="lg" disabled={enCurso}>
           {enCurso ? 'Guardando…' : 'Cargar gasto'}
-        </PanchoButton>
+        </Button>
         <p className="pn-muted min-w-56 flex-1 text-xs font-medium">
           Los gastos en efectivo se descuentan del efectivo esperado en el cierre de caja.
         </p>

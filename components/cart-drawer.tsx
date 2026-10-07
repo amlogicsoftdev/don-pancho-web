@@ -132,7 +132,7 @@ export function CartDrawer({
     setError(null)
     setFallbackAvailable(false)
 
-    if (!customerName.trim()) return setError('Ingresá tu nombre.')
+    if (!customerName.trim()) return setError('Ingresá tu nombre y apellido.')
     if (!customerPhone.trim()) return setError('Ingresá tu teléfono para poder confirmarte el pedido.')
     if (orderType === 'delivery' && !address.trim()) return setError('Ingresá la dirección de entrega.')
 
@@ -387,12 +387,12 @@ export function CartDrawer({
                     <User className="pointer-events-none absolute left-3 size-4 text-pancho-black/55" />
                     <input
                       type="text"
-                      aria-label="Tu nombre"
+                      aria-label="Tu nombre y apellido"
                       autoComplete="name"
                       maxLength={80}
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder="Tu nombre"
+                      placeholder="Tu nombre y apellido"
                       className={`${inputClass} pl-9 pr-3`}
                     />
                   </div>

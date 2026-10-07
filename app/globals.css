@@ -1499,7 +1499,7 @@ html:has(.panel) {
     align-items: center;
     gap: 0.5rem;
     height: 2.75rem;
-    padding-inline: 0.75rem;
+    padding-inline: 0.625rem;
     font-size: 0.8125rem;
     font-weight: 800;
     letter-spacing: 0.06em;
@@ -1536,6 +1536,130 @@ html:has(.panel) {
     font-weight: 800;
     line-height: 1;
     letter-spacing: 0;
+  }
+
+  /* Aviso de pedidos pendientes en el nav: campana y cantidad. Cuando entra uno nuevo, la
+     campana se sacude hasta que se entra a Pedidos. */
+  .pn-aviso {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: 1.5rem;
+    padding-inline: 0.4rem;
+    background: var(--color-pancho-red);
+    color: var(--color-pancho-white);
+    font-size: 0.75rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .pn-aviso[data-nuevo='true'] svg {
+    transform-origin: 50% 0;
+    animation: pn-campana 1.2s ease-in-out infinite;
+  }
+
+  @keyframes pn-campana {
+    0%,
+    50%,
+    100% {
+      rotate: 0deg;
+    }
+    10%,
+    30% {
+      rotate: 16deg;
+    }
+    20%,
+    40% {
+      rotate: -16deg;
+    }
+  }
+
+  /* --- Manija para ordenar arrastrando (menú: categorías y productos) --- */
+
+  .pn-asa {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--color-pancho-black);
+    cursor: grab;
+    /* Con el dedo, arrastrar desde la manija mueve el elemento en vez de desplazar la página */
+    touch-action: none;
+    transition: background-color 0.15s ease-out;
+  }
+
+  .pn-asa:focus-visible {
+    outline: 2px solid var(--color-pancho-black);
+    outline-offset: 2px;
+  }
+
+  .pn-asa:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+
+  @media (hover: hover) {
+    .pn-asa:not(:disabled):hover {
+      background: rgb(13 13 13 / 0.08);
+    }
+  }
+
+  /* El elemento que se arrastra queda por encima de los demás y sigue al puntero, apenas
+     resaltado (sin sombra) */
+  .pn-ordenable[data-arrastrando='true'] {
+    position: relative;
+    z-index: 20;
+    background: color-mix(in srgb, var(--color-pancho-paper) 60%, var(--color-pancho-white));
+    cursor: grabbing;
+  }
+
+  .pn-ordenable[data-arrastrando='true'] .pn-asa {
+    cursor: grabbing;
+  }
+
+  /* --- Bloque plegable de la lista de pedidos (Pendientes, En preparación…) --- */
+
+  .pn-bloque__titulo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    cursor: pointer;
+    list-style: none;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-pancho-black);
+    user-select: none;
+  }
+
+  /* Sin el triángulo propio del navegador: la flecha va a la derecha */
+  .pn-bloque__titulo::-webkit-details-marker {
+    display: none;
+  }
+
+  .pn-bloque__titulo:focus-visible {
+    outline: 2px solid var(--color-pancho-black);
+    outline-offset: 4px;
+  }
+
+  .pn-bloque__flecha {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 2px solid var(--color-pancho-black);
+    background: var(--color-pancho-white);
+    transition:
+      background-color 0.15s ease-out,
+      color 0.15s ease-out;
+  }
+
+  /* Solo con mouse: en el celular el hover queda pegado después de tocar */
+  @media (hover: hover) {
+    .pn-bloque__titulo:hover .pn-bloque__flecha {
+      background: var(--color-pancho-black);
+      color: var(--color-pancho-white);
+    }
   }
 
   /* --- Textos --- */
@@ -1649,6 +1773,15 @@ html:has(.panel) {
     color: var(--color-pancho-black);
     outline: none;
     transition: box-shadow 0.15s ease-out;
+  }
+
+  /* Campo de fecha: el calendario se abre con el ícono propio (CampoFecha), no con el del navegador */
+  .pn-field--fecha::-webkit-calendar-picker-indicator {
+    display: none;
+  }
+
+  .pn-field--fecha {
+    cursor: pointer;
   }
 
   textarea.pn-field {
@@ -1778,6 +1911,12 @@ html:has(.panel) {
 
   .pn-tag[data-estado='en_preparacion'] {
     background: var(--color-pancho-yellow);
+  }
+
+  .pn-tag[data-estado='listo'] {
+    border-color: var(--color-pancho-red-deep);
+    background: var(--color-pancho-red-deep);
+    color: var(--color-pancho-white);
   }
 
   .pn-tag[data-estado='en_camino'] {
@@ -1932,6 +2071,23 @@ html:has(.panel) {
     color: var(--color-pancho-black);
   }
 
+  /* --- Cuadro modal (confirmar o rechazar un pedido) --- */
+
+  .pn-dialog {
+    width: min(100% - 2rem, 30rem);
+    margin: auto;
+    border: 2px solid var(--color-pancho-black);
+    border-radius: 2px;
+    background: var(--color-pancho-white);
+    padding: 1.5rem;
+    color: var(--color-pancho-black);
+    box-shadow: 6px 6px 0 var(--color-pancho-black);
+  }
+
+  .pn-dialog::backdrop {
+    background: rgb(13 13 13 / 0.55);
+  }
+
   /* Cada paso es un botón: tocarlo mueve el pedido a ese estado (con confirmación) */
   .pn-step__btn {
     display: flex;
@@ -2031,7 +2187,8 @@ html:has(.panel) {
   .btn-in .btn-pancho,
   .btn-in .btn-pancho__arrow--out,
   [data-inview='true'] .rv-btn .btn-pancho,
-  [data-inview='true'] .rv-btn .btn-pancho__arrow--out {
+  [data-inview='true'] .rv-btn .btn-pancho__arrow--out,
+  .pn-aviso[data-nuevo='true'] svg {
     animation: none;
   }
 

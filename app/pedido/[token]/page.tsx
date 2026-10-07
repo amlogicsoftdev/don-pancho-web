@@ -71,6 +71,21 @@ export default async function SeguimientoPage({ params }: { params: Promise<{ to
                 {texto.titulo}
               </h1>
               <p className="mt-3 max-w-md font-medium text-pancho-black/75">{texto.detalle}</p>
+              {(pedido.estado === 'en_preparacion' || pedido.estado === 'en_camino') && pedido.entregaEstimada && (
+                <p className="mt-4 inline-block -rotate-1 border-2 border-pancho-black bg-pancho-yellow px-3 py-1.5 font-extrabold shadow-[3px_3px_0_var(--color-pancho-black)]">
+                  {pedido.modalidad === 'delivery' ? 'Llega' : 'Listo para retirar'} aprox. a las{' '}
+                  {formatearHora(pedido.entregaEstimada)}
+                </p>
+              )}
+              {/* Hasta que el local confirma que llegó la transferencia */}
+              {esTransferencia && !pedido.pagoConfirmado && !cancelado && (
+                <div className="mt-4 max-w-md border-2 border-pancho-red-deep px-4 py-3">
+                  <p className="font-extrabold text-pancho-red-deep">Estamos esperando tu transferencia</p>
+                  <p className="mt-1 text-sm font-medium text-pancho-black/75">
+                    Más abajo tenés los datos para transferir. Mandanos el comprobante por WhatsApp y te lo confirmamos.
+                  </p>
+                </div>
+              )}
             </div>
 
             {!cancelado && (
@@ -120,11 +135,6 @@ export default async function SeguimientoPage({ params }: { params: Promise<{ to
             )}
 
             <div className="space-y-3">
-              {enCurso && (
-                <p className="text-xs text-pancho-black/60">
-                  Esta página se actualiza sola cada {ACTUALIZAR_CADA_SEGUNDOS} segundos.
-                </p>
-              )}
               <div className="flex flex-wrap gap-3">
                 <PanchoButton href={`https://wa.me/${local.whatsapp}`} target="_blank" rel="noopener noreferrer" variant="ink">
                   Escribinos por WhatsApp

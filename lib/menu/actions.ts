@@ -1,6 +1,6 @@
 'use server'
 
-import { and, asc, eq, max, sql } from 'drizzle-orm'
+import { and, eq, max, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { requerirDueno } from '@/lib/auth/guards'
 import { db, schema } from '@/lib/db'
@@ -93,23 +93,37 @@ export async function alternarCategoria(id: unknown, activa: unknown): Promise<R
   return { ok: true }
 }
 
-/** Sube o baja una categoría un lugar, renumerando el orden de todas para que nunca se repita. */
-export async function moverCategoria(id: unknown, direccion: unknown): Promise<ResultadoAccion> {
-  await requerirDueno()
-  if (!idValido(id) || (direccion !== 'arriba' && direccion !== 'abajo')) return { ok: false, error: 'Movimiento inválido.' }
+/** Lista de ids sin repetidos (el orden en que quedaron en la pantalla). */
+function esListaDeIds(v: unknown): v is number[] {
+  return Array.isArray(v) && v.length <= 500 && v.every(idValido) && new Set(v).size === v.length
+}
 
-  await db.transaction(async (tx) => {
-    const lista = await tx.select({ id: schema.categorias.id }).from(schema.categorias).orderBy(asc(schema.categorias.orden), asc(schema.categorias.id))
-    const i = lista.findIndex((c) => c.id === id)
-    const j = direccion === 'arriba' ? i - 1 : i + 1
-    if (i < 0 || j < 0 || j >= lista.length) return
-    ;[lista[i], lista[j]] = [lista[j], lista[i]]
-    for (const [orden, c] of lista.entries()) {
-      await tx.update(schema.categorias).set({ orden }).where(eq(schema.categorias.id, c.id))
+/** true si `ids` tiene exactamente los mismos elementos que `actuales`, en cualquier orden. */
+function mismosIds(ids: number[], actuales: number[]) {
+  const conjunto = new Set(actuales)
+  return ids.length === actuales.length && ids.every((id) => conjunto.has(id))
+}
+
+const MENU_CAMBIADO = 'El menú cambió mientras lo mirabas. Se actualizó la pantalla; probá de nuevo.'
+
+/**
+ * Guarda el orden de las categorías tal como quedó al arrastrarlas. Llega la lista completa:
+ * si no coincide con las categorías de la base (alguien agregó una mientras tanto), no se toca nada.
+ */
+export async function ordenarCategorias(ids: unknown): Promise<ResultadoAccion> {
+  await requerirDueno()
+  if (!esListaDeIds(ids)) return { ok: false, error: 'Orden inválido.' }
+
+  const guardado = await db.transaction(async (tx) => {
+    const actuales = await tx.select({ id: schema.categorias.id }).from(schema.categorias)
+    if (!mismosIds(ids, actuales.map((c) => c.id))) return false
+    for (const [orden, id] of ids.entries()) {
+      await tx.update(schema.categorias).set({ orden }).where(eq(schema.categorias.id, id))
     }
+    return true
   })
   refrescar()
-  return { ok: true }
+  return guardado ? { ok: true } : { ok: false, error: MENU_CAMBIADO }
 }
 
 // --- Productos ---
@@ -186,62 +200,52 @@ export async function alternarProducto(id: unknown, activo: unknown): Promise<Re
   return { ok: true }
 }
 
-/** Sube o baja un producto un lugar dentro de su categoría. */
-export async function moverProducto(id: unknown, direccion: unknown): Promise<ResultadoAccion> {
+/** Guarda el orden de los productos de una categoría (la lista completa, como en las categorías). */
+export async function ordenarProductos(categoriaId: unknown, ids: unknown): Promise<ResultadoAccion> {
   await requerirDueno()
-  if (!idValido(id) || (direccion !== 'arriba' && direccion !== 'abajo')) return { ok: false, error: 'Movimiento inválido.' }
+  if (!idValido(categoriaId) || !esListaDeIds(ids)) return { ok: false, error: 'Orden inválido.' }
 
-  await db.transaction(async (tx) => {
-    const [producto] = await tx.select({ categoriaId: schema.productos.categoriaId }).from(schema.productos).where(eq(schema.productos.id, id))
-    if (!producto) return
-    const lista = await tx
+  const guardado = await db.transaction(async (tx) => {
+    const actuales = await tx
       .select({ id: schema.productos.id })
       .from(schema.productos)
-      .where(and(eq(schema.productos.categoriaId, producto.categoriaId)))
-      .orderBy(asc(schema.productos.orden), asc(schema.productos.id))
-    const i = lista.findIndex((p) => p.id === id)
-    const j = direccion === 'arriba' ? i - 1 : i + 1
-    if (i < 0 || j < 0 || j >= lista.length) return
-    ;[lista[i], lista[j]] = [lista[j], lista[i]]
-    for (const [orden, p] of lista.entries()) {
-      await tx.update(schema.productos).set({ orden }).where(eq(schema.productos.id, p.id))
+      .where(eq(schema.productos.categoriaId, categoriaId))
+    if (!mismosIds(ids, actuales.map((p) => p.id))) return false
+    for (const [orden, id] of ids.entries()) {
+      await tx
+        .update(schema.productos)
+        .set({ orden })
+        .where(and(eq(schema.productos.id, id), eq(schema.productos.categoriaId, categoriaId)))
     }
+    return true
   })
   refrescar()
-  return { ok: true }
+  return guardado ? { ok: true } : { ok: false, error: MENU_CAMBIADO }
 }
 
 // --- Ajustes del local ---
 
-/**
- * Descuento por pedido (0–100 %), hora de corte del día de caja (0–23) y datos de la cuenta para
- * transferencias (alias, CBU, titular y banco; todos opcionales).
- */
-export async function guardarAjustes(entrada: unknown): Promise<ResultadoAccion> {
+// --- Ajustes del local: cada hoja de la pantalla se guarda por separado ---
+
+/** Guarda claves de `configuracion` (inserta o reemplaza) en una sola transacción. */
+async function guardarClaves(pares: readonly (readonly [string, string])[]) {
+  await db.transaction(async (tx) => {
+    for (const [clave, valor] of pares) {
+      await tx
+        .insert(schema.configuracion)
+        .values({ clave, valor })
+        .onConflictDoUpdate({ target: schema.configuracion.clave, set: { valor } })
+    }
+  })
+  revalidatePath('/admin/ajustes')
+}
+
+/** Nombre, WhatsApp, dirección, horario y redes: los ve el cliente en todo el sitio. */
+export async function guardarDatosLocal(entrada: unknown): Promise<ResultadoAccion> {
   await requerirDueno()
-  if (typeof entrada !== 'object' || entrada === null) return { ok: false, error: 'Los ajustes no son válidos.' }
+  if (typeof entrada !== 'object' || entrada === null) return { ok: false, error: 'Los datos no son válidos.' }
   const d = entrada as Record<string, unknown>
 
-  // El descuento no es un ajuste general: se carga en cada pedido (lib/orders/actions.ts)
-  const corte = d.corteHora
-  if (typeof corte !== 'number' || !Number.isInteger(corte) || corte < 0 || corte > 23) {
-    return { ok: false, error: 'La hora de corte debe ser un número entero entre 0 y 23.' }
-  }
-
-  const alias = texto(d.alias ?? '', 20)
-  const cbu = texto(d.cbu ?? '', 22)
-  const titular = texto(d.titular ?? '', 80)
-  const banco = texto(d.banco ?? '', 60)
-  if (alias === null || (alias !== '' && !/^[a-zA-Z0-9.-]{6,20}$/.test(alias))) {
-    return { ok: false, error: 'El alias debe tener entre 6 y 20 caracteres: letras, números, puntos o guiones.' }
-  }
-  if (cbu === null || (cbu !== '' && !/^\d{22}$/.test(cbu))) {
-    return { ok: false, error: 'El CBU o CVU debe tener exactamente 22 números.' }
-  }
-  if (titular === null) return { ok: false, error: 'El nombre del titular es demasiado largo (máximo 80 caracteres).' }
-  if (banco === null) return { ok: false, error: 'El nombre del banco es demasiado largo (máximo 60 caracteres).' }
-
-  // Datos públicos del local (los ve el cliente en el sitio)
   const nombre = texto(d.nombre ?? '', 60)
   const whatsappCrudo = texto(d.whatsapp ?? '', 30)
   const direccion = texto(d.direccion ?? '', 120)
@@ -260,32 +264,58 @@ export async function guardarAjustes(entrada: unknown): Promise<ResultadoAccion>
     }
   }
 
-  await db.transaction(async (tx) => {
-    // Un dato de transferencia vacío se guarda como texto vacío: el sitio lo trata como "no cargado".
-    for (const [clave, valor] of [
-      ['corte_dia_hora', String(corte)],
-      [CLAVES_TRANSFERENCIA.alias, alias],
-      [CLAVES_TRANSFERENCIA.cbu, cbu],
-      [CLAVES_TRANSFERENCIA.titular, titular],
-      [CLAVES_TRANSFERENCIA.banco, banco],
-      [CLAVES_LOCAL.nombre, nombre],
-      [CLAVES_LOCAL.whatsapp, whatsapp],
-      [CLAVES_LOCAL.direccion, direccion],
-      [CLAVES_LOCAL.horario, horario],
-      [CLAVES_LOCAL.instagram, redes.instagram ?? ''],
-      [CLAVES_LOCAL.facebook, redes.facebook ?? ''],
-      [CLAVES_LOCAL.tiktok, redes.tiktok ?? ''],
-    ] as const) {
-      await tx
-        .insert(schema.configuracion)
-        .values({ clave, valor })
-        .onConflictDoUpdate({ target: schema.configuracion.clave, set: { valor } })
-    }
-  })
-  revalidatePath('/admin/ajustes')
-  revalidatePath('/admin/caja')
-  revalidatePath('/admin/pedidos', 'layout')
-  // Nombre, WhatsApp, dirección y redes se muestran en todo el sitio
+  await guardarClaves([
+    [CLAVES_LOCAL.nombre, nombre],
+    [CLAVES_LOCAL.whatsapp, whatsapp],
+    [CLAVES_LOCAL.direccion, direccion],
+    [CLAVES_LOCAL.horario, horario],
+    [CLAVES_LOCAL.instagram, redes.instagram ?? ''],
+    [CLAVES_LOCAL.facebook, redes.facebook ?? ''],
+    [CLAVES_LOCAL.tiktok, redes.tiktok ?? ''],
+  ])
+  // Se muestran en todo el sitio (pie, carrito, seguimiento) y en mensajes y comandas
   revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
+/** Cuenta para transferencias (alias, CBU, titular y banco; todos opcionales). */
+export async function guardarCuentaTransferencia(entrada: unknown): Promise<ResultadoAccion> {
+  await requerirDueno()
+  if (typeof entrada !== 'object' || entrada === null) return { ok: false, error: 'Los datos no son válidos.' }
+  const d = entrada as Record<string, unknown>
+
+  const alias = texto(d.alias ?? '', 20)
+  const cbu = texto(d.cbu ?? '', 22)
+  const titular = texto(d.titular ?? '', 80)
+  const banco = texto(d.banco ?? '', 60)
+  if (alias === null || (alias !== '' && !/^[a-zA-Z0-9.-]{6,20}$/.test(alias))) {
+    return { ok: false, error: 'El alias debe tener entre 6 y 20 caracteres: letras, números, puntos o guiones.' }
+  }
+  if (cbu === null || (cbu !== '' && !/^\d{22}$/.test(cbu))) {
+    return { ok: false, error: 'El CBU o CVU debe tener exactamente 22 números.' }
+  }
+  if (titular === null) return { ok: false, error: 'El nombre del titular es demasiado largo (máximo 80 caracteres).' }
+  if (banco === null) return { ok: false, error: 'El nombre del banco es demasiado largo (máximo 60 caracteres).' }
+
+  // Un dato vacío se guarda como texto vacío: el sitio lo trata como "no cargado"
+  await guardarClaves([
+    [CLAVES_TRANSFERENCIA.alias, alias],
+    [CLAVES_TRANSFERENCIA.cbu, cbu],
+    [CLAVES_TRANSFERENCIA.titular, titular],
+    [CLAVES_TRANSFERENCIA.banco, banco],
+  ])
+  revalidatePath('/admin/pedidos', 'layout')
+  return { ok: true }
+}
+
+/** Hora a la que empieza el día de caja (0–23): define el día en la caja y en los reportes. */
+export async function guardarCorteCaja(corte: number): Promise<ResultadoAccion> {
+  await requerirDueno()
+  if (typeof corte !== 'number' || !Number.isInteger(corte) || corte < 0 || corte > 23) {
+    return { ok: false, error: 'La hora de corte debe ser un número entero entre 0 y 23.' }
+  }
+  await guardarClaves([['corte_dia_hora', String(corte)]])
+  revalidatePath('/admin/caja')
+  revalidatePath('/admin/ventas')
   return { ok: true }
 }

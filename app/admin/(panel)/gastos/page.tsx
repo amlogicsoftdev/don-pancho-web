@@ -3,6 +3,7 @@ import { requerirDueno } from '@/lib/auth/guards'
 import { diaOperativo, esDiaValido, leerCorteHora, mostrarDia } from '@/lib/caja/dia'
 import { listarGastos } from '@/lib/caja/queries'
 import { ETIQUETA_PAGO, formatearPrecio } from '@/lib/orders/estados'
+import { CampoFecha } from '../campo-fecha'
 import { Encabezado } from '../encabezado'
 import { FormularioGasto } from './formulario-gasto'
 
@@ -27,14 +28,8 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
           {/* Período de la lista, con el total a la derecha */}
           <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
             <form method="get" className="flex flex-wrap items-end gap-3">
-              <label>
-                <span className="pn-label">Desde</span>
-                <input type="date" name="desde" defaultValue={desde} className="pn-field w-auto" />
-              </label>
-              <label>
-                <span className="pn-label">Hasta</span>
-                <input type="date" name="hasta" defaultValue={hasta} className="pn-field w-auto" />
-              </label>
+              <CampoFecha etiqueta="Desde" name="desde" defaultValue={desde} className="w-44" />
+              <CampoFecha etiqueta="Hasta" name="hasta" defaultValue={hasta} className="w-44" />
               <Button type="submit" variant="default">
                 Filtrar
               </Button>

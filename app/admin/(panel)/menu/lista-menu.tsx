@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
+import { Menu, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -8,12 +8,13 @@ import {
   alternarCategoria,
   alternarProducto,
   crearCategoria,
-  moverCategoria,
-  moverProducto,
+  ordenarCategorias,
+  ordenarProductos,
   renombrarCategoria,
   type ResultadoAccion,
 } from '@/lib/menu/actions'
 import { formatearPrecio } from '@/lib/orders/estados'
+import { useOrdenable } from './use-ordenable'
 
 interface Producto {
   id: number
@@ -30,13 +31,15 @@ interface Categoria {
   productos: Producto[]
 }
 
+type Ejecutar = (accion: () => Promise<ResultadoAccion>, alTerminar?: () => void) => void
+type GuardarOrden = (accion: () => Promise<ResultadoAccion>) => Promise<boolean>
+
 export function ListaMenu({ menu }: { menu: Categoria[] }) {
   const [error, setError] = useState<string | null>(null)
   const [enCurso, iniciar] = useTransition()
   const [nueva, setNueva] = useState('')
-  const [editando, setEditando] = useState<{ id: number; nombre: string } | null>(null)
 
-  function ejecutar(accion: () => Promise<ResultadoAccion>, alTerminar?: () => void) {
+  const ejecutar: Ejecutar = (accion, alTerminar) => {
     setError(null)
     iniciar(async () => {
       const resultado = await accion()
@@ -48,147 +51,23 @@ export function ListaMenu({ menu }: { menu: Categoria[] }) {
     })
   }
 
+  // El orden se guarda al soltar: la lista ya se ve en su lugar nuevo mientras tanto
+  const guardarOrden: GuardarOrden = async (accion) => {
+    setError(null)
+    const resultado = await accion()
+    if (!resultado.ok) setError(resultado.error)
+    return resultado.ok
+  }
+
+  const categorias = useOrdenable(
+    menu.map((c) => c.id),
+    (ids) => guardarOrden(() => ordenarCategorias(ids)),
+    enCurso,
+  )
+  const porId = new Map(menu.map((c) => [c.id, c]))
+
   return (
     <div className="space-y-6">
-      {error && (
-        <p role="alert" className="pn-alert pn-alert--error">
-          {error}
-        </p>
-      )}
-
-      {menu.map((categoria, i) => (
-        <article key={categoria.id} className="pn-card p-5 sm:p-6">
-          {/* Nombre de la categoría a la izquierda; a la derecha, primero el orden y después el resto */}
-          <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-            {editando?.id === categoria.id ? (
-              <form
-                className="flex flex-wrap items-center gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  ejecutar(() => renombrarCategoria(categoria.id, editando.nombre), () => setEditando(null))
-                }}
-              >
-                <input
-                  value={editando.nombre}
-                  onChange={(e) => setEditando({ id: categoria.id, nombre: e.target.value })}
-                  maxLength={60}
-                  autoFocus
-                  aria-label="Nombre de la categoría"
-                  className="pn-field w-56"
-                />
-                <Button type="submit" variant="default" disabled={enCurso}>
-                  Guardar
-                </Button>
-                <Button type="button" variant="ghost" onClick={() => setEditando(null)}>
-                  Cancelar
-                </Button>
-              </form>
-            ) : (
-              <h2 className={`flex flex-wrap items-center gap-3 text-3xl leading-none ${categoria.activa ? '' : 'text-pancho-black/50'}`}>
-                {categoria.nombre}
-                {!categoria.activa && <span className="pn-tag font-sans">Oculta</span>}
-              </h2>
-            )}
-
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex gap-1.5">
-                <Button
-                  size="icon-sm"
-                  disabled={enCurso || i === 0}
-                  onClick={() => ejecutar(() => moverCategoria(categoria.id, 'arriba'))}
-                  aria-label={`Subir ${categoria.nombre}`}
-                >
-                  <ChevronUp strokeWidth={3} />
-                </Button>
-                <Button
-                  size="icon-sm"
-                  disabled={enCurso || i === menu.length - 1}
-                  onClick={() => ejecutar(() => moverCategoria(categoria.id, 'abajo'))}
-                  aria-label={`Bajar ${categoria.nombre}`}
-                >
-                  <ChevronDown strokeWidth={3} />
-                </Button>
-              </div>
-              <Button
-                size="sm"
-                disabled={enCurso}
-                onClick={() => setEditando({ id: categoria.id, nombre: categoria.nombre })}
-              >
-                Renombrar
-              </Button>
-              <Button
-                size="sm"
-                disabled={enCurso}
-                onClick={() => ejecutar(() => alternarCategoria(categoria.id, !categoria.activa))}
-              >
-                {categoria.activa ? 'Ocultar' : 'Mostrar'}
-              </Button>
-              <Link
-                href={`/admin/menu/productos/nuevo?categoria=${categoria.id}`}
-                className={buttonVariants({ variant: 'default', size: 'sm' })}
-              >
-                <Plus strokeWidth={3} />
-                Producto
-              </Link>
-            </div>
-          </header>
-
-          {categoria.productos.length === 0 ? (
-            <p className="pn-muted mt-4 text-sm font-semibold">Esta categoría todavía no tiene productos.</p>
-          ) : (
-            <ul className="pn-rows mt-4">
-              {categoria.productos.map((p, j) => (
-                <li key={p.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
-                  <div className={`min-w-0 ${p.activo ? '' : 'opacity-55'}`}>
-                    <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-base leading-snug font-bold">
-                      <span className="truncate">{p.nombre}</span>
-                      {p.etiqueta && (
-                        <span className="pn-tag" data-estado="pendiente">
-                          {p.etiqueta}
-                        </span>
-                      )}
-                      {!p.activo && <span className="pn-tag">Inactivo</span>}
-                    </p>
-                    <p className="pn-muted text-sm font-semibold tabular-nums">{formatearPrecio(p.precio)}</p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex gap-1.5">
-                      <Button
-                        size="icon-sm"
-                        disabled={enCurso || j === 0}
-                        onClick={() => ejecutar(() => moverProducto(p.id, 'arriba'))}
-                        aria-label={`Subir ${p.nombre}`}
-                      >
-                        <ChevronUp strokeWidth={3} />
-                      </Button>
-                      <Button
-                        size="icon-sm"
-                        disabled={enCurso || j === categoria.productos.length - 1}
-                        onClick={() => ejecutar(() => moverProducto(p.id, 'abajo'))}
-                        aria-label={`Bajar ${p.nombre}`}
-                      >
-                        <ChevronDown strokeWidth={3} />
-                      </Button>
-                    </div>
-                    <Link href={`/admin/menu/productos/${p.id}`} className={buttonVariants({ size: 'sm' })}>
-                      Editar
-                    </Link>
-                    <Button
-                      size="sm"
-                      className="w-28"
-                      disabled={enCurso}
-                      onClick={() => ejecutar(() => alternarProducto(p.id, !p.activo))}
-                    >
-                      {p.activo ? 'Desactivar' : 'Activar'}
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </article>
-      ))}
-
       <form
         className="pn-card pn-card--soft flex flex-wrap items-end gap-3 p-5"
         onSubmit={(e) => {
@@ -211,6 +90,163 @@ export function ListaMenu({ menu }: { menu: Categoria[] }) {
           Agregar categoría
         </Button>
       </form>
+
+      {error && (
+        <p role="alert" className="pn-alert pn-alert--error">
+          {error}
+        </p>
+      )}
+      <p role="status" className="sr-only">
+        {categorias.anuncio}
+      </p>
+
+      {categorias.orden.map((id) => {
+        const categoria = porId.get(id)
+        if (!categoria) return null
+        return (
+          <TarjetaCategoria
+            key={id}
+            categoria={categoria}
+            refElemento={categorias.refElemento(id)}
+            arrastrando={categorias.arrastrando === id}
+            asa={categorias.propsAsa(id, categoria.nombre)}
+            enCurso={enCurso}
+            ejecutar={ejecutar}
+            guardarOrden={guardarOrden}
+          />
+        )
+      })}
     </div>
+  )
+}
+
+interface TarjetaProps {
+  categoria: Categoria
+  refElemento: (nodo: HTMLElement | null) => void
+  arrastrando: boolean
+  asa: ReturnType<ReturnType<typeof useOrdenable>['propsAsa']>
+  enCurso: boolean
+  ejecutar: Ejecutar
+  guardarOrden: GuardarOrden
+}
+
+function TarjetaCategoria({ categoria, refElemento, arrastrando, asa, enCurso, ejecutar, guardarOrden }: TarjetaProps) {
+  const [editando, setEditando] = useState<string | null>(null)
+  const productos = useOrdenable(
+    categoria.productos.map((p) => p.id),
+    (ids) => guardarOrden(() => ordenarProductos(categoria.id, ids)),
+    enCurso,
+  )
+  const porId = new Map(categoria.productos.map((p) => [p.id, p]))
+
+  return (
+    <article ref={refElemento} className="pn-card pn-ordenable p-5 sm:p-6" data-arrastrando={arrastrando}>
+      {/* Nombre de la categoría a la izquierda; a la derecha, las acciones y la manija para moverla */}
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        {editando !== null ? (
+          <form
+            className="flex flex-wrap items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              ejecutar(() => renombrarCategoria(categoria.id, editando), () => setEditando(null))
+            }}
+          >
+            <input
+              value={editando}
+              onChange={(e) => setEditando(e.target.value)}
+              maxLength={60}
+              autoFocus
+              aria-label="Nombre de la categoría"
+              className="pn-field w-56"
+            />
+            <Button type="submit" variant="default" disabled={enCurso}>
+              Guardar
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setEditando(null)}>
+              Cancelar
+            </Button>
+          </form>
+        ) : (
+          <h2 className={`flex flex-wrap items-center gap-3 text-3xl leading-none ${categoria.activa ? '' : 'text-pancho-black/50'}`}>
+            {categoria.nombre}
+            {!categoria.activa && <span className="pn-tag font-sans">Oculta</span>}
+          </h2>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" disabled={enCurso} onClick={() => setEditando(categoria.nombre)}>
+            Renombrar
+          </Button>
+          <Button
+            size="sm"
+            disabled={enCurso}
+            onClick={() => ejecutar(() => alternarCategoria(categoria.id, !categoria.activa))}
+          >
+            {categoria.activa ? 'Ocultar' : 'Mostrar'}
+          </Button>
+          <Link
+            href={`/admin/menu/productos/nuevo?categoria=${categoria.id}`}
+            className={buttonVariants({ variant: 'default', size: 'sm' })}
+          >
+            <Plus strokeWidth={3} />
+            Producto
+          </Link>
+          <button {...asa}>
+            <Menu className="size-5" strokeWidth={2.75} aria-hidden="true" />
+          </button>
+        </div>
+      </header>
+
+      <p role="status" className="sr-only">
+        {productos.anuncio}
+      </p>
+      {categoria.productos.length === 0 ? (
+        <p className="pn-muted mt-4 text-sm font-semibold">Esta categoría todavía no tiene productos.</p>
+      ) : (
+        <ul className="pn-rows mt-4">
+          {productos.orden.map((id) => {
+            const p = porId.get(id)
+            if (!p) return null
+            return (
+              <li
+                key={p.id}
+                ref={productos.refElemento(p.id)}
+                className="pn-ordenable flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3"
+                data-arrastrando={productos.arrastrando === p.id}
+              >
+                <div className={`min-w-0 ${p.activo ? '' : 'opacity-55'}`}>
+                  <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-base leading-snug font-bold">
+                    <span className="truncate">{p.nombre}</span>
+                    {p.etiqueta && (
+                      <span className="pn-tag" data-estado="pendiente">
+                        {p.etiqueta}
+                      </span>
+                    )}
+                    {!p.activo && <span className="pn-tag">De baja</span>}
+                  </p>
+                  <p className="pn-muted text-sm font-semibold tabular-nums">{formatearPrecio(p.precio)}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link href={`/admin/menu/productos/${p.id}`} className={buttonVariants({ size: 'sm' })}>
+                    Editar
+                  </Link>
+                  <Button
+                    size="sm"
+                    className="w-32"
+                    disabled={enCurso}
+                    onClick={() => ejecutar(() => alternarProducto(p.id, !p.activo))}
+                  >
+                    {p.activo ? 'Dar de baja' : 'Dar de alta'}
+                  </Button>
+                  <button {...productos.propsAsa(p.id, p.nombre)}>
+                    <Menu className="size-5" strokeWidth={2.75} aria-hidden="true" />
+                  </button>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </article>
   )
 }

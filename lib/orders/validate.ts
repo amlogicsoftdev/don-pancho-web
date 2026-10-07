@@ -2,6 +2,8 @@
 // información no confiable: acá solo se aceptan los campos esperados, con tipos y largos acotados.
 // Los precios y el total NO se leen del navegador; se recalculan en el servidor (create.ts).
 
+import { TIEMPOS_ENTREGA } from './estados'
+
 export const MODALIDADES = ['delivery', 'retiro'] as const
 export const METODOS_PAGO = ['efectivo', 'transferencia'] as const
 
@@ -143,16 +145,26 @@ export function validarPedido(cuerpo: unknown): Resultado {
 
 export interface VentaMostradorEntrada {
   metodoPago: MetodoPago
+  modalidad: Modalidad
   clienteNombre: string | null
+  /** Solo dígitos. Opcional: hace falta para avisarle por WhatsApp. */
+  clienteTelefono: string | null
+  /** Obligatoria si es delivery. */
+  direccion: string | null
   notas: string | null
   items: ItemPedidoEntrada[]
   /** Descuento de esta venta, en porcentaje entero (0 = sin descuento). */
   descuentoPorcentaje: number
+  /** Tiempo de entrega informado, en minutos (uno de TIEMPOS_ENTREGA). */
+  tiempoEstimadoMin: number
 }
 
 type ResultadoMostrador = { ok: true; venta: VentaMostradorEntrada } | { ok: false; error: string }
 
-/** Venta cargada a mano en el mostrador: no pide teléfono ni dirección. */
+/**
+ * Venta cargada en el mostrador: para retirar o delivery (con dirección). El teléfono es
+ * opcional y solo sirve para avisarle al cliente por WhatsApp.
+ */
 export function validarVentaMostrador(cuerpo: unknown): ResultadoMostrador {
   if (typeof cuerpo !== 'object' || cuerpo === null || Array.isArray(cuerpo)) {
     return { ok: false, error: 'La venta no es válida.' }
@@ -162,11 +174,24 @@ export function validarVentaMostrador(cuerpo: unknown): ResultadoMostrador {
   if (!esEnum(METODOS_PAGO, dato.metodoPago)) {
     return { ok: false, error: 'Elegí efectivo o transferencia.' }
   }
+  if (!esEnum(MODALIDADES, dato.modalidad)) {
+    return { ok: false, error: 'Elegí retiro o delivery.' }
+  }
   const nombre = texto(dato.clienteNombre, LIMITES.nombre)
   const notas = texto(dato.notas, LIMITES.notas)
-  if (nombre === undefined || notas === undefined) {
+  const direccion = texto(dato.direccion, LIMITES.direccion)
+  const telefonoCrudo = texto(dato.clienteTelefono, 30)
+  if (nombre === undefined || notas === undefined || direccion === undefined || telefonoCrudo === undefined) {
     return { ok: false, error: 'Algún dato de la venta es demasiado largo o no es válido.' }
   }
+  if (dato.modalidad === 'delivery' && !direccion) {
+    return { ok: false, error: 'Para delivery, cargá la dirección de entrega.' }
+  }
+  const telefono = telefonoCrudo ? normalizarTelefono(telefonoCrudo) : null
+  if (telefono !== null && (telefono.length < LIMITES.telefonoMin || telefono.length > LIMITES.telefonoMax)) {
+    return { ok: false, error: 'El teléfono no es válido (o dejalo vacío).' }
+  }
+
   const resultadoItems = validarItems(dato.items)
   if (!resultadoItems.ok) return resultadoItems
 
@@ -174,15 +199,27 @@ export function validarVentaMostrador(cuerpo: unknown): ResultadoMostrador {
   if (typeof descuento !== 'number' || !Number.isInteger(descuento) || descuento < 0 || descuento > 100) {
     return { ok: false, error: 'El descuento debe ser un número entero entre 0 y 100.' }
   }
+  if (!esTiempoEntrega(dato.tiempoEstimadoMin)) {
+    return { ok: false, error: 'Elegí el tiempo de entrega.' }
+  }
 
   return {
     ok: true,
     venta: {
       metodoPago: dato.metodoPago,
+      modalidad: dato.modalidad,
       clienteNombre: nombre,
+      clienteTelefono: telefono,
+      direccion: dato.modalidad === 'delivery' ? direccion : null,
       notas,
       items: resultadoItems.items,
       descuentoPorcentaje: descuento,
+      tiempoEstimadoMin: dato.tiempoEstimadoMin,
     },
   }
+}
+
+/** Tiempo de entrega válido: uno de los que ofrece el cuadro de confirmación. */
+export function esTiempoEntrega(valor: unknown): valor is number {
+  return typeof valor === 'number' && (TIEMPOS_ENTREGA as readonly number[]).includes(valor)
 }

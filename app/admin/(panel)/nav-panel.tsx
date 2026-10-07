@@ -11,7 +11,7 @@ const SECCIONES = [
   { href: '/admin/ventas', titulo: 'Ventas', soloDueno: true },
   { href: '/admin/menu', titulo: 'Menú', soloDueno: true },
   { href: '/admin/gastos', titulo: 'Gastos', soloDueno: true },
-  { href: '/admin/anulaciones', titulo: 'Anulaciones', soloDueno: true },
+  { href: '/admin/anulaciones', titulo: 'Cancelados', soloDueno: true },
   { href: '/admin/ajustes', titulo: 'Ajustes', soloDueno: true },
 ]
 
@@ -31,7 +31,7 @@ export function NavPanel({ esDueno, pendientesIniciales }: Props) {
   return (
     <nav
       aria-label="Secciones del panel"
-      className="order-last -mx-4 flex w-[calc(100%+2rem)] overflow-x-auto border-t border-pancho-black/15 px-4 sm:-mx-6 sm:w-[calc(100%+3rem)] sm:px-6 lg:order-2 lg:mx-0 lg:w-auto lg:border-t-0 lg:px-0"
+      className="order-last -mx-4 flex w-[calc(100%+2rem)] overflow-x-auto border-t border-pancho-black/15 px-4 sm:-mx-6 sm:w-[calc(100%+3rem)] sm:px-6 xl:order-2 xl:mx-0 xl:w-auto xl:border-t-0 xl:px-0"
     >
       {SECCIONES.filter((seccion) => esDueno || !seccion.soloDueno).map((seccion) =>
         seccion.href === '/admin/pedidos' ? (

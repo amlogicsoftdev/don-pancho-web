@@ -3,7 +3,6 @@
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition, type FormEvent } from 'react'
-import { PanchoButton } from '@/components/pancho-button'
 import { Button } from '@/components/ui/button'
 import { guardarProducto, pedirFirmaSubida } from '@/lib/menu/actions'
 
@@ -182,7 +181,7 @@ export function FormularioProducto({ categorias, cloudinaryListo, inicial }: Pro
 
       <label className="flex cursor-pointer items-center gap-3 text-sm font-bold">
         <input type="checkbox" name="activo" defaultChecked={inicial.activo} className="pn-check" />
-        Activo (se muestra en la carta)
+        Dado de alta (se muestra en la carta)
       </label>
 
       {error && (
@@ -192,9 +191,9 @@ export function FormularioProducto({ categorias, cloudinaryListo, inicial }: Pro
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <PanchoButton type="submit" disabled={enCurso || subiendo}>
+        <Button type="submit" variant="default" size="lg" disabled={enCurso || subiendo}>
           {enCurso ? 'Guardando…' : 'Guardar producto'}
-        </PanchoButton>
+        </Button>
         <Button type="button" variant="ghost" onClick={() => router.push('/admin/menu')} disabled={enCurso}>
           Cancelar
         </Button>

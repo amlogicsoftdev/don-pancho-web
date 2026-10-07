@@ -10,6 +10,15 @@ import { leerCorteHora, rangoDias } from './dia'
 /** Una venta es todo pedido que no está cancelado ni borrado (CLAUDE.md, sección 7). */
 const esVenta = and(isNull(schema.pedidos.borradoEn), ne(schema.pedidos.estado, 'cancelado'))
 
+/**
+ * Venta cobrada: la plata ya está en el local. Una transferencia, cuando se confirmó que llegó;
+ * el efectivo, cuando se entregó el pedido (se cobra al entregar). Las ventas de mostrador se
+ * registran cobradas (pago_confirmado), salvo el delivery en efectivo, que sigue la regla del
+ * efectivo. Ventas y caja solo suman lo cobrado.
+ */
+const cobrado = sql`(${schema.pedidos.pagoConfirmado} or (${schema.pedidos.metodoPago} = 'efectivo' and ${schema.pedidos.estado} = 'entregado'))`
+const esCobrada = and(esVenta, cobrado)
+
 export interface ResumenCaja {
   dia: string
   cantidadVentas: number
@@ -33,9 +42,10 @@ export async function resumenDia(dia: string): Promise<ResumenCaja> {
 
   const [ventas] = await db
     .select({
-      cantidad: sql<number>`count(*)::int`,
-      efectivo: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${schema.pedidos.metodoPago} = 'efectivo'), 0)::int`,
-      transfConfirmadas: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${schema.pedidos.metodoPago} = 'transferencia' and ${schema.pedidos.pagoConfirmado}), 0)::int`,
+      // Solo lo cobrado (ver `cobrado`): lo que todavía no se cobró no entra a la caja
+      cantidad: sql<number>`count(*) filter (where ${cobrado})::int`,
+      efectivo: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${cobrado} and ${schema.pedidos.metodoPago} = 'efectivo'), 0)::int`,
+      transfConfirmadas: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${cobrado} and ${schema.pedidos.metodoPago} = 'transferencia'), 0)::int`,
       transfPorConfirmar: sql<number>`coalesce(sum(${schema.pedidos.total}) filter (where ${schema.pedidos.metodoPago} = 'transferencia' and not ${schema.pedidos.pagoConfirmado}), 0)::int`,
       cantPorConfirmar: sql<number>`count(*) filter (where ${schema.pedidos.metodoPago} = 'transferencia' and not ${schema.pedidos.pagoConfirmado})::int`,
       sinEntregar: sql<number>`count(*) filter (where ${schema.pedidos.estado} in (${sql.join(ESTADOS_ACTIVOS.map((e) => sql`${e}`), sql`, `)}))::int`,
@@ -119,8 +129,9 @@ export async function reporteVentas(filtro: FiltroVentas) {
   const corte = await leerCorteHora()
   const { inicio, fin } = rangoDias(filtro.desde, filtro.hasta, corte)
 
+  // Solo ventas cobradas: lo que todavía no se cobró no figura ni en la lista ni en los totales
   const condiciones = and(
-    esVenta,
+    esCobrada,
     gte(schema.pedidos.creadoEn, inicio),
     lt(schema.pedidos.creadoEn, fin),
     filtro.origen === 'todos' ? undefined : eq(schema.pedidos.origen, filtro.origen),

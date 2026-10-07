@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { PanchoButton } from '@/components/pancho-button'
+import { Button } from '@/components/ui/button'
 import { cerrarCaja } from '@/lib/caja/actions'
 import { formatearPrecio } from '@/lib/orders/estados'
 
@@ -97,9 +97,9 @@ export function FormularioCierre({ dia, ventasEfectivo, gastosEfectivo, cierraCo
       )}
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <PanchoButton disabled={enCurso || !hayContado || Number(contado) < 0} onClick={cerrar}>
+        <Button variant="default" size="lg" disabled={enCurso || !hayContado || Number(contado) < 0} onClick={cerrar}>
           {enCurso ? 'Cerrando…' : 'Cerrar caja'}
-        </PanchoButton>
+        </Button>
         <p className="pn-muted min-w-56 flex-1 text-xs font-medium">
           Queda guardado con la fecha, la hora y tu usuario ({cierraComo}). Una vez cerrada, la caja de este día no se
           puede volver a cerrar.

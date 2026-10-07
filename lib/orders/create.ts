@@ -149,8 +149,9 @@ export async function crearPedidoWeb(entrada: PedidoEntrada, ipHash: string | nu
 }
 
 /**
- * Guarda una venta de mostrador: entra al sistema ya entregada y cobrada, a nombre de quien la
- * cargó, así suma sola a los reportes y al cierre de caja.
+ * Guarda una venta de mostrador a nombre de quien la cargó: entra confirmada, en preparación, y
+ * cobrada (salvo el delivery en efectivo, que se cobra al entregar). Así suma sola a los reportes
+ * y al cierre de caja.
  */
 export async function crearVentaMostrador(entrada: VentaMostradorEntrada, usuarioId: string): Promise<PedidoCreado> {
   // En el mostrador el descuento se carga junto con la venta (se cobra en el momento)
@@ -159,6 +160,7 @@ export async function crearVentaMostrador(entrada: VentaMostradorEntrada, usuari
     entrada.descuentoPorcentaje,
   )
   const token = randomBytes(24).toString('base64url')
+  const ahora = new Date()
 
   const { id, numero } = await db.transaction(async (tx) => {
     const [pedido] = await tx
@@ -166,14 +168,19 @@ export async function crearVentaMostrador(entrada: VentaMostradorEntrada, usuari
       .values({
         tokenSeguimiento: token,
         origen: 'mostrador',
-        estado: 'entregado',
-        modalidad: 'retiro',
+        // Se prepara y se entrega después: entra ya confirmada, con su tiempo de entrega.
+        estado: 'en_preparacion',
+        modalidad: entrada.modalidad,
         metodoPago: entrada.metodoPago,
-        // En el mostrador se cobra en el momento.
-        pagoConfirmado: true,
+        // En el mostrador se cobra en el momento, salvo el delivery en efectivo: lo cobra el
+        // cadete al entregar, y suma a la caja recién cuando el pedido pasa a "entregado".
+        pagoConfirmado: !(entrada.modalidad === 'delivery' && entrada.metodoPago === 'efectivo'),
         clienteNombre: entrada.clienteNombre ?? 'Mostrador',
-        clienteTelefono: '',
+        clienteTelefono: entrada.clienteTelefono ?? '',
+        direccion: entrada.direccion,
         notas: entrada.notas,
+        tiempoEstimadoMin: entrada.tiempoEstimadoMin,
+        entregaEstimada: new Date(ahora.getTime() + entrada.tiempoEstimadoMin * 60_000),
         subtotal,
         descuentoPorcentaje,
         descuentoMonto,
@@ -188,7 +195,7 @@ export async function crearVentaMostrador(entrada: VentaMostradorEntrada, usuari
     await tx.insert(schema.pedidoHistorial).values({
       pedidoId: pedido.id,
       estadoAnterior: null,
-      estadoNuevo: 'entregado',
+      estadoNuevo: 'en_preparacion',
       usuarioId,
     })
     return { id: pedido.id, numero: pedido.numero }

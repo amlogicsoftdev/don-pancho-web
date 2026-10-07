@@ -1,10 +1,10 @@
 'use client'
 
-import { Check } from 'lucide-react'
+import { Check, Printer } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { PanchoButton } from '@/components/pancho-button'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { IconoWhatsApp } from '@/components/icono-whatsapp'
 import {
   aplicarDescuento,
   avanzarPedido,
@@ -12,9 +12,13 @@ import {
   cambiarEstado,
   cancelarPedido,
   confirmarPago,
+  confirmarPedido,
+  rechazarPedido,
   type ResultadoAccion,
 } from '@/lib/orders/actions'
-import { ETIQUETA_ESTADO, type EstadoPedido } from '@/lib/orders/estados'
+import { ETIQUETA_ESTADO, MOTIVOS_RECHAZO, type EstadoPedido } from '@/lib/orders/estados'
+import { CuadroConfirmar } from '../cuadro-confirmar'
+import { imprimirComandas } from '../imprimir-comandas'
 
 // Las acciones del pedido van repartidas por la pantalla, cada una al lado de lo que cambia:
 // - <PasosPedido>     los pasos, que se pueden tocar para mover el pedido (también hacia atrás)
@@ -50,15 +54,166 @@ const MensajeError = ({ error }: { error: string | null }) =>
     </p>
   ) : null
 
+interface AccionesEstadoProps {
+  pedidoId: number
+  numero: number
+  estado: EstadoPedido
+  /** Texto del botón que avanza al paso siguiente (null si el pedido ya terminó). */
+  etiquetaAvance: string | null
+}
+
+/**
+ * Acción principal según el estado: un pedido pendiente se confirma (cuadro con tiempo,
+ * impresión y aviso por WhatsApp) o se rechaza; después, se avanza paso a paso.
+ * Va siempre en el mismo lugar de la pantalla: así, cuando la página se actualiza tras
+ * confirmar o rechazar, el cuadro sigue abierto con el botón para avisar al cliente.
+ */
+export function AccionesEstado({ pedidoId, numero, estado, etiquetaAvance }: AccionesEstadoProps) {
+  const [confirmando, setConfirmando] = useState(false)
+  const [rechazando, setRechazando] = useState(false)
+
+  return (
+    <div>
+      {estado === 'pendiente' && !rechazando && (
+        <>
+          <p className="pn-eyebrow mb-3">Pedido nuevo</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="default" size="lg" onClick={() => setConfirmando(true)}>
+              Confirmar pedido
+            </Button>
+            <Button variant="destructive" onClick={() => setRechazando(true)}>
+              Rechazar
+            </Button>
+          </div>
+        </>
+      )}
+
+      {estado !== 'pendiente' && !rechazando && etiquetaAvance && (
+        <>
+          <p className="pn-eyebrow mb-3">Siguiente paso</p>
+          <BotonAvanzar pedidoId={pedidoId} etiqueta={etiquetaAvance} />
+        </>
+      )}
+
+      {rechazando && <RechazarPedido pedidoId={pedidoId} onCerrar={() => setRechazando(false)} />}
+
+      <CuadroConfirmar
+        abierto={confirmando}
+        titulo={`Confirmar pedido N° ${String(numero).padStart(4, '0')}`}
+        textoConfirmar="Confirmar pedido"
+        onConfirmar={async (minutos) => {
+          const resultado = await confirmarPedido(pedidoId, minutos, true)
+          return resultado.ok ? { ok: true, pedidoId, numero, linkWhatsApp: resultado.linkWhatsApp } : resultado
+        }}
+        onCerrar={() => setConfirmando(false)}
+      />
+    </div>
+  )
+}
+
+/** Rechazar un pedido pendiente: motivo rápido (o escrito) y, si se quiere, aviso por WhatsApp. */
+function RechazarPedido({ pedidoId, onCerrar }: { pedidoId: number; onCerrar: () => void }) {
+  const [enCurso, iniciar] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  const [elegido, setElegido] = useState<string | null>(null)
+  const [otro, setOtro] = useState('')
+  const [hecho, setHecho] = useState<{ linkWhatsApp: string | null } | null>(null)
+
+  const motivo = elegido === 'otro' ? otro.trim() : (elegido ?? '')
+
+  function rechazar() {
+    setError(null)
+    iniciar(async () => {
+      const resultado = await rechazarPedido(pedidoId, motivo, true)
+      if (!resultado.ok) return setError(resultado.error)
+      setHecho({ linkWhatsApp: resultado.linkWhatsApp })
+    })
+  }
+
+  if (hecho) {
+    return (
+      <div className="space-y-3">
+        <p className="pn-alert pn-alert--ok">Pedido rechazado. Quedó en Cancelados con el motivo.</p>
+        <div className="flex flex-wrap gap-2">
+          {hecho.linkWhatsApp && (
+            <a
+              href={hecho.linkWhatsApp}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: 'secondary' })}
+            >
+              <IconoWhatsApp className="size-4" />
+              Avisar al cliente por WhatsApp
+            </a>
+          )}
+          <Button variant="ghost" onClick={onCerrar}>
+            Listo
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="pn-label">¿Por qué se rechaza?</p>
+      <div className="flex flex-wrap gap-2">
+        {[...MOTIVOS_RECHAZO, 'otro'].map((m) => (
+          <button
+            key={m}
+            type="button"
+            className="pn-option"
+            aria-pressed={elegido === m}
+            onClick={() => setElegido(m)}
+          >
+            {m === 'otro' ? 'Otro motivo' : m}
+          </button>
+        ))}
+      </div>
+      {elegido === 'otro' && (
+        <textarea
+          value={otro}
+          onChange={(e) => setOtro(e.target.value)}
+          maxLength={300}
+          rows={2}
+          autoFocus
+          aria-label="Motivo del rechazo"
+          placeholder="Escribí el motivo"
+          className="pn-field"
+        />
+      )}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="destructive" disabled={enCurso || motivo.length < 3} onClick={rechazar}>
+          {enCurso ? 'Rechazando…' : 'Rechazar pedido'}
+        </Button>
+        <Button variant="ghost" disabled={enCurso} onClick={onCerrar}>
+          Volver
+        </Button>
+      </div>
+      <MensajeError error={error} />
+    </div>
+  )
+}
+
+/** Imprime las comandas sin salir de la pantalla (sale el diálogo de impresión). */
+export function BotonImprimirComandas({ pedidoId }: { pedidoId: number }) {
+  return (
+    <Button variant="outline" size="sm" onClick={() => void imprimirComandas(pedidoId)}>
+      <Printer />
+      Imprimir comandas
+    </Button>
+  )
+}
+
 /** Botón principal de la pantalla: pasa el pedido al estado que sigue. */
 export function BotonAvanzar({ pedidoId, etiqueta }: { pedidoId: number; etiqueta: string }) {
   const { enCurso, error, ejecutar } = useAccion()
 
   return (
     <div>
-      <PanchoButton size="lg" disabled={enCurso} onClick={() => ejecutar(() => avanzarPedido(pedidoId))}>
+      <Button variant="default" size="lg" disabled={enCurso} onClick={() => ejecutar(() => avanzarPedido(pedidoId))}>
         {etiqueta}
-      </PanchoButton>
+      </Button>
       <MensajeError error={error} />
     </div>
   )

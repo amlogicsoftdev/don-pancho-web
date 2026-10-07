@@ -1,12 +1,12 @@
 'use client'
 
-import { Minus, Plus, Printer } from 'lucide-react'
+import { Minus, Plus } from 'lucide-react'
 import Link from 'next/link'
-import { useState, useTransition } from 'react'
-import { PanchoButton } from '@/components/pancho-button'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { registrarVentaMostrador } from '@/lib/orders/actions'
 import { formatearNumero, formatearPrecio } from '@/lib/orders/estados'
+import { CuadroConfirmar } from '../pedidos/cuadro-confirmar'
 
 interface Categoria {
   id: number
@@ -18,6 +18,8 @@ interface Registrada {
   id: number
   numero: number
   total: number
+  /** Delivery en efectivo: lo cobra el cadete y suma a la caja al marcarlo entregado. */
+  cobraAlEntregar: boolean
 }
 
 // Los precios acá son solo para mostrar el total mientras se arma la venta. El servidor
@@ -25,11 +27,17 @@ interface Registrada {
 export function VentaMostrador({ menu }: { menu: Categoria[] }) {
   const [cantidades, setCantidades] = useState<Record<number, number>>({})
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo')
+  const [modalidad, setModalidad] = useState<'retiro' | 'delivery'>('retiro')
   const [nombre, setNombre] = useState('')
+  const [telefono, setTelefono] = useState('')
+  const [direccion, setDireccion] = useState('')
   const [descuento, setDescuento] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [registrada, setRegistrada] = useState<Registrada | null>(null)
-  const [enCurso, iniciar] = useTransition()
+  // Cuadro de confirmación: tiempo de entrega, impresión y aviso por WhatsApp
+  const [confirmando, setConfirmando] = useState(false)
+  // La venta se guardó en este cuadro: al cerrarlo se limpia el formulario para la próxima
+  const [guardadaEnCuadro, setGuardadaEnCuadro] = useState(false)
 
   const productos = menu.flatMap((c) => c.productos)
   const lineas = productos.filter((p) => (cantidades[p.id] ?? 0) > 0)
@@ -50,28 +58,53 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
   function limpiar() {
     setCantidades({})
     setNombre('')
+    setTelefono('')
+    setDireccion('')
     setDescuento('')
     setMetodoPago('efectivo')
+    setModalidad('retiro')
     setError(null)
   }
 
-  function registrar() {
+  /** Revisa lo básico antes de abrir el cuadro (el servidor vuelve a validar todo). */
+  function abrirConfirmacion() {
     setError(null)
     if (!descuentoValido) return setError('El descuento debe ser un número entero entre 0 y 100.')
-    iniciar(async () => {
-      const resultado = await registrarVentaMostrador({
+    if (modalidad === 'delivery' && !direccion.trim()) return setError('Para delivery, cargá la dirección de entrega.')
+    setConfirmando(true)
+  }
+
+  async function registrar(minutos: number) {
+    const resultado = await registrarVentaMostrador(
+      {
         metodoPago,
+        modalidad,
         clienteNombre: nombre,
+        clienteTelefono: telefono,
+        direccion: modalidad === 'delivery' ? direccion : null,
         items: lineas.map((p) => ({ productoId: p.id, cantidad: cantidades[p.id] })),
         descuentoPorcentaje: porcentaje,
-      })
-      if (!resultado.ok) {
-        setError(resultado.error)
-        return
-      }
-      setRegistrada({ id: resultado.id, numero: resultado.numero, total: resultado.total })
-      limpiar()
+        tiempoEstimadoMin: minutos,
+      },
+      true,
+    )
+    if (!resultado.ok) return resultado
+    setRegistrada({
+      id: resultado.id,
+      numero: resultado.numero,
+      total: resultado.total,
+      cobraAlEntregar: modalidad === 'delivery' && metodoPago === 'efectivo',
     })
+    setGuardadaEnCuadro(true)
+    return { ok: true as const, pedidoId: resultado.id, numero: resultado.numero, linkWhatsApp: resultado.linkWhatsApp }
+  }
+
+  function cerrarConfirmacion() {
+    setConfirmando(false)
+    if (guardadaEnCuadro) {
+      setGuardadaEnCuadro(false)
+      limpiar()
+    }
   }
 
   return (
@@ -124,15 +157,12 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
         {registrada && (
           <div role="status" className="pn-alert pn-alert--ok">
             <p>
-              Venta N° {formatearNumero(registrada.numero)} registrada por {formatearPrecio(registrada.total)}.
+              Venta N° {formatearNumero(registrada.numero)} registrada por {formatearPrecio(registrada.total)}. Quedó en
+              preparación.
+              {registrada.cobraAlEntregar && ' El efectivo suma a la caja cuando lo marques como entregado.'}
             </p>
-            <Link
-              href={`/admin/pedidos/${registrada.id}/comandas`}
-              target="_blank"
-              className="pn-link mt-1 inline-flex items-center gap-1.5"
-            >
-              <Printer className="size-4" aria-hidden="true" />
-              Imprimir comanda
+            <Link href={`/admin/pedidos/${registrada.id}`} className="pn-link mt-1 inline-flex">
+              Ver el pedido
             </Link>
           </div>
         )}
@@ -187,9 +217,53 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
           </div>
         </fieldset>
 
+        <fieldset>
+          <legend className="pn-label">Entrega</legend>
+          <div className="grid grid-cols-2 gap-2">
+            {(['retiro', 'delivery'] as const).map((opcion) => (
+              <button
+                key={opcion}
+                type="button"
+                onClick={() => setModalidad(opcion)}
+                aria-pressed={modalidad === opcion}
+                className="pn-option"
+              >
+                {opcion === 'retiro' ? 'Retira' : 'Delivery'}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        {modalidad === 'delivery' && (
+          <label className="block">
+            <span className="pn-label">Dirección de entrega</span>
+            <input
+              value={direccion}
+              onChange={(e) => setDireccion(e.target.value)}
+              maxLength={200}
+              required
+              placeholder="Calle, número, depto o referencia"
+              className="pn-field"
+            />
+          </label>
+        )}
+
         <label className="block">
-          <span className="pn-label">Nombre (opcional)</span>
+          <span className="pn-label">Nombre y apellido (opcional)</span>
           <input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={80} className="pn-field" />
+        </label>
+
+        <label className="block">
+          <span className="pn-label">Teléfono (opcional, para avisarle por WhatsApp)</span>
+          <input
+            type="tel"
+            inputMode="tel"
+            value={telefono}
+            onChange={(e) => setTelefono(e.target.value)}
+            maxLength={30}
+            placeholder="Ej.: 3442 66-8413"
+            className="pn-field"
+          />
         </label>
 
         <label className="block">
@@ -214,16 +288,24 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
         )}
 
         <div className="space-y-2">
-          <PanchoButton block disabled={enCurso || lineas.length === 0} onClick={registrar}>
-            {enCurso ? 'Registrando…' : 'Registrar venta'}
-          </PanchoButton>
+          <Button variant="default" size="lg" className="w-full" disabled={lineas.length === 0} onClick={abrirConfirmacion}>
+            Registrar venta
+          </Button>
           {lineas.length > 0 && (
-            <Button variant="ghost" className="w-full" onClick={limpiar} disabled={enCurso}>
+            <Button variant="ghost" className="w-full" onClick={limpiar}>
               Vaciar
             </Button>
           )}
         </div>
       </aside>
+
+      <CuadroConfirmar
+        abierto={confirmando}
+        titulo="Registrar venta"
+        textoConfirmar="Registrar venta"
+        onConfirmar={registrar}
+        onCerrar={cerrarConfirmacion}
+      />
     </div>
   )
 }

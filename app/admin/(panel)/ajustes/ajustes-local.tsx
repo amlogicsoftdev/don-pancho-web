@@ -1,8 +1,13 @@
 'use client'
 
 import { useState, useTransition, type FormEvent } from 'react'
-import { PanchoButton } from '@/components/pancho-button'
-import { guardarAjustes } from '@/lib/menu/actions'
+import { Button } from '@/components/ui/button'
+import {
+  guardarCorteCaja,
+  guardarCuentaTransferencia,
+  guardarDatosLocal,
+  type ResultadoAccion,
+} from '@/lib/menu/actions'
 import type { DatosLocal } from '@/lib/local/datos'
 
 interface Props {
@@ -21,8 +26,17 @@ function Campo({ etiqueta, ...input }: { etiqueta: string } & React.InputHTMLAtt
   )
 }
 
-// El descuento ya no es un ajuste general: se carga en cada pedido (mostrador o detalle).
-export function AjustesLocal({ corteHora, transferencia, local }: Props) {
+interface HojaProps {
+  titulo: string
+  descripcion?: string
+  /** Guarda los datos de esta hoja (cada hoja se guarda por separado). */
+  onGuardar: (datos: FormData) => Promise<ResultadoAccion>
+  suave?: boolean
+  children: React.ReactNode
+}
+
+/** Una hoja de ajustes: su propio formulario, su botón Guardar y su mensaje. */
+function Hoja({ titulo, descripcion, onGuardar, suave = false, children }: HojaProps) {
   const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null)
   const [enCurso, iniciar] = useTransition()
 
@@ -31,35 +45,50 @@ export function AjustesLocal({ corteHora, transferencia, local }: Props) {
     const datos = new FormData(evento.currentTarget)
     setMensaje(null)
     iniciar(async () => {
-      const resultado = await guardarAjustes({
-        corteHora: Number(datos.get('corte')),
-        alias: datos.get('alias'),
-        cbu: datos.get('cbu'),
-        titular: datos.get('titular'),
-        banco: datos.get('banco'),
-        nombre: datos.get('nombre'),
-        whatsapp: datos.get('whatsapp'),
-        direccion: datos.get('direccion'),
-        horario: datos.get('horario'),
-        instagram: datos.get('instagram'),
-        facebook: datos.get('facebook'),
-        tiktok: datos.get('tiktok'),
-      })
-      setMensaje(resultado.ok ? { ok: true, texto: 'Ajustes guardados.' } : { ok: false, texto: resultado.error })
+      const resultado = await onGuardar(datos)
+      setMensaje(resultado.ok ? { ok: true, texto: 'Guardado.' } : { ok: false, texto: resultado.error })
     })
   }
 
   return (
-    <form onSubmit={enviar} className="space-y-6">
-      {/* ---------- Datos del local ---------- */}
-      <fieldset className="pn-card p-5 sm:p-6">
-        <legend className="sr-only">Datos del local</legend>
-        <h2 className="text-2xl leading-none">Datos del local</h2>
-        <p className="pn-muted mt-2 text-sm font-medium">
-          Se muestran en el sitio (pie de página, carrito y seguimiento). Los pedidos y las consultas llegan a este
-          WhatsApp. Si el local no tiene alguna red, dejá el link vacío y no se muestra.
-        </p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+    <form onSubmit={enviar} className={`pn-card p-5 sm:p-6 ${suave ? 'pn-card--soft' : ''}`}>
+      <h2 className="text-2xl leading-none">{titulo}</h2>
+      {descripcion && <p className="pn-muted mt-2 text-sm font-medium">{descripcion}</p>}
+      <div className="mt-5">{children}</div>
+      <div className="mt-5 flex flex-wrap items-center gap-4 border-t-2 border-dotted border-pancho-black/25 pt-5">
+        <Button type="submit" variant="default" size="lg" disabled={enCurso}>
+          {enCurso ? 'Guardando…' : 'Guardar'}
+        </Button>
+        {mensaje && (
+          <p role={mensaje.ok ? 'status' : 'alert'} className={`pn-alert ${mensaje.ok ? 'pn-alert--ok' : 'pn-alert--error'}`}>
+            {mensaje.texto}
+          </p>
+        )}
+      </div>
+    </form>
+  )
+}
+
+// El descuento ya no es un ajuste general: se carga en cada pedido (mostrador o detalle).
+export function AjustesLocal({ corteHora, transferencia, local }: Props) {
+  return (
+    <div className="space-y-6">
+      <Hoja
+        titulo="Datos del local"
+        descripcion="Se muestran en el sitio (pie de página, carrito y seguimiento), en las comandas y en los mensajes. Los pedidos y las consultas llegan a este WhatsApp. Si el local no tiene alguna red, dejá el link vacío y no se muestra."
+        onGuardar={(d) =>
+          guardarDatosLocal({
+            nombre: d.get('nombre'),
+            whatsapp: d.get('whatsapp'),
+            direccion: d.get('direccion'),
+            horario: d.get('horario'),
+            instagram: d.get('instagram'),
+            facebook: d.get('facebook'),
+            tiktok: d.get('tiktok'),
+          })
+        }
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
           <Campo etiqueta="Nombre" name="nombre" required maxLength={60} defaultValue={local.nombre} />
           <Campo
             etiqueta="WhatsApp del local (celular con código de área)"
@@ -77,7 +106,7 @@ export function AjustesLocal({ corteHora, transferencia, local }: Props) {
             required
             maxLength={80}
             defaultValue={local.horario}
-            placeholder="Ej.: Mar a Dom · 19:00 a 00:30"
+            placeholder="Ej.: Mar a Dom · 20:15 a 00:15"
           />
           <Campo
             etiqueta="Instagram (link)"
@@ -104,17 +133,21 @@ export function AjustesLocal({ corteHora, transferencia, local }: Props) {
             placeholder="https://tiktok.com/@..."
           />
         </div>
-      </fieldset>
+      </Hoja>
 
-      {/* ---------- Cuenta para transferencias ---------- */}
-      <fieldset className="pn-card p-5 sm:p-6">
-        <legend className="sr-only">Cuenta para transferencias</legend>
-        <h2 className="text-2xl leading-none">Cuenta para transferencias</h2>
-        <p className="pn-muted mt-2 text-sm font-medium">
-          Se muestran al cliente en el seguimiento del pedido y en el mensaje de WhatsApp cuando paga por transferencia.
-          Si dejás alias y CBU vacíos, no se muestra ningún dato.
-        </p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <Hoja
+        titulo="Cuenta para transferencias"
+        descripcion="Se muestran al cliente en el seguimiento del pedido y en el mensaje de WhatsApp cuando paga por transferencia. Si dejás alias y CBU vacíos, no se muestra ningún dato."
+        onGuardar={(d) =>
+          guardarCuentaTransferencia({
+            alias: d.get('alias'),
+            cbu: d.get('cbu'),
+            titular: d.get('titular'),
+            banco: d.get('banco'),
+          })
+        }
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
           <Campo
             etiqueta="Alias"
             name="alias"
@@ -132,13 +165,15 @@ export function AjustesLocal({ corteHora, transferencia, local }: Props) {
           <Campo etiqueta="Titular" name="titular" maxLength={80} defaultValue={transferencia.titular} />
           <Campo etiqueta="Banco o billetera" name="banco" maxLength={60} defaultValue={transferencia.banco} />
         </div>
-      </fieldset>
+      </Hoja>
 
-      {/* ---------- Caja ---------- */}
-      <fieldset className="pn-card pn-card--soft p-5 sm:p-6">
-        <legend className="sr-only">Caja</legend>
-        <h2 className="text-2xl leading-none">Caja</h2>
-        <div className="mt-5 max-w-xs">
+      <Hoja
+        titulo="Caja"
+        descripcion="Define cuándo cambia el día en la caja y en los reportes. Por ejemplo, 6 = de 06:00 a 06:00 del día siguiente: lo que se vende después de medianoche cuenta para la noche anterior."
+        onGuardar={(d) => guardarCorteCaja(Number(d.get('corte')))}
+        suave
+      >
+        <div className="max-w-xs">
           <Campo
             etiqueta="El día de caja empieza a las (hora)"
             name="corte"
@@ -150,22 +185,7 @@ export function AjustesLocal({ corteHora, transferencia, local }: Props) {
             defaultValue={corteHora}
           />
         </div>
-        <p className="pn-muted mt-2 text-sm font-medium">
-          Define cuándo cambia el día en la caja y en los reportes. Por ejemplo, 6 = de 06:00 a 06:00 del día siguiente,
-          así lo que se vende después de medianoche cuenta para la noche anterior.
-        </p>
-      </fieldset>
-
-      <div className="flex flex-wrap items-center gap-4">
-        <PanchoButton type="submit" disabled={enCurso}>
-          {enCurso ? 'Guardando…' : 'Guardar ajustes'}
-        </PanchoButton>
-        {mensaje && (
-          <p role={mensaje.ok ? 'status' : 'alert'} className={`pn-alert ${mensaje.ok ? 'pn-alert--ok' : 'pn-alert--error'}`}>
-            {mensaje.texto}
-          </p>
-        )}
-      </div>
-    </form>
+      </Hoja>
+    </div>
   )
 }
