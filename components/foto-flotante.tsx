@@ -4,9 +4,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import type { Product } from '@/lib/types'
 
-// Tamaño de la polaroid (w-45 más el pie) y separaciones
+// Tamaño de la foto (cuadrada, w-45) y separaciones
 const ANCHO = 180
-const ALTO = 222
+const ALTO = 180
 const SEPARACION = 20
 const MARGEN = 8
 // Lo más chica que puede quedar la foto cuando el margen de la pantalla es angosto
@@ -50,7 +50,7 @@ function lugarPara(fila: HTMLElement, id: number): Lugar {
 }
 
 /**
- * Polaroid con la foto del plato que señala el mouse en la carta (solo con mouse). Queda
+ * Foto del plato que señala el mouse en la carta (solo con mouse). Queda
  * pegada al plato y, al pasar a otro, se desliza hasta él; entra con un pequeño rebote y se
  * apaga en su lugar. Al cambiar de plato, la foto cambia con un fundido.
  */
@@ -112,14 +112,10 @@ export function FotoFlotante({ producto, ancla }: { producto: Product | null; an
     >
       {ultimo && (
         <div className="foto-flotante" data-visible={producto !== null}>
-          <div className="absolute -top-2.5 left-1/2 -ml-8 h-5 w-16 rotate-3 bg-[rgba(230,215,185,0.9)]" />
           {/* La key hace que, al cambiar de plato, la foto nueva entre con su fundido */}
           <div key={ultimo.id} className="foto-flotante__foto relative aspect-square w-full overflow-hidden bg-neutral-900">
             <Image src={ultimo.image} alt="" fill sizes="180px" className="object-cover" />
           </div>
-          <span className="absolute inset-x-0 bottom-2 truncate px-2 text-center font-heading text-[13px] uppercase leading-none text-pancho-black">
-            {ultimo.name}
-          </span>
         </div>
       )}
     </div>
