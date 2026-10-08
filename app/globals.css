@@ -2401,6 +2401,36 @@ html:has(.panel) {
     box-shadow: inset 0 0 0 1px var(--color-pancho-red-deep);
   }
 
+  /* Selector compacto: opciones más chicas y pegadas, para filtros secundarios (entrega) */
+  .pn-segmento {
+    display: inline-flex;
+  }
+
+  .pn-segmento > .pn-option {
+    min-height: 2.25rem;
+    padding-inline: 0.875rem;
+    border-radius: 0;
+    font-size: 0.6875rem;
+  }
+
+  .pn-segmento > .pn-option + .pn-option {
+    margin-left: -1px;
+  }
+
+  .pn-segmento > .pn-option:first-child {
+    border-radius: 2px 0 0 2px;
+  }
+
+  .pn-segmento > .pn-option:last-child {
+    border-radius: 0 2px 2px 0;
+  }
+
+  /* La elegida y la que tiene el mouse encima quedan por encima, así se ve su borde entero */
+  .pn-segmento > .pn-option:is(:hover, [aria-current='page']) {
+    position: relative;
+    z-index: 1;
+  }
+
   /* --- Estado de un pedido: etiqueta recta, de color pleno --- */
 
   .pn-tag {

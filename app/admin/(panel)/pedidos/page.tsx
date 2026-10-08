@@ -140,18 +140,21 @@ export default async function PedidosPage({
       </Encabezado>
 
       {/* Cómo se entrega: se combina con la pestaña de arriba y con la búsqueda */}
-      <nav className="mt-4 flex flex-wrap items-center gap-2" aria-label="Filtrar por entrega">
+      <nav className="mt-4 flex items-center gap-3" aria-label="Filtrar por entrega">
         <span className="pn-label mb-0">Entrega</span>
-        {ENTREGAS.map((e) => (
-          <Link
-            key={e.entrega}
-            href={hrefLista(filtro, e.entrega, busqueda)}
-            aria-current={e.entrega === entrega ? 'page' : undefined}
-            className="pn-option"
-          >
-            {e.titulo}
-          </Link>
-        ))}
+        {/* Selector compacto: es un filtro secundario, más liviano que las pestañas de arriba */}
+        <div className="pn-segmento">
+          {ENTREGAS.map((e) => (
+            <Link
+              key={e.entrega}
+              href={hrefLista(filtro, e.entrega, busqueda)}
+              aria-current={e.entrega === entrega ? 'page' : undefined}
+              className="pn-option"
+            >
+              {e.titulo}
+            </Link>
+          ))}
+        </div>
       </nav>
 
       {/* Buscador: número, nombre, teléfono o dirección, en todos los estados */}
