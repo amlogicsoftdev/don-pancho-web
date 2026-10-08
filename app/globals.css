@@ -1883,7 +1883,7 @@ html:has(.panel) {
     position: sticky;
     top: 0;
     z-index: 40;
-    border-bottom: 2px solid var(--color-pancho-black);
+    border-bottom: 1px solid rgb(13 13 13 / 0.12);
     background: rgb(255 238 214 / 0.94);
     backdrop-filter: blur(10px);
   }
@@ -1901,11 +1901,33 @@ html:has(.panel) {
     letter-spacing: 0.06em;
     text-transform: uppercase;
     white-space: nowrap;
-    transition: background-color 0.2s ease-out;
+    color: rgb(13 13 13 / 0.6);
+    transition: color 0.2s ease-out;
+  }
+
+  /* Subrayado de la sección: crece desde el centro. Tenue al pasar el mouse, rojo en la actual. */
+  .pn-nav-link::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0.625rem;
+    bottom: 0.375rem;
+    height: 2px;
+    background: var(--color-pancho-red-deep);
+    border-radius: 1px;
+    scale: 0 1;
+    opacity: 0;
+    transition:
+      scale 0.3s var(--ease-out),
+      opacity 0.2s ease-out;
   }
 
   .pn-nav-link:hover {
-    background: rgb(13 13 13 / 0.07);
+    color: var(--color-pancho-black);
+  }
+
+  .pn-nav-link:hover::after {
+    scale: 0.5 1;
+    opacity: 0.35;
   }
 
   .pn-nav-link:focus-visible {
@@ -1913,10 +1935,14 @@ html:has(.panel) {
     outline-offset: -2px;
   }
 
-  /* Sección en la que se está: bloque negro, como una etiqueta */
+  /* Sección en la que se está: texto en negro pleno y subrayado rojo */
   .pn-nav-link[aria-current='page'] {
-    background: var(--color-pancho-black);
-    color: var(--color-pancho-white);
+    color: var(--color-pancho-black);
+  }
+
+  .pn-nav-link[aria-current='page']::after {
+    scale: 1 1;
+    opacity: 1;
   }
 
   /* Contador de pedidos pendientes */
@@ -2024,7 +2050,7 @@ html:has(.panel) {
     cursor: pointer;
     list-style: none;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid var(--color-pancho-black);
+    border-bottom: 1px solid rgb(13 13 13 / 0.15);
     user-select: none;
   }
 

@@ -67,7 +67,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
         Volver a pedidos
       </Link>
 
-      <header className="mt-2 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 border-b-2 border-pancho-black pb-4">
+      <header className="mt-2 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 border-b border-pancho-black/15 pb-4">
         <div>
           <p className="pn-eyebrow mb-1.5">
             {esMostrador ? 'Venta de mostrador' : 'Pedido web'} · {formatearFechaHora(pedido.creadoEn)}
