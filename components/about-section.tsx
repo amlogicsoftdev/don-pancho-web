@@ -78,6 +78,8 @@ function inkProps(steps: number, from: number, travel: number, own: number, tau:
 export function AboutSection() {
   const { ref: headRef, isInView: isHeadInView } = useInView({ threshold: 0.6 })
   const { ref: footRef, isInView: isFootInView } = useInView({ threshold: 0.5 })
+  // Los tres pasos entran por tiempo (no por scroll): ver «Tres pasos» en app/globals.css
+  const { ref: stepsRef, isInView: isStepsInView } = useInView({ threshold: 0.6 })
   const sectionRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -274,20 +276,18 @@ export function AboutSection() {
 
             {/* Los tres pasos */}
             <p className="about-label mt-8">Pedí en 3 pasos</p>
-            <ol className="about-values mt-2" {...inkProps(VALUES.length + 0.5, 1, 0.1, 0.5, 540)}>
-              {VALUES.map((value, index) => (
-                <li
-                  key={value}
-                  className="about-value"
-                  style={{ '--i': index, '--spread': 1.5 } as React.CSSProperties}
-                >
-                  <span aria-hidden="true" className="about-value__num">
-                    0{index + 1}
-                  </span>
-                  <span className="about-value__text">{value}</span>
-                </li>
-              ))}
-            </ol>
+            <div ref={stepsRef} data-inview={isStepsInView} className="mt-2">
+              <ol className="about-values">
+                {VALUES.map((value, index) => (
+                  <li key={value} className="about-value" style={{ '--i': index } as React.CSSProperties}>
+                    <span aria-hidden="true" className="about-value__num">
+                      0{index + 1}
+                    </span>
+                    <span className="about-value__text">{value}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
 
             {/* Botón a la carta */}
             <div ref={footRef} data-inview={isFootInView} className="mt-8">
