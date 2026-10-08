@@ -1298,10 +1298,18 @@ html:has(.page-menu) {
   text-transform: uppercase;
 }
 
-/* El botón de esta sección y el del carrito llevan el cuadrado naranja, que sobre el crema se ve más */
-.about .btn-pancho,
-.cart-panel .btn-pancho {
+/* El botón de esta sección lleva el cuadrado naranja, que sobre el crema se ve más */
+.about .btn-pancho {
   --btn-chip-bg: var(--color-pancho-orange);
+}
+
+/* El del carrito lleva el cuadrado bordó con la flecha blanca, como los números del pedido;
+   al pasar el mouse se invierte (blanco con la flecha bordó) */
+.cart-panel .btn-pancho {
+  --btn-chip-bg: var(--color-pancho-red-deep);
+  --btn-chip-fg: var(--color-pancho-white);
+  --btn-chip-hover-bg: var(--color-pancho-white);
+  --btn-chip-hover-fg: var(--color-pancho-red-deep);
 }
 
 /* Botón de «Sobre nosotros»: cuerpo negro y cuadrado bordó con la flecha blanca, el mismo
