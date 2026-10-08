@@ -197,7 +197,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   }
 
   return (
-    <div className="page-menu flex min-h-screen flex-col justify-between bg-pancho-paper bg-[url('/images/fondo-secciones-crema.webp')] bg-cover bg-fixed bg-top text-pancho-black selection:bg-pancho-orange selection:text-pancho-black">
+    <div className="page-menu flex min-h-screen flex-col justify-between bg-pancho-paper text-pancho-black selection:bg-pancho-orange selection:text-pancho-black">
       <Navbar cartCount={totalCartCount} onOpenCart={() => setCartOpen(true)} />
 
       <div className="flex-1 pb-28">

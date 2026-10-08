@@ -1367,6 +1367,23 @@ html:has(.page-menu) {
   }
 }
 
+/* Fondo de papel de la carta, quieto detrás del contenido al scrollear. Va en una capa fija
+   propia y no como «background-attachment: fixed»: ese fondo obliga al navegador a volver a
+   dibujar toda la pantalla en cada cuadro del scroll y la carta se sentía trabada (el 95 % de
+   los cuadros tardaba 41 ms en vez de 8). Una capa fija se mueve sola, sin redibujar. */
+.page-menu {
+  isolation: isolate;
+}
+
+.page-menu::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url('/images/fondo-secciones-crema.webp') center top / cover no-repeat;
+}
+
 /* =========================================================
    CARTA (components/menu-view.tsx)
    Las filas entran escalonadas al abrir y cada vez que cambia el filtro.
