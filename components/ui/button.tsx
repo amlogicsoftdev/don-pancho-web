@@ -3,26 +3,26 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
 
-// Botón del panel: recto, en mayúsculas, con borde negro. La acción principal de cada pantalla
+// Botón del panel: recto, en mayúsculas, con borde fino. La acción principal de cada pantalla
 // va en negro lleno y grande (variant="default", size="lg"). <PanchoButton>, el botón animado,
 // es solo para el sitio público.
-// Al pasar el mouse invierte sus colores; al apretarlo se achica apenas.
+// Al pasar el mouse se oscurece apenas; al apretarlo se achica apenas.
 const buttonVariants = cva(
-  "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xs border-2 font-sans font-extrabold tracking-[0.06em] whitespace-nowrap uppercase select-none transition-[background-color,color,border-color,transform] duration-200 ease-(--ease-out) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pancho-black active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xs border font-sans font-extrabold tracking-[0.06em] whitespace-nowrap uppercase select-none transition-[background-color,color,border-color,transform] duration-200 ease-(--ease-out) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pancho-black active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         // Negro lleno: acción secundaria con peso (filtrar, agregar)
-        default: 'border-pancho-black bg-pancho-black text-white hover:bg-white hover:text-pancho-black',
+        default: 'border-pancho-black bg-pancho-black text-white hover:border-pancho-black/80 hover:bg-pancho-black/80',
         // Blanco con borde: la mayoría de las acciones
-        outline: 'border-pancho-black bg-white text-pancho-black hover:bg-pancho-black hover:text-white',
+        outline: 'border-pancho-black/22 bg-white text-pancho-black hover:border-pancho-black/50 hover:bg-pancho-black/4',
         // Naranja: para destacar una acción sin que compita con el botón principal
-        secondary: 'border-pancho-black bg-pancho-orange text-pancho-black hover:bg-pancho-black hover:text-white',
+        secondary: 'border-pancho-orange bg-pancho-orange text-pancho-black hover:border-pancho-orange-deep hover:bg-pancho-orange-deep',
         // Sin borde: volver, cancelar, vaciar
         ghost: 'border-transparent bg-transparent text-pancho-black hover:bg-pancho-black/8',
         // Rojo: cancelar o borrar
         destructive:
-          'border-pancho-red-deep bg-white text-pancho-red-deep hover:bg-pancho-red-deep hover:text-white focus-visible:outline-pancho-red-deep',
+          'border-pancho-red-deep/40 bg-white text-pancho-red-deep hover:border-pancho-red-deep hover:bg-pancho-red-deep/6 focus-visible:outline-pancho-red-deep',
         link: 'border-transparent text-pancho-black underline decoration-pancho-orange decoration-2 underline-offset-4 hover:decoration-pancho-black',
       },
       size: {

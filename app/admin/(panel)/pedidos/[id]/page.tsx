@@ -112,7 +112,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
               </p>
             )}
 
-            <div className="mt-6 border-t-2 border-dotted border-pancho-black/25 pt-5">
+            <div className="mt-6 border-t border-pancho-black/10 pt-5">
               <AccionesEstado
                 pedidoId={pedido.id}
                 numero={pedido.numero}
@@ -214,7 +214,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
             )}
 
             {enlaceWhatsApp && (
-              <div className="mt-5 border-t-2 border-dotted border-pancho-black/25 pt-5">
+              <div className="mt-5 border-t border-pancho-black/10 pt-5">
                 <a
                   href={enlaceWhatsApp}
                   target="_blank"
@@ -256,14 +256,14 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
                   <dd>-{formatearPrecio(pedido.descuentoMonto)}</dd>
                 </div>
               )}
-              <div className="flex items-baseline justify-between gap-3 border-t-2 border-pancho-black pt-3">
+              <div className="flex items-baseline justify-between gap-3 border-t border-pancho-black/30 pt-3">
                 <dt className="font-display text-2xl leading-none">Total</dt>
                 <dd className="font-display text-4xl leading-none">{formatearPrecio(pedido.total)}</dd>
               </div>
             </dl>
 
             {sePuedeDescontar && (
-              <div className="mt-5 border-t-2 border-dotted border-pancho-black/25 pt-5">
+              <div className="mt-5 border-t border-pancho-black/10 pt-5">
                 <DescuentoPedido pedidoId={pedido.id} items={items} />
                 <p className="pn-muted mt-2 text-xs font-medium">
                   Aplicalo antes de confirmar por WhatsApp, así el mensaje sale con el total correcto.
@@ -272,7 +272,7 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
             )}
 
             {esTransferencia && (
-              <div className="mt-5 border-t-2 border-dotted border-pancho-black/25 pt-5">
+              <div className="mt-5 border-t border-pancho-black/10 pt-5">
                 <p className={`pn-alert mb-4 ${pedido.pagoConfirmado ? 'pn-alert--ok' : 'pn-alert--warn'}`}>
                   {pedido.pagoConfirmado ? 'Pago confirmado.' : 'Pago sin confirmar.'}
                 </p>
