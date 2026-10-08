@@ -49,6 +49,8 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   // Alto real de la barra de navegación (cambia entre celular y escritorio y al scrollear):
   // las categorías quedan fijas justo debajo, sin dejar un hueco en el medio
   const [navHeight, setNavHeight] = useState(88)
+  // La lista de platos: al cambiar de filtro, la página vuelve al principio de esta lista
+  const listaRef = useRef<HTMLElement>(null)
   const [cartOpen, setCartOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>(initialCategory)
   // Plato que señala el mouse y su fila (la foto se pega a la fila)
@@ -86,7 +88,24 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     category === TODAS ? products.length : products.filter((p) => p.category === category).length
   const nothingToShow = !featured && gridProducts.length === 0 && comboProducts.length === 0
 
+  /**
+   * Lleva la página al principio de la lista: la barra de filtros queda pegada debajo de la barra de
+   * arriba y los primeros platos justo debajo. Si la página todavía no pasó ese punto (se está
+   * viendo el encabezado), no se mueve: bajar solo por tocar un filtro sería raro.
+   */
+  const volverAlPrincipioDeLaLista = () => {
+    const lista = listaRef.current
+    const filtros = lista?.previousElementSibling
+    if (!lista || !(filtros instanceof HTMLElement)) return
+    const principio = lista.getBoundingClientRect().top + window.scrollY - navHeight - filtros.offsetHeight
+    if (window.scrollY <= principio) return
+    const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: principio, behavior: sinMovimiento ? 'auto' : 'smooth' })
+  }
+
   const handleCategoryClick = (category: CategoryFilter) => {
+    // También con el filtro que ya está elegido: sirve para volver arriba de la lista
+    volverAlPrincipioDeLaLista()
     if (category === activeCategory) return
     setActiveCategory(category)
     setHovered(null)
@@ -228,6 +247,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
         </div>
 
         <main
+          ref={listaRef}
           key={activeCategory}
           className="mx-auto flex max-w-300 flex-col gap-10 px-4 pt-7 sm:gap-16 sm:px-6 sm:pt-12 lg:px-10"
         >
