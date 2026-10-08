@@ -54,9 +54,12 @@ const VALUES = ['Entrá al menú', 'Armá tu pedido', 'Elegí delivery o retiro'
  *   arriba del grupo para empezar.
  * - travel: cuánto scroll tarda en completarse, en alturas de pantalla…
  * - own: …más esta fracción de la altura del propio grupo.
+ * - tau: cuántos milisegundos tarda la tinta en alcanzar al scroll (retraso suave). Sin esto,
+ *   al llegar de golpe (por ejemplo, desde el menú) todo aparece ya terminado y la animación
+ *   no se ve. Los grupos de más abajo llevan un tau mayor, así se entintan en cascada.
  */
-function inkProps(steps: number, from: number, travel: number, own: number) {
-  return { 'data-ink': steps, 'data-ink-from': from, 'data-ink-travel': travel, 'data-ink-own': own }
+function inkProps(steps: number, from: number, travel: number, own: number, tau: number) {
+  return { 'data-ink': steps, 'data-ink-from': from, 'data-ink-travel': travel, 'data-ink-own': own, 'data-ink-tau': tau }
 }
 
 /**
@@ -75,6 +78,8 @@ function inkProps(steps: number, from: number, travel: number, own: number) {
 export function AboutSection() {
   const { ref: headRef, isInView: isHeadInView } = useInView({ threshold: 0.6 })
   const { ref: footRef, isInView: isFootInView } = useInView({ threshold: 0.5 })
+  // Los tres pasos entran por tiempo (no por scroll): ver «Tres pasos» en app/globals.css
+  const { ref: stepsRef, isInView: isStepsInView } = useInView({ threshold: 0.6 })
   const sectionRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -89,27 +94,49 @@ export function AboutSection() {
       from: Number(element.dataset.inkFrom),
       travel: Number(element.dataset.inkTravel),
       own: Number(element.dataset.inkOwn),
+      tau: Number(element.dataset.inkTau) || 300,
+      // Lo que se está mostrando ahora; null hasta la primera medida (ahí arranca sin animar,
+      // por si la página se abre ya scrolleada)
+      actual: null as number | null,
     }))
 
     let rafId: number | null = null
+    let ultimoCuadro = 0
 
-    const update = () => {
+    const update = (ahora: number) => {
       rafId = null
       const viewport = window.innerHeight
+      const dt = ultimoCuadro ? Math.min(64, ahora - ultimoCuadro) : 16
+      ultimoCuadro = ahora
+      let siguePersiguiendo = false
 
       for (const group of groups) {
         const rect = group.element.getBoundingClientRect()
         const distance = viewport * group.travel + rect.height * group.own
         const progress = Math.max(0, Math.min(1, (viewport * group.from - rect.top) / distance))
-        group.element.style.setProperty('--p', (progress * group.steps).toFixed(3))
+        const objetivo = progress * group.steps
+
+        if (group.actual === null) {
+          group.actual = objetivo
+        } else {
+          // Alcanza al objetivo de a poco: más rápido cuanto más lejos está
+          group.actual += (objetivo - group.actual) * (1 - Math.exp(-dt / group.tau))
+          if (Math.abs(objetivo - group.actual) < 0.004 * group.steps) group.actual = objetivo
+          else siguePersiguiendo = true
+        }
+        group.element.style.setProperty('--p', group.actual.toFixed(3))
       }
+
+      // Mientras la tinta no alcanzó al scroll, sigue dibujando aunque el scroll ya haya parado
+      if (siguePersiguiendo) requestUpdate()
+      else ultimoCuadro = 0
     }
 
     const requestUpdate = () => {
       if (rafId === null) rafId = requestAnimationFrame(update)
     }
 
-    update()
+    update(performance.now())
     window.addEventListener('scroll', requestUpdate, { passive: true })
     window.addEventListener('resize', requestUpdate)
 
@@ -139,7 +166,7 @@ export function AboutSection() {
 
         <div className="mt-12 grid items-start gap-16 sm:mt-14 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
           {/* Fotos con sombra dura y el sello */}
-          <div className="about-photos" {...inkProps(4.5, 1, 0.3, 0)}>
+          <div className="about-photos" {...inkProps(4.5, 1, 0.3, 0, 260)}>
             <figure className="about-photo about-photo--big" style={{ '--i': 0, '--spread': 2 } as React.CSSProperties}>
               <div className="about-photo__card">
                 <div className="relative aspect-4/5 overflow-hidden bg-pancho-surface">
@@ -183,7 +210,7 @@ export function AboutSection() {
             <h2
               id="nosotros-titulo"
               className="about-title"
-              {...inkProps(TITLE_LETTERS + TITLE_SPREAD, 1, 0.2, 0.6)}
+              {...inkProps(TITLE_LETTERS + TITLE_SPREAD, 1, 0.2, 0.6, 340)}
             >
               <span className="sr-only">{TITLE_TEXT}</span>
               <span aria-hidden="true">
@@ -223,7 +250,7 @@ export function AboutSection() {
             </h2>
 
             {/* Párrafo */}
-            <p className="about-text mt-7" {...inkProps(TEXT_WORDS.length + TEXT_SPREAD, 1, 0.2, 0.6)}>
+            <p className="about-text mt-7" {...inkProps(TEXT_WORDS.length + TEXT_SPREAD, 1, 0.2, 0.6, 440)}>
               {TEXT_WORDS.map((word, index) => (
                 <React.Fragment key={index}>
                   {index > 0 ? ' ' : null}
@@ -249,20 +276,18 @@ export function AboutSection() {
 
             {/* Los tres pasos */}
             <p className="about-label mt-8">Pedí en 3 pasos</p>
-            <ol className="about-values mt-2" {...inkProps(VALUES.length + 0.5, 1, 0.1, 0.5)}>
-              {VALUES.map((value, index) => (
-                <li
-                  key={value}
-                  className="about-value"
-                  style={{ '--i': index, '--spread': 1.5 } as React.CSSProperties}
-                >
-                  <span aria-hidden="true" className="about-value__num">
-                    0{index + 1}
-                  </span>
-                  <span className="about-value__text">{value}</span>
-                </li>
-              ))}
-            </ol>
+            <div ref={stepsRef} data-inview={isStepsInView} className="mt-2">
+              <ol className="about-values">
+                {VALUES.map((value, index) => (
+                  <li key={value} className="about-value" style={{ '--i': index } as React.CSSProperties}>
+                    <span aria-hidden="true" className="about-value__num">
+                      0{index + 1}
+                    </span>
+                    <span className="about-value__text">{value}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
 
             {/* Botón a la carta */}
             <div ref={footRef} data-inview={isFootInView} className="mt-8">

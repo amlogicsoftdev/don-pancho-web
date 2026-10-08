@@ -34,7 +34,7 @@ export function VersusSection({ ready }: VersusSectionProps) {
 
       {/* Sin z-index a propósito: así los nombres y botones (z-30) quedan por encima de la
           hamburguesa que viaja (z-20), que vive fuera de esta sección */}
-      <div className="relative grid h-[86svh] min-h-130 max-h-225 grid-cols-2">
+      <div className="relative grid h-svh min-h-130 grid-cols-2">
         {/* =======================================================
             MITAD PANCHO — papel rojo, a la izquierda
         ======================================================= */}
@@ -127,9 +127,10 @@ export function VersusSection({ ready }: VersusSectionProps) {
 
       {/* =========================================================
           TÍTULO — una etiqueta girada sobre el corte, como en el flyer.
-          Se pega de un golpe apenas llega la hamburguesa.
+          Se pega de un golpe apenas llega la hamburguesa. Baja lo que mide la barra de
+          arriba (que tapa el borde de la sección cuando ocupa toda la pantalla).
       ========================================================= */}
-      <div className="pointer-events-none absolute inset-x-0 top-20 z-30 flex flex-col items-center px-4 sm:top-24">
+      <div className="pointer-events-none absolute inset-x-0 top-26 z-30 flex flex-col items-center px-4 sm:top-30 lg:top-34">
         <h2
           id="elegir-titulo"
           style={{ '--d': '240ms' } as React.CSSProperties}

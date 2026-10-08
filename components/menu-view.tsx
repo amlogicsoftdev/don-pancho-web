@@ -203,7 +203,10 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
       <div className="flex-1 pb-28">
         {/* Encabezado */}
         <section className="mx-auto max-w-300 px-4 pt-28 sm:px-6 lg:px-10">
-          <div className="load-fade" style={{ '--d': '100ms' } as React.CSSProperties}>
+          {/* `relative z-10`: el título de abajo es enorme y de interlineado ajustado, y la parte
+              de arriba de sus letras queda sobre este enlace (el navegador usa la altura de la
+              tipografía, no la del renglón). Sin esto, el clic le llegaba a una letra. */}
+          <div className="load-fade relative z-10" style={{ '--d': '100ms' } as React.CSSProperties}>
             <Link
               href="/"
               className="group inline-flex items-center gap-2 text-xs font-semibold text-pancho-black/70 transition-colors hover:text-pancho-red-deep"

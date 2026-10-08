@@ -1072,8 +1072,7 @@ html:has(.page-menu) {
 .about-mark__bg,
 .about-photo,
 .about-stamp,
-.about-text__word,
-.about-value {
+.about-text__word {
   --t: clamp(0, calc((var(--p) - var(--i)) / var(--spread, 1)), 1);
 }
 
@@ -1270,8 +1269,29 @@ html:has(.page-menu) {
   align-items: flex-start;
   gap: 0.55rem;
   padding: 0.9rem 0.5rem 0.5rem 0.85rem;
-  opacity: calc(0.16 + 0.84 * var(--t));
-  translate: 0 calc((1 - var(--t)) * 0.75rem);
+  /* Tres pasos: entran por tiempo, no por scroll, uno tras otro (--i es 0, 1, 2). El scroll de
+     este recuadro es cortísimo (unos 150 px) y el tercer paso quedaba para el final, a medias y
+     a los saltos. Así, apenas se ve el recuadro, los tres entran parejos, con la misma curva que
+     el resto del sitio, sin depender de la velocidad del scroll. Solo opacity y translate. */
+  transition:
+    opacity 0.6s var(--ease-out) calc(var(--i) * 150ms),
+    translate 0.9s var(--ease-out) calc(var(--i) * 150ms);
+}
+
+[data-inview='false'] > .about-values .about-value {
+  opacity: 0.16;
+  translate: 0 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-inview='false'] > .about-values .about-value {
+    opacity: 1;
+    translate: none;
+  }
+
+  .about-value {
+    transition: none;
+  }
 }
 
 .about-value:first-child {
