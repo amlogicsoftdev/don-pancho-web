@@ -326,6 +326,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
             <article
               key={combo.id}
               {...hoverProps(combo)}
+              data-foto="derecha"
               style={{ '--i': index + 2 } as React.CSSProperties}
               className="menu-row relative grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] items-center gap-x-14 gap-y-6 overflow-hidden bg-pancho-red-deep bg-[url('/images/fondo-footer-bordo.webp')] bg-cover bg-center p-7 text-white sm:p-12"
             >
