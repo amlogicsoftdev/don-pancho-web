@@ -882,9 +882,14 @@ html:has(.page-menu) {
   background: rgb(0 0 0 / 0.66);
 }
 
-.versus:has(.versus-side[data-side='hamburguesa']:is(:hover, :focus-visible)) .versus-red::after,
-.versus:has(.versus-side[data-side='pancho']:is(:hover, :focus-visible)) .versus-veil {
-  opacity: 1;
+/* Solo con mouse: en el celular, mantener apretado «pega» el hover (se oscurecían las dos
+   mitades y la hamburguesa que viaja cambiaba de pose bajo el dedo). Ahí no hay mitad elegida:
+   el botón de elegir se ve siempre (ver el final de esta sección). */
+@media (hover: hover) and (pointer: fine) {
+  .versus:has(.versus-side[data-side='hamburguesa']:is(:hover, :focus-visible)) .versus-red::after,
+  .versus:has(.versus-side[data-side='pancho']:is(:hover, :focus-visible)) .versus-veil {
+    opacity: 1;
+  }
 }
 
 .versus-side {
@@ -948,47 +953,49 @@ html:has(.page-menu) {
 
 /* --- Mitad elegida --- */
 
-.versus-side[data-side='hamburguesa']:is(:hover, :focus-visible) .versus-food {
-  scale: 1.16;
-  rotate: 5deg;
-  translate: 0 -8%;
-}
+@media (hover: hover) and (pointer: fine) {
+  .versus-side[data-side='hamburguesa']:is(:hover, :focus-visible) .versus-food {
+    scale: 1.16;
+    rotate: 5deg;
+    translate: 0 -8%;
+  }
 
-.versus-side[data-side='pancho']:is(:hover, :focus-visible) .versus-food {
-  scale: 1.14;
-  rotate: -5deg;
-  translate: 0 -4%;
-}
+  .versus-side[data-side='pancho']:is(:hover, :focus-visible) .versus-food {
+    scale: 1.14;
+    rotate: -5deg;
+    translate: 0 -4%;
+  }
 
-.versus-side:is(:hover, :focus-visible) .versus-name {
-  scale: 1.16;
-}
+  .versus-side:is(:hover, :focus-visible) .versus-name {
+    scale: 1.16;
+  }
 
-.versus-side:is(:hover, :focus-visible) .versus-go {
-  opacity: 1;
-  translate: 0 0;
-}
+  .versus-side:is(:hover, :focus-visible) .versus-go {
+    opacity: 1;
+    translate: 0 0;
+  }
 
-/* El botón de la mitad elegida queda «encendido» */
-.versus-side:is(:hover, :focus-visible) .btn-pancho__face--fill {
-  clip-path: inset(0 0 0 0);
-}
+  /* El botón de la mitad elegida queda «encendido» */
+  .versus-side:is(:hover, :focus-visible) .btn-pancho__face--fill {
+    clip-path: inset(0 0 0 0);
+  }
 
-.versus-side:is(:hover, :focus-visible) .btn-pancho__label {
-  background-position: 0 0;
-}
+  .versus-side:is(:hover, :focus-visible) .btn-pancho__label {
+    background-position: 0 0;
+  }
 
-.versus-side:is(:hover, :focus-visible) .btn-pancho__chip {
-  background: var(--btn-chip-hover-bg);
-  color: var(--btn-chip-hover-fg);
-}
+  .versus-side:is(:hover, :focus-visible) .btn-pancho__chip {
+    background: var(--btn-chip-hover-bg);
+    color: var(--btn-chip-hover-fg);
+  }
 
-.versus-side:is(:hover, :focus-visible) .btn-pancho__arrow--out {
-  transform: translate3d(260%, 0, 0);
-}
+  .versus-side:is(:hover, :focus-visible) .btn-pancho__arrow--out {
+    transform: translate3d(260%, 0, 0);
+  }
 
-.versus-side:is(:hover, :focus-visible) .btn-pancho__arrow--in {
-  transform: none;
+  .versus-side:is(:hover, :focus-visible) .btn-pancho__arrow--in {
+    transform: none;
+  }
 }
 
 .versus-side:active .versus-go {
@@ -1000,43 +1007,45 @@ html:has(.page-menu) {
   outline-offset: 3px;
 }
 
-/* --- Mitad no elegida: se apaga, se achica y retrocede --- */
+@media (hover: hover) and (pointer: fine) {
+  /* --- Mitad no elegida: se apaga, se achica y retrocede --- */
 
-.versus:has(.versus-side:is(:hover, :focus-visible)) .versus-side:not(:hover, :focus-visible) .versus-food {
-  scale: 0.8;
-  filter: grayscale(1) brightness(0.45) drop-shadow(0 10px 12px rgb(0 0 0 / 0.3));
-}
+  .versus:has(.versus-side:is(:hover, :focus-visible)) .versus-side:not(:hover, :focus-visible) .versus-food {
+    scale: 0.8;
+    filter: grayscale(1) brightness(0.45) drop-shadow(0 10px 12px rgb(0 0 0 / 0.3));
+  }
 
-.versus:has(.versus-side:is(:hover, :focus-visible)) .versus-side[data-side='hamburguesa']:not(:hover, :focus-visible) .versus-food {
-  rotate: -6deg;
-  translate: 0 4%;
-}
+  .versus:has(.versus-side:is(:hover, :focus-visible)) .versus-side[data-side='hamburguesa']:not(:hover, :focus-visible) .versus-food {
+    rotate: -6deg;
+    translate: 0 4%;
+  }
 
-.versus:has(.versus-side:is(:hover, :focus-visible)) .versus-side[data-side='pancho']:not(:hover, :focus-visible) .versus-food {
-  rotate: 6deg;
-  translate: 0 4%;
-}
+  .versus:has(.versus-side:is(:hover, :focus-visible)) .versus-side[data-side='pancho']:not(:hover, :focus-visible) .versus-food {
+    rotate: 6deg;
+    translate: 0 4%;
+  }
 
-.versus:has(.versus-side:is(:hover, :focus-visible)) .versus-side:not(:hover, :focus-visible) .versus-name {
-  scale: 0.84;
-  opacity: 0.4;
-}
+  .versus:has(.versus-side:is(:hover, :focus-visible)) .versus-side:not(:hover, :focus-visible) .versus-name {
+    scale: 0.84;
+    opacity: 0.4;
+  }
 
-/* La hamburguesa que viaja está fuera de la sección: sigue la selección desde el escenario */
-.intro-stage:has(.versus-side[data-side='hamburguesa']:is(:hover, :focus-visible)) .burger-traveler-pose {
-  scale: 1.16;
-  rotate: 5deg;
-  translate: 0 -8%;
-}
+  /* La hamburguesa que viaja está fuera de la sección: sigue la selección desde el escenario */
+  .intro-stage:has(.versus-side[data-side='hamburguesa']:is(:hover, :focus-visible)) .burger-traveler-pose {
+    scale: 1.16;
+    rotate: 5deg;
+    translate: 0 -8%;
+  }
 
-.intro-stage:has(.versus-side[data-side='pancho']:is(:hover, :focus-visible)) .burger-traveler-pose {
-  scale: 0.8;
-  rotate: -6deg;
-  translate: 0 4%;
-}
+  .intro-stage:has(.versus-side[data-side='pancho']:is(:hover, :focus-visible)) .burger-traveler-pose {
+    scale: 0.8;
+    rotate: -6deg;
+    translate: 0 4%;
+  }
 
-.intro-stage:has(.versus-side[data-side='pancho']:is(:hover, :focus-visible)) .burger-traveler-art {
-  filter: grayscale(1) brightness(0.45) drop-shadow(0 10px 12px rgb(0 0 0 / 0.3));
+  .intro-stage:has(.versus-side[data-side='pancho']:is(:hover, :focus-visible)) .burger-traveler-art {
+    filter: grayscale(1) brightness(0.45) drop-shadow(0 10px 12px rgb(0 0 0 / 0.3));
+  }
 }
 
 /* En pantallas táctiles no hay «pasar el mouse»: el botón de elegir se ve siempre */
