@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, Plus } from 'lucide-react'
@@ -93,20 +93,40 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
    * arriba y los primeros platos justo debajo. Si la página todavía no pasó ese punto (se está
    * viendo el encabezado), no se mueve: bajar solo por tocar un filtro sería raro.
    */
-  const volverAlPrincipioDeLaLista = () => {
-    const lista = listaRef.current
-    const filtros = lista?.previousElementSibling
-    if (!lista || !(filtros instanceof HTMLElement)) return
-    const principio = lista.getBoundingClientRect().top + window.scrollY - navHeight - filtros.offsetHeight
-    if (window.scrollY <= principio) return
-    const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    window.scrollTo({ top: principio, behavior: sinMovimiento ? 'auto' : 'smooth' })
-  }
+  const volverAlPrincipioDeLaLista = useCallback(
+    (suave: boolean) => {
+      const lista = listaRef.current
+      const filtros = lista?.previousElementSibling
+      if (!lista || !(filtros instanceof HTMLElement)) return
+      const principio = lista.getBoundingClientRect().top + window.scrollY - navHeight - filtros.offsetHeight
+      if (window.scrollY <= principio) return
+      const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      // 'instant' a propósito: el CSS de la página tiene scroll-behavior: smooth y 'auto' lo seguiría
+      window.scrollTo({ top: principio, behavior: suave && !sinMovimiento ? 'smooth' : 'instant' })
+    },
+    [navHeight],
+  )
+
+  // Al cambiar de filtro, la lista nueva es más corta y el navegador recorta la posición de la
+  // página de golpe. Si en ese momento hubiera un desplazamiento suave en curso, algunos navegadores
+  // lo cancelan y la vista queda en el pie, lejos de los primeros platos. Por eso, al cambiar de
+  // categoría el salto es inmediato y se hace acá, apenas está la lista nueva y antes de dibujarla.
+  const subirAlCambiarDeFiltro = useRef(false)
+  useLayoutEffect(() => {
+    if (!subirAlCambiarDeFiltro.current) return
+    subirAlCambiarDeFiltro.current = false
+    volverAlPrincipioDeLaLista(false)
+    // Por si el navegador vuelve a ajustar la posición después (la lista cambió de alto), se confirma
+    // en el cuadro siguiente. No hace nada si ya está en su lugar.
+    const cuadro = requestAnimationFrame(() => volverAlPrincipioDeLaLista(false))
+    return () => cancelAnimationFrame(cuadro)
+  }, [activeCategory, volverAlPrincipioDeLaLista])
 
   const handleCategoryClick = (category: CategoryFilter) => {
-    // También con el filtro que ya está elegido: sirve para volver arriba de la lista
-    volverAlPrincipioDeLaLista()
-    if (category === activeCategory) return
+    // El filtro que ya está elegido no cambia la lista: sirve para volver arriba de ella, con
+    // desplazamiento suave (no hay nada que recortar)
+    if (category === activeCategory) return volverAlPrincipioDeLaLista(true)
+    subirAlCambiarDeFiltro.current = true
     setActiveCategory(category)
     setHovered(null)
     // La URL acompaña al filtro, así el enlace se puede compartir y «atrás» vuelve a la misma categoría
