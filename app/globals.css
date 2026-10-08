@@ -1380,14 +1380,16 @@ html:has(.page-menu) {
   animation-delay: calc(var(--row-base, 0ms) + min(var(--i, 0), 9) * 45ms);
 }
 
-/* Polaroid que sigue al mouse (components/foto-flotante.tsx). Entra con un pequeño rebote,
-   sale con un fundido y, al pasar de un plato a otro, la foto cambia sin que desaparezca. */
+/* Foto del plato junto a la carta (components/foto-flotante.tsx): cuadrada, con borde blanco y
+   sombra dura, igual que la del combo. Entra con un pequeño rebote, sale con un fundido y, al
+   pasar de un plato a otro, la foto cambia sin que desaparezca. */
 .foto-flotante {
   position: relative;
   width: 11.25rem;
-  padding: 0.5rem 0.5rem 1.875rem;
-  background: #f4efe6;
-  box-shadow: 0 20px 40px -10px rgb(0 0 0 / 0.55);
+  overflow: hidden;
+  border: 2px solid var(--color-pancho-white);
+  background: var(--color-pancho-black);
+  box-shadow: 6px 6px 0 rgb(0 0 0 / 0.35);
   opacity: 0;
   transform: translate3d(0, 10px, 0) scale(0.86);
   transform-origin: 30% 90%;
