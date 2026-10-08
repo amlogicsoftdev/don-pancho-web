@@ -11,7 +11,14 @@ import {
   formatearPrecio,
   formatearSoloFecha,
 } from '@/lib/orders/estados'
-import { buscarPedidos, esFiltro, listarPedidos, type FiltroPedidos } from '@/lib/orders/queries'
+import {
+  buscarPedidos,
+  esFiltro,
+  esFiltroEntrega,
+  listarPedidos,
+  type FiltroEntrega,
+  type FiltroPedidos,
+} from '@/lib/orders/queries'
 import { Encabezado } from '../encabezado'
 import { BloquePedidos } from './bloque-pedidos'
 import { HaceCuanto } from './hace-cuanto'
@@ -23,6 +30,22 @@ const PESTANAS: { filtro: FiltroPedidos; titulo: string }[] = [
   { filtro: 'cancelados', titulo: 'Cancelados' },
   { filtro: 'todos', titulo: 'Todos' },
 ]
+
+const ENTREGAS: { entrega: FiltroEntrega; titulo: string }[] = [
+  { entrega: 'todas', titulo: 'Todos' },
+  { entrega: 'delivery', titulo: 'Delivery' },
+  { entrega: 'retiro', titulo: 'Retiro' },
+]
+
+/** Link de la lista: la pestaña y el filtro de entrega elegidos van en la dirección. */
+function hrefLista(filtro: FiltroPedidos, entrega: FiltroEntrega, q?: string) {
+  const params = new URLSearchParams()
+  if (filtro !== 'activos') params.set('filtro', filtro)
+  if (entrega !== 'todas') params.set('entrega', entrega)
+  if (q) params.set('q', q)
+  const texto = params.toString()
+  return texto ? `/admin/pedidos?${texto}` : '/admin/pedidos'
+}
 
 type Pedido = Awaited<ReturnType<typeof listarPedidos>>[number]
 
@@ -88,14 +111,15 @@ function FilaPedido({ p, activos }: { p: Pedido; activos: boolean }) {
 export default async function PedidosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filtro?: string; q?: string }>
+  searchParams: Promise<{ filtro?: string; entrega?: string; q?: string }>
 }) {
   await requerirUsuario()
-  const { filtro: filtroCrudo, q } = await searchParams
+  const { filtro: filtroCrudo, entrega: entregaCruda, q } = await searchParams
   const filtro: FiltroPedidos = esFiltro(filtroCrudo) ? filtroCrudo : 'activos'
+  const entrega: FiltroEntrega = esFiltroEntrega(entregaCruda) ? entregaCruda : 'todas'
   const busqueda = typeof q === 'string' ? q.trim().slice(0, 80) : ''
   // Con búsqueda se mira en todos los estados; sin búsqueda, la pestaña elegida
-  const pedidos = busqueda ? await buscarPedidos(busqueda) : await listarPedidos(filtro)
+  const pedidos = busqueda ? await buscarPedidos(busqueda, entrega) : await listarPedidos(filtro, entrega)
   const activos = !busqueda && filtro === 'activos'
 
   return (
@@ -105,7 +129,7 @@ export default async function PedidosPage({
           {PESTANAS.map((p) => (
             <Link
               key={p.filtro}
-              href={p.filtro === 'activos' ? '/admin/pedidos' : `/admin/pedidos?filtro=${p.filtro}`}
+              href={hrefLista(p.filtro, entrega)}
               aria-current={!busqueda && p.filtro === filtro ? 'page' : undefined}
               className="pn-option"
             >
@@ -115,8 +139,24 @@ export default async function PedidosPage({
         </nav>
       </Encabezado>
 
+      {/* Cómo se entrega: se combina con la pestaña de arriba y con la búsqueda */}
+      <nav className="mt-4 flex flex-wrap items-center gap-2" aria-label="Filtrar por entrega">
+        <span className="pn-label mb-0">Entrega</span>
+        {ENTREGAS.map((e) => (
+          <Link
+            key={e.entrega}
+            href={hrefLista(filtro, e.entrega, busqueda)}
+            aria-current={e.entrega === entrega ? 'page' : undefined}
+            className="pn-option"
+          >
+            {e.titulo}
+          </Link>
+        ))}
+      </nav>
+
       {/* Buscador: número, nombre, teléfono o dirección, en todos los estados */}
       <form method="get" role="search" className="mt-6 flex gap-2">
+        {entrega !== 'todas' && <input type="hidden" name="entrega" value={entrega} />}
         <label className="relative min-w-0 flex-1">
           <span className="sr-only">Buscar pedidos</span>
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" aria-hidden="true" />
@@ -139,7 +179,7 @@ export default async function PedidosPage({
           {pedidos.length === 0
             ? `No encontramos pedidos con «${busqueda}».`
             : `${pedidos.length === 50 ? 'Primeros 50 resultados' : `${pedidos.length} ${pedidos.length === 1 ? 'resultado' : 'resultados'}`} para «${busqueda}»`}
-          <Link href="/admin/pedidos" className="pn-link inline-flex items-center gap-1">
+          <Link href={hrefLista(filtro, entrega)} className="pn-link inline-flex items-center gap-1">
             <X className="size-3.5" aria-hidden="true" />
             Limpiar búsqueda
           </Link>

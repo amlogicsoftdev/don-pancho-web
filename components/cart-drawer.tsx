@@ -39,6 +39,8 @@ interface CartDrawerProps {
 const inputClass =
   'w-full border-2 border-pancho-black bg-white py-2.5 text-base text-pancho-black outline-none transition-shadow placeholder:text-pancho-black/45 focus:ring-2 focus:ring-pancho-orange sm:text-sm'
 
+const invalidClass = 'border-pancho-red-deep ring-2 ring-pancho-red-deep/40'
+
 const labelClass = 'about-label'
 
 /**
@@ -60,12 +62,16 @@ export function CartDrawer({
   const [address, setAddress] = useState('')
   const [isInputFocused, setIsInputFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const nameRef = useRef<HTMLInputElement>(null)
+  const phoneRef = useRef<HTMLInputElement>(null)
   const [paymentMethod, setPaymentMethod] = useState<'efectivo' | 'transferencia'>('efectivo')
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [website, setWebsite] = useState('') // anti-bots: las personas no lo ven ni lo completan
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Campo que falta completar: se marca en rojo y se lleva el cursor hasta él
+  const [invalidField, setInvalidField] = useState<'nombre' | 'telefono' | 'direccion' | null>(null)
   const [fallbackAvailable, setFallbackAvailable] = useState(false)
   const [confirmation, setConfirmation] = useState<{ numero: number; total: number; token: string } | null>(null)
   // Productos cuyo campo de aclaración está abierto (los que ya tienen una siempre lo muestran)
@@ -127,14 +133,32 @@ export function CartDrawer({
     window.open(`https://wa.me/${SITE_CONFIG.whatsappNumber}?text=${encoded}`, '_blank', 'noopener,noreferrer')
   }
 
+  const clearFieldError = () => {
+    setInvalidField(null)
+    setError(null)
+  }
+
   const handleSubmitOrder = async () => {
     if (items.length === 0 || isSending) return
     setError(null)
+    setInvalidField(null)
     setFallbackAvailable(false)
 
-    if (!customerName.trim()) return setError('Ingresá tu nombre y apellido.')
-    if (!customerPhone.trim()) return setError('Ingresá tu teléfono para poder confirmarte el pedido.')
-    if (orderType === 'delivery' && !address.trim()) return setError('Ingresá la dirección de entrega.')
+    // El campo vive más abajo en la lista, detrás del pie del carrito: se lo muestra y se deja
+    // listo para escribir, así no hace falta buscarlo ni recargar la página.
+    const rechazar = (message: string, field: 'nombre' | 'telefono' | 'direccion', input: HTMLInputElement | null) => {
+      setError(message)
+      setInvalidField(field)
+      input?.focus({ preventScroll: true })
+      input?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    }
+    if (!customerName.trim()) return rechazar('Ingresá tu nombre y apellido.', 'nombre', nameRef.current)
+    if (!customerPhone.trim()) {
+      return rechazar('Ingresá tu teléfono para poder confirmarte el pedido.', 'telefono', phoneRef.current)
+    }
+    if (orderType === 'delivery' && !address.trim()) {
+      return rechazar('Ingresá la dirección de entrega.', 'direccion', inputRef.current)
+    }
 
     setIsSending(true)
     try {
@@ -178,11 +202,11 @@ export function CartDrawer({
     onClose()
   }
 
-  /** Dos opciones en un solo bloque con borde negro; la elegida va en naranja */
+  /** Dos opciones en un solo bloque con borde negro; la elegida va en bordó */
   const segmentClass = (active: boolean, second: boolean) =>
     `flex cursor-pointer select-none items-center justify-center gap-2 px-3 py-2.5 text-xs font-extrabold uppercase tracking-[0.04em] transition-colors duration-200 sm:text-sm ${
       second ? 'border-l-2 border-pancho-black' : ''
-    } ${active ? 'bg-pancho-orange text-pancho-black' : 'bg-white text-pancho-black/65 hover:text-pancho-black'}`
+    } ${active ? 'bg-pancho-red-deep text-white' : 'bg-white text-pancho-black/65 hover:text-pancho-black'}`
 
   return (
     <>
@@ -387,27 +411,37 @@ export function CartDrawer({
                     <User className="pointer-events-none absolute left-3 size-4 text-pancho-black/55" />
                     <input
                       type="text"
+                      ref={nameRef}
                       aria-label="Tu nombre y apellido"
+                      aria-invalid={invalidField === 'nombre'}
                       autoComplete="name"
                       maxLength={80}
                       value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
+                      onChange={(e) => {
+                        setCustomerName(e.target.value)
+                        if (invalidField === 'nombre') clearFieldError()
+                      }}
                       placeholder="Tu nombre y apellido"
-                      className={`${inputClass} pl-9 pr-3`}
+                      className={`${inputClass} pl-9 pr-3 ${invalidField === 'nombre' ? invalidClass : ''}`}
                     />
                   </div>
                   <div className="relative flex items-center">
                     <Phone className="pointer-events-none absolute left-3 size-4 text-pancho-black/55" />
                     <input
                       type="tel"
+                      ref={phoneRef}
                       aria-label="Tu teléfono"
+                      aria-invalid={invalidField === 'telefono'}
                       autoComplete="tel"
                       inputMode="tel"
                       maxLength={30}
                       value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      onChange={(e) => {
+                        setCustomerPhone(e.target.value)
+                        if (invalidField === 'telefono') clearFieldError()
+                      }}
                       placeholder="Tu teléfono (para confirmarte el pedido)"
-                      className={`${inputClass} pl-9 pr-3`}
+                      className={`${inputClass} pl-9 pr-3 ${invalidField === 'telefono' ? invalidClass : ''}`}
                     />
                   </div>
                   {/* Campo trampa anti-bots: oculto para las personas */}
@@ -475,9 +509,13 @@ export function CartDrawer({
                               inputRef.current?.blur()
                             }
                           }}
-                          onChange={(e) => handleAddressChange(e.target.value)}
+                          aria-invalid={invalidField === 'direccion'}
+                          onChange={(e) => {
+                            handleAddressChange(e.target.value)
+                            if (invalidField === 'direccion') clearFieldError()
+                          }}
                           placeholder="Calle, número, depto o referencia..."
-                          className={`${inputClass} pl-9 pr-16`}
+                          className={`${inputClass} pl-9 pr-16 ${invalidField === 'direccion' ? invalidClass : ''}`}
                         />
                         {isInputFocused && (
                           <button
