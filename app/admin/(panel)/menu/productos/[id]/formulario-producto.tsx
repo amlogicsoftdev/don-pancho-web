@@ -134,15 +134,15 @@ export function FormularioProducto({ categorias, cloudinaryListo, inicial }: Pro
       </div>
 
       {/* Imagen: la vista previa a la izquierda y, al lado, cómo cambiarla */}
-      <div className="border-y-2 border-dotted border-pancho-black/25 py-5">
+      <div className="border-y border-pancho-black/10 py-5">
         <span className="pn-label">Imagen</span>
         <div className="flex flex-wrap items-start gap-5">
           {imagenUrl ? (
-            <div className="relative size-36 flex-none overflow-hidden border-2 border-pancho-black bg-pancho-paper">
+            <div className="relative size-36 flex-none overflow-hidden border border-pancho-black/15 bg-pancho-paper">
               <Image src={imagenUrl} alt="Vista previa de la imagen del producto" fill sizes="144px" className="object-cover" />
             </div>
           ) : (
-            <div className="pn-muted grid size-36 flex-none place-items-center border-2 border-dashed border-pancho-black/35 p-3 text-center text-xs font-semibold">
+            <div className="pn-muted grid size-36 flex-none place-items-center border border-dashed border-pancho-black/25 p-3 text-center text-xs font-semibold">
               Sin imagen: en la carta se muestra el logo.
             </div>
           )}
@@ -160,7 +160,7 @@ export function FormularioProducto({ categorias, cloudinaryListo, inicial }: Pro
                     if (archivo) void subirImagen(archivo)
                     e.target.value = ''
                   }}
-                  className="max-w-full text-xs font-semibold file:mr-3 file:h-10 file:cursor-pointer file:rounded-xs file:border-2 file:border-solid file:border-pancho-black file:bg-white file:px-3 file:font-sans file:text-[0.6875rem] file:font-extrabold file:tracking-[0.06em] file:text-pancho-black file:uppercase"
+                  className="max-w-full text-xs font-semibold file:mr-3 file:h-10 file:cursor-pointer file:rounded-xs file:border file:border-solid file:border-pancho-black/25 file:bg-white file:px-3 file:font-sans file:text-[0.6875rem] file:font-extrabold file:tracking-[0.06em] file:text-pancho-black file:uppercase"
                 />
                 {subiendo && <span className="pn-muted font-semibold">Subiendo…</span>}
                 {imagenUrl && !subiendo && (

@@ -40,7 +40,7 @@ export function CampoFecha({ etiqueta, className = '', ...input }: Props) {
           type="button"
           onClick={abrirCalendario}
           aria-label={`Abrir calendario: ${etiqueta}`}
-          className="absolute inset-y-0.5 right-0.5 grid w-10 cursor-pointer place-items-center border-l-2 border-pancho-black bg-pancho-orange text-pancho-black transition-colors hover:bg-pancho-black hover:text-white focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-white"
+          className="absolute inset-y-0.5 right-0.5 grid w-10 cursor-pointer place-items-center border-l border-pancho-black/15 bg-pancho-orange text-pancho-black transition-colors hover:bg-pancho-black hover:text-white focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-white"
         >
           <CalendarDays className="size-5" aria-hidden="true" />
         </button>

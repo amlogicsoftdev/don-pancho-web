@@ -8,10 +8,10 @@ interface Props {
   children?: React.ReactNode
 }
 
-/** Encabezado de cada pantalla del panel: título de afiche sobre una raya negra. */
+/** Encabezado de cada pantalla del panel: título de afiche sobre una línea fina. */
 export function Encabezado({ titulo, rotulo, descripcion, children }: Props) {
   return (
-    <header className="border-b-2 border-pancho-black pb-4">
+    <header className="border-b border-pancho-black/15 pb-4">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div className="min-w-0">
           {rotulo && <p className="pn-eyebrow mb-1.5">{rotulo}</p>}

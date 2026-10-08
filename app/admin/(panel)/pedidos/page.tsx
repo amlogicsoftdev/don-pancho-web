@@ -56,7 +56,7 @@ function FilaPedido({ p, activos }: { p: Pedido; activos: boolean }) {
     <li>
       <Link
         href={`/admin/pedidos/${p.id}`}
-        className={`pn-card grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 p-4 transition-[border-color] duration-200 hover:border-pancho-black focus-visible:border-pancho-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pancho-black sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-x-6 sm:p-5 ${
+        className={`pn-card grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 p-4 transition-[border-color] duration-200 hover:border-pancho-black/35 focus-visible:border-pancho-black/35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pancho-black sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-x-6 sm:p-5 ${
           pendiente ? 'border-pancho-orange bg-pancho-orange/10' : ''
         }`}
       >
@@ -93,7 +93,7 @@ function FilaPedido({ p, activos }: { p: Pedido; activos: boolean }) {
           )}
         </div>
 
-        <div className="col-span-2 flex items-baseline justify-between gap-3 border-t-2 border-dotted border-pancho-black/20 pt-3 sm:col-span-1 sm:block sm:border-0 sm:pt-0 sm:text-right">
+        <div className="col-span-2 flex items-baseline justify-between gap-3 border-t border-pancho-black/10 pt-3 sm:col-span-1 sm:block sm:border-0 sm:pt-0 sm:text-right">
           <p className="font-display text-3xl leading-none">{formatearPrecio(p.total)}</p>
           <p className="pn-muted text-xs font-semibold sm:mt-1.5">
             {activos ? (
@@ -140,18 +140,21 @@ export default async function PedidosPage({
       </Encabezado>
 
       {/* Cómo se entrega: se combina con la pestaña de arriba y con la búsqueda */}
-      <nav className="mt-4 flex flex-wrap items-center gap-2" aria-label="Filtrar por entrega">
+      <nav className="mt-4 flex items-center gap-3" aria-label="Filtrar por entrega">
         <span className="pn-label mb-0">Entrega</span>
-        {ENTREGAS.map((e) => (
-          <Link
-            key={e.entrega}
-            href={hrefLista(filtro, e.entrega, busqueda)}
-            aria-current={e.entrega === entrega ? 'page' : undefined}
-            className="pn-option"
-          >
-            {e.titulo}
-          </Link>
-        ))}
+        {/* Selector compacto: es un filtro secundario, más liviano que las pestañas de arriba */}
+        <div className="pn-segmento">
+          {ENTREGAS.map((e) => (
+            <Link
+              key={e.entrega}
+              href={hrefLista(filtro, e.entrega, busqueda)}
+              aria-current={e.entrega === entrega ? 'page' : undefined}
+              className="pn-option"
+            >
+              {e.titulo}
+            </Link>
+          ))}
+        </div>
       </nav>
 
       {/* Buscador: número, nombre, teléfono o dirección, en todos los estados */}

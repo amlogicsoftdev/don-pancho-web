@@ -72,7 +72,7 @@ export function FormularioCierre({ dia, ventasEfectivo, gastosEfectivo, cierraCo
         </label>
       </div>
 
-      <p className="flex items-baseline justify-between gap-3 border-y-2 border-dotted border-pancho-black/25 py-3 text-sm font-semibold">
+      <p className="flex items-baseline justify-between gap-3 border-y border-pancho-black/10 py-3 text-sm font-semibold">
         <span className="pn-muted">Efectivo esperado según el sistema</span>
         <strong className="font-display text-2xl leading-none font-normal tabular-nums">{formatearPrecio(esperado)}</strong>
       </p>

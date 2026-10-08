@@ -208,7 +208,7 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
         )}
 
         {descuentoMonto > 0 && (
-          <dl className="space-y-1 border-t-2 border-dotted border-pancho-black/25 pt-3 text-sm font-semibold tabular-nums">
+          <dl className="space-y-1 border-t border-pancho-black/10 pt-3 text-sm font-semibold tabular-nums">
             <div className="flex justify-between gap-3">
               <dt className="pn-muted">Subtotal</dt>
               <dd>{formatearPrecio(subtotal)}</dd>
@@ -220,7 +220,7 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
           </dl>
         )}
 
-        <div className="flex items-baseline justify-between border-t-2 border-pancho-black pt-3">
+        <div className="flex items-baseline justify-between border-t border-pancho-black/30 pt-3">
           <span className="font-display text-2xl leading-none">Total</span>
           <span className="font-display text-4xl leading-none tabular-nums">{formatearPrecio(total)}</span>
         </div>

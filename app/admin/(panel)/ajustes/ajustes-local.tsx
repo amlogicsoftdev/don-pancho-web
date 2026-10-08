@@ -55,7 +55,7 @@ function Hoja({ titulo, descripcion, onGuardar, suave = false, children }: HojaP
       <h2 className="text-2xl leading-none">{titulo}</h2>
       {descripcion && <p className="pn-muted mt-2 text-sm font-medium">{descripcion}</p>}
       <div className="mt-5">{children}</div>
-      <div className="mt-5 flex flex-wrap items-center gap-4 border-t-2 border-dotted border-pancho-black/25 pt-5">
+      <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-pancho-black/10 pt-5">
         <Button type="submit" variant="default" size="lg" disabled={enCurso}>
           {enCurso ? 'Guardando…' : 'Guardar'}
         </Button>
