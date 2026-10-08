@@ -332,7 +332,10 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                         <Image src={product.image} alt="" fill sizes="104px" className="object-cover" />
                       </div>
                     </div>
-                    <div className="flex min-w-0 items-baseline gap-2.5">
+                    {/* Con mouse, la línea del título ocupa todo el ancho y termina en el precio (como en
+                        una carta); el + va abajo, a la derecha, en un hueco que ya tiene el ancho de la caja
+                        abierta. Así abrir el contador no corre ni acomoda el texto de la fila. */}
+                    <div className="col-span-2 flex min-w-0 items-baseline gap-2.5 [@media(hover:none)]:col-span-1">
                       <h3 className="font-heading text-[clamp(22px,2vw,26px)] leading-[1.05]">{product.name}</h3>
                       {product.badge && (
                         <span className="flex-none -translate-y-0.75 bg-pancho-red-deep px-1.5 py-0.75 text-[9.5px] font-extrabold uppercase tracking-widest text-white">
@@ -340,9 +343,13 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                         </span>
                       )}
                       <span className="min-w-4 flex-1 -translate-y-1.25 border-b-2 border-dotted border-pancho-black/35" />
+                      <span className="hidden flex-none font-heading text-[26px] leading-none text-pancho-red-deep [@media(hover:hover)]:inline">
+                        {formatPrice(product.price)}
+                      </span>
                     </div>
-                    <div className="row-span-2 flex items-center gap-3.5 [@media(hover:none)]:order-last [@media(hover:none)]:row-span-1 [@media(hover:none)]:mt-1.5">
-                      <span className="font-heading text-[26px] leading-none text-pancho-red-deep">
+                    <div className="col-start-2 row-start-2 flex items-center justify-self-end gap-3.5 [@media(hover:none)]:order-last [@media(hover:none)]:col-auto [@media(hover:none)]:row-auto [@media(hover:none)]:mt-1.5 [@media(hover:none)]:justify-self-auto">
+                      {/* El precio de esta línea es solo para pantallas táctiles: con mouse va en el título */}
+                      <span className="font-heading text-[26px] leading-none text-pancho-red-deep [@media(hover:hover)]:hidden">
                         {formatPrice(product.price)}
                       </span>
                       {renderAdd(product)}

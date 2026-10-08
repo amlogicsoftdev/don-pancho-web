@@ -13,9 +13,10 @@ interface ControlCantidadProps {
 
 /**
  * Botón de agregar de cada plato de la carta. Es un solo control que se transforma: el + se
- * queda en su lugar y la caja se estira para mostrar − y la cantidad (y se encoge al volver a
- * cero). Al cambiar la cantidad, el número sube o baja. Los estilos están en app/globals.css,
- * bajo «Cantidad».
+ * queda en su lugar y la caja se estira hacia la izquierda para mostrar − y la cantidad (y se
+ * encoge al volver a cero). Al cambiar la cantidad, el número sube o baja. El hueco que ocupa
+ * está reservado con el ancho de la caja abierta, así abrirla no corre ni acomoda el texto de la
+ * fila. Los estilos están en app/globals.css, bajo «Cantidad».
  */
 export function ControlCantidad({ nombre, cantidad, onAgregar, onCambiar }: ControlCantidadProps) {
   const abierto = cantidad > 0
@@ -33,38 +34,40 @@ export function ControlCantidad({ nombre, cantidad, onAgregar, onCambiar }: Cont
   }
 
   return (
-    <div className="cantidad" data-abierto={abierto}>
-      <button
-        type="button"
-        className="cantidad__menos"
-        onClick={() => {
-          if (performance.now() - abrioEn.current < 450) return
-          onCambiar(-1)
-        }}
-        aria-label={`Quitar uno de ${nombre}`}
-        inert={!abierto}
-      >
-        −
-      </button>
-      <span className="cantidad__numero" inert={!abierto} aria-live="polite">
-        {/* La key hace que cada número nuevo entre con su animación */}
-        <span key={cantidad} className="cantidad__digito" data-sube={sube}>
-          {abierto ? cantidad : ''}
+    <div className="cantidad-hueco">
+      <div className="cantidad" data-abierto={abierto}>
+        <button
+          type="button"
+          className="cantidad__menos"
+          onClick={() => {
+            if (performance.now() - abrioEn.current < 450) return
+            onCambiar(-1)
+          }}
+          aria-label={`Quitar uno de ${nombre}`}
+          inert={!abierto}
+        >
+          −
+        </button>
+        <span className="cantidad__numero" inert={!abierto} aria-live="polite">
+          {/* La key hace que cada número nuevo entre con su animación */}
+          <span key={cantidad} className="cantidad__digito" data-sube={sube}>
+            {abierto ? cantidad : ''}
+          </span>
+          <span className="sr-only">{abierto ? ` en tu pedido` : ''}</span>
         </span>
-        <span className="sr-only">{abierto ? ` en tu pedido` : ''}</span>
-      </span>
-      <button
-        type="button"
-        className="cantidad__mas"
-        onClick={() => {
-          if (abierto) return onCambiar(1)
-          abrioEn.current = performance.now()
-          onAgregar()
-        }}
-        aria-label={abierto ? `Agregar otro ${nombre}` : `Agregar ${nombre} al pedido`}
-      >
-        <Plus className="size-4.5 stroke-3" aria-hidden="true" />
-      </button>
+        <button
+          type="button"
+          className="cantidad__mas"
+          onClick={() => {
+            if (abierto) return onCambiar(1)
+            abrioEn.current = performance.now()
+            onAgregar()
+          }}
+          aria-label={abierto ? `Agregar otro ${nombre}` : `Agregar ${nombre} al pedido`}
+        >
+          <Plus className="size-4.5 stroke-3" aria-hidden="true" />
+        </button>
+      </div>
     </div>
   )
 }

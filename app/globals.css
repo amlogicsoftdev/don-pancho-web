@@ -1384,7 +1384,10 @@ html:has(.page-menu) {
 }
 
 .menu-row {
-  animation: dpRowIn 0.55s var(--ease-out) both;
+  /* «backwards» y no «both»: al terminar la entrada la fila vuelve a ser una fila común. Con
+     «both» el navegador la sigue tratando como animada (capa aparte, con posiciones de medio
+     píxel), y ahí los bordes finos se desfasan. */
+  animation: dpRowIn 0.55s var(--ease-out) backwards;
   animation-delay: calc(var(--row-base, 0ms) + min(var(--i, 0), 9) * 45ms);
 }
 
@@ -1449,15 +1452,39 @@ html:has(.page-menu) {
 }
 
 /* --- Cantidad (components/control-cantidad.tsx) ---
-   Un solo control: cerrado es el cuadrado con el +; al agregar se estira hasta −  n  +, con
-   el + siempre en el mismo lugar. Medidas por dentro del borde: − 36 px, número 40, + 40. */
+   Un solo control: cerrado es el cuadrado con el +; al agregar se estira hacia la izquierda
+   hasta −  n  +, con el + siempre en el mismo lugar.
+
+   El hueco (.cantidad-hueco) tiene siempre el ancho de la caja abierta: así, abrirla no
+   agranda la columna del precio ni achica el texto de la fila (antes el precio se corría 76 px y
+   el título o la descripción podían bajar un renglón). En pantallas táctiles el control va debajo
+   de la descripción, sin nada a su lado, y no hace falta reservar.
+
+   El borde negro no es un border: es un marco (::after) que se dibuja ENCIMA de los botones, y los
+   botones llegan hasta el borde de afuera. Así el fondo del botón (naranja o negro al pasar el
+   mouse) y el marco se superponen y no puede quedar un hueco claro entre los dos, aunque la fila
+   caiga en una posición con decimales. Medidas desde el borde de afuera: − 38 px (36 a la vista),
+   número 40, + 44 (40 a la vista). */
+.cantidad-hueco {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  width: 7.5rem;
+}
+
+@media (hover: none) {
+  .cantidad-hueco {
+    justify-content: flex-start;
+    width: auto;
+  }
+}
+
 .cantidad {
   position: relative;
   flex: none;
   width: 2.75rem;
   height: 2.75rem;
   overflow: hidden;
-  border: 2px solid var(--color-pancho-black);
   background-color: rgb(255 255 255 / 0);
   color: var(--color-pancho-black);
   transition:
@@ -1480,6 +1507,16 @@ html:has(.page-menu) {
     background-color 0.3s ease-out;
 }
 
+/* El marco: por encima de los botones, sin interceptar el mouse */
+.cantidad::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: 2px solid var(--color-pancho-black);
+  pointer-events: none;
+}
+
 .cantidad__mas,
 .cantidad__menos {
   position: absolute;
@@ -1493,12 +1530,13 @@ html:has(.page-menu) {
 
 .cantidad__mas {
   right: 0;
-  width: 2.5rem;
+  width: 2.75rem;
 }
 
 .cantidad__menos {
   left: 0;
-  width: 2.25rem;
+  width: 2.375rem;
+  padding-left: 2px;
   font-size: 1.25rem;
   font-weight: 800;
 }
@@ -1528,7 +1566,7 @@ html:has(.page-menu) {
 .cantidad__numero {
   position: absolute;
   top: 0;
-  left: 2.25rem;
+  left: 2.375rem;
   display: grid;
   place-items: center;
   width: 2.5rem;
@@ -1588,7 +1626,7 @@ html:has(.page-menu) {
 
 .cantidad :is(.cantidad__mas, .cantidad__menos):focus-visible {
   outline: 2px solid var(--color-pancho-black);
-  outline-offset: -4px;
+  outline-offset: -6px;
 }
 
 /* Texto del botón grande (favorita y combos) al cambiar la cantidad */
