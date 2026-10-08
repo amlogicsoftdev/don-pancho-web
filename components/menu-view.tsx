@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, Plus } from 'lucide-react'
@@ -49,6 +49,8 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   // Alto real de la barra de navegación (cambia entre celular y escritorio y al scrollear):
   // las categorías quedan fijas justo debajo, sin dejar un hueco en el medio
   const [navHeight, setNavHeight] = useState(88)
+  // La lista de platos: al cambiar de filtro, la página vuelve al principio de esta lista
+  const listaRef = useRef<HTMLElement>(null)
   const [cartOpen, setCartOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>(initialCategory)
   // Plato que señala el mouse y su fila (la foto se pega a la fila)
@@ -86,8 +88,45 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     category === TODAS ? products.length : products.filter((p) => p.category === category).length
   const nothingToShow = !featured && gridProducts.length === 0 && comboProducts.length === 0
 
+  /**
+   * Lleva la página al principio de la lista: la barra de filtros queda pegada debajo de la barra de
+   * arriba y los primeros platos justo debajo. Si la página todavía no pasó ese punto (se está
+   * viendo el encabezado), no se mueve: bajar solo por tocar un filtro sería raro.
+   */
+  const volverAlPrincipioDeLaLista = useCallback(
+    (suave: boolean) => {
+      const lista = listaRef.current
+      const filtros = lista?.previousElementSibling
+      if (!lista || !(filtros instanceof HTMLElement)) return
+      const principio = lista.getBoundingClientRect().top + window.scrollY - navHeight - filtros.offsetHeight
+      if (window.scrollY <= principio) return
+      const sinMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      // 'instant' a propósito: el CSS de la página tiene scroll-behavior: smooth y 'auto' lo seguiría
+      window.scrollTo({ top: principio, behavior: suave && !sinMovimiento ? 'smooth' : 'instant' })
+    },
+    [navHeight],
+  )
+
+  // Al cambiar de filtro, la lista nueva es más corta y el navegador recorta la posición de la
+  // página de golpe. Si en ese momento hubiera un desplazamiento suave en curso, algunos navegadores
+  // lo cancelan y la vista queda en el pie, lejos de los primeros platos. Por eso, al cambiar de
+  // categoría el salto es inmediato y se hace acá, apenas está la lista nueva y antes de dibujarla.
+  const subirAlCambiarDeFiltro = useRef(false)
+  useLayoutEffect(() => {
+    if (!subirAlCambiarDeFiltro.current) return
+    subirAlCambiarDeFiltro.current = false
+    volverAlPrincipioDeLaLista(false)
+    // Por si el navegador vuelve a ajustar la posición después (la lista cambió de alto), se confirma
+    // en el cuadro siguiente. No hace nada si ya está en su lugar.
+    const cuadro = requestAnimationFrame(() => volverAlPrincipioDeLaLista(false))
+    return () => cancelAnimationFrame(cuadro)
+  }, [activeCategory, volverAlPrincipioDeLaLista])
+
   const handleCategoryClick = (category: CategoryFilter) => {
-    if (category === activeCategory) return
+    // El filtro que ya está elegido no cambia la lista: sirve para volver arriba de ella, con
+    // desplazamiento suave (no hay nada que recortar)
+    if (category === activeCategory) return volverAlPrincipioDeLaLista(true)
+    subirAlCambiarDeFiltro.current = true
     setActiveCategory(category)
     setHovered(null)
     // La URL acompaña al filtro, así el enlace se puede compartir y «atrás» vuelve a la misma categoría
@@ -158,7 +197,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   }
 
   return (
-    <div className="page-menu flex min-h-screen flex-col justify-between bg-pancho-paper bg-[url('/images/fondo-secciones-crema.webp')] bg-cover bg-fixed bg-top text-pancho-black selection:bg-pancho-orange selection:text-pancho-black">
+    <div className="page-menu flex min-h-screen flex-col justify-between bg-pancho-paper text-pancho-black selection:bg-pancho-orange selection:text-pancho-black">
       <Navbar cartCount={totalCartCount} onOpenCart={() => setCartOpen(true)} />
 
       <div className="flex-1 pb-28">
@@ -228,6 +267,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
         </div>
 
         <main
+          ref={listaRef}
           key={activeCategory}
           className="mx-auto flex max-w-300 flex-col gap-10 px-4 pt-7 sm:gap-16 sm:px-6 sm:pt-12 lg:px-10"
         >
@@ -292,7 +332,10 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                         <Image src={product.image} alt="" fill sizes="104px" className="object-cover" />
                       </div>
                     </div>
-                    <div className="flex min-w-0 items-baseline gap-2.5">
+                    {/* Con mouse, la línea del título ocupa todo el ancho y termina en el precio (como en
+                        una carta); el + va abajo, a la derecha, en un hueco que ya tiene el ancho de la caja
+                        abierta. Así abrir el contador no corre ni acomoda el texto de la fila. */}
+                    <div className="col-span-2 flex min-w-0 items-baseline gap-2.5 [@media(hover:none)]:col-span-1">
                       <h3 className="font-heading text-[clamp(22px,2vw,26px)] leading-[1.05]">{product.name}</h3>
                       {product.badge && (
                         <span className="flex-none -translate-y-0.75 bg-pancho-red-deep px-1.5 py-0.75 text-[9.5px] font-extrabold uppercase tracking-widest text-white">
@@ -300,9 +343,13 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                         </span>
                       )}
                       <span className="min-w-4 flex-1 -translate-y-1.25 border-b-2 border-dotted border-pancho-black/35" />
+                      <span className="hidden flex-none font-heading text-[26px] leading-none text-pancho-red-deep [@media(hover:hover)]:inline">
+                        {formatPrice(product.price)}
+                      </span>
                     </div>
-                    <div className="row-span-2 flex items-center gap-3.5 [@media(hover:none)]:order-last [@media(hover:none)]:row-span-1 [@media(hover:none)]:mt-1.5">
-                      <span className="font-heading text-[26px] leading-none text-pancho-red-deep">
+                    <div className="col-start-2 row-start-2 flex items-center justify-self-end gap-3.5 [@media(hover:none)]:order-last [@media(hover:none)]:col-auto [@media(hover:none)]:row-auto [@media(hover:none)]:mt-1.5 [@media(hover:none)]:justify-self-auto">
+                      {/* El precio de esta línea es solo para pantallas táctiles: con mouse va en el título */}
+                      <span className="font-heading text-[26px] leading-none text-pancho-red-deep [@media(hover:hover)]:hidden">
                         {formatPrice(product.price)}
                       </span>
                       {renderAdd(product)}
