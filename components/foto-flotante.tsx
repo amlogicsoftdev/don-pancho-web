@@ -9,10 +9,8 @@ const ANCHO = 180
 const ALTO = 222
 const SEPARACION = 20
 const MARGEN = 8
-// Arriba del plato, cuánto se apoya sobre la fila (como pegada con la cinta)
-const APOYO = 14
-// Arriba del plato va más chica, para tapar solo la zona del precio de la fila de arriba
-const ESCALA_ARRIBA = 0.7
+// Lo más chica que puede quedar la foto cuando el margen de la pantalla es angosto
+const ESCALA_MIN = 0.6
 // Cuánto se acerca a su lugar en cada cuadro (0–1): menos es más suave
 const SEGUIMIENTO = 0.14
 
@@ -24,10 +22,11 @@ interface Lugar {
 }
 
 /**
- * Lugar de la foto para un plato, en coordenadas de la página. Si al costado de la carta hay
- * lugar (pantallas anchas), va pegada al costado de afuera, a la altura del plato. Si no, va
- * arriba del plato, del lado del precio: tapa un poco la fila de arriba, nunca la que se lee.
- * Si arriba no entra (justo debajo de los filtros), va abajo.
+ * Lugar de la foto para un plato, en coordenadas de la página. Siempre va al costado de afuera,
+ * a la altura del plato: los de la columna izquierda a la izquierda de los nombres, los de la
+ * derecha a la derecha del «+», y los combos (`data-foto="derecha"`) a la derecha del cartel
+ * rojo. Si el margen de la pantalla es angosto, la foto se achica para entrar (hasta ESCALA_MIN);
+ * si ni así entra, se pega al borde de la ventana.
  */
 function lugarPara(fila: HTMLElement, id: number): Lugar {
   const r = fila.getBoundingClientRect()
@@ -36,26 +35,17 @@ function lugarPara(fila: HTMLElement, id: number): Lugar {
   // Cada plato con su propia inclinación, para que no se vean todas iguales
   const giro = id % 2 === 0 ? -4 : 3
 
-  const aLaIzquierda = r.left + r.width / 2 < window.innerWidth / 2
+  const aLaIzquierda = fila.dataset.foto !== 'derecha' && r.left + r.width / 2 < window.innerWidth / 2
   const libre = aLaIzquierda ? r.left : window.innerWidth - r.right
-  if (libre >= ANCHO + SEPARACION + MARGEN) {
-    return {
-      x: sx + (aLaIzquierda ? r.left - SEPARACION - ANCHO : r.right + SEPARACION),
-      y: sy + r.top + r.height / 2 - ALTO / 2,
-      giro,
-      escala: 1,
-    }
-  }
+  const escala = Math.min(1, Math.max(ESCALA_MIN, (libre - SEPARACION - MARGEN) / ANCHO))
+  const ancho = ANCHO * escala
 
-  const ancho = ANCHO * ESCALA_ARRIBA
-  const alto = ALTO * ESCALA_ARRIBA
-  const filtros = document.querySelector('.menu-filtros')?.getBoundingClientRect().bottom ?? 0
-  const arriba = r.top - alto + APOYO
+  const x = aLaIzquierda ? r.left - SEPARACION - ancho : r.right + SEPARACION
   return {
-    x: sx + Math.max(MARGEN, r.right - ancho - 4),
-    y: sy + (arriba >= filtros + MARGEN ? arriba : r.bottom - APOYO),
+    x: sx + Math.min(Math.max(MARGEN, x), window.innerWidth - ancho - MARGEN),
+    y: sy + r.top + r.height / 2 - (ALTO * escala) / 2,
     giro,
-    escala: ESCALA_ARRIBA,
+    escala,
   }
 }
 
