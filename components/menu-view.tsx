@@ -325,7 +325,6 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
           {comboProducts.map((combo, index) => (
             <article
               key={combo.id}
-              {...hoverProps(combo)}
               style={{ '--i': index + 2 } as React.CSSProperties}
               className="menu-row relative grid grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] items-center gap-x-14 gap-y-6 overflow-hidden bg-pancho-red-deep bg-[url('/images/fondo-footer-bordo.webp')] bg-cover bg-center p-7 text-white sm:p-12"
             >
@@ -342,11 +341,21 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                   </div>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-5">
-                <span className="font-heading text-[clamp(48px,5.5vw,72px)] leading-none">
-                  {formatPrice(combo.price)}
-                </span>
-                {renderBigAdd(combo, 'black')}
+              {/* Precio arriba y botón abajo, y a la derecha la foto del combo, siempre a la vista
+                  (con mouse; sin mouse va debajo de la información), un poco más grande que los dos */}
+              <div className="flex items-center gap-8 lg:-ml-12">
+                <div className="flex flex-none flex-col items-start gap-5">
+                  <span className="font-heading text-[clamp(48px,5.5vw,72px)] leading-none">
+                    {formatPrice(combo.price)}
+                  </span>
+                  {renderBigAdd(combo, 'black')}
+                </div>
+                <div
+                  aria-hidden="true"
+                  className="relative hidden size-[calc(clamp(48px,5.5vw,72px)+1.25rem+var(--alto-boton,3.25rem)+4.5rem)] flex-none rotate-3 overflow-hidden border-2 border-white bg-neutral-900 shadow-[6px_6px_0_rgba(0,0,0,0.35)] [@media(hover:hover)]:block"
+                >
+                  <Image src={combo.image} alt="" fill sizes="220px" className="object-cover" />
+                </div>
               </div>
             </article>
           ))}

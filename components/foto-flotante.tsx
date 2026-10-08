@@ -4,15 +4,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import type { Product } from '@/lib/types'
 
-// Tamaño de la polaroid (w-45 más el pie) y separaciones
+// Tamaño de la foto (cuadrada, w-45) y separaciones
 const ANCHO = 180
-const ALTO = 222
+const ALTO = 180
 const SEPARACION = 20
 const MARGEN = 8
-// Arriba del plato, cuánto se apoya sobre la fila (como pegada con la cinta)
-const APOYO = 14
-// Arriba del plato va más chica, para tapar solo la zona del precio de la fila de arriba
-const ESCALA_ARRIBA = 0.7
+// Lo más chica que puede quedar la foto cuando el margen de la pantalla es angosto
+const ESCALA_MIN = 0.6
 // Cuánto se acerca a su lugar en cada cuadro (0–1): menos es más suave
 const SEGUIMIENTO = 0.14
 
@@ -24,10 +22,11 @@ interface Lugar {
 }
 
 /**
- * Lugar de la foto para un plato, en coordenadas de la página. Si al costado de la carta hay
- * lugar (pantallas anchas), va pegada al costado de afuera, a la altura del plato. Si no, va
- * arriba del plato, del lado del precio: tapa un poco la fila de arriba, nunca la que se lee.
- * Si arriba no entra (justo debajo de los filtros), va abajo.
+ * Lugar de la foto para un plato, en coordenadas de la página. Siempre va al costado de afuera,
+ * a la altura del plato: los de la columna izquierda a la izquierda de los nombres, los de la
+ * derecha a la derecha del «+», y los combos (`data-foto="derecha"`) a la derecha del cartel
+ * rojo. Si el margen de la pantalla es angosto, la foto se achica para entrar (hasta ESCALA_MIN);
+ * si ni así entra, se pega al borde de la ventana.
  */
 function lugarPara(fila: HTMLElement, id: number): Lugar {
   const r = fila.getBoundingClientRect()
@@ -36,31 +35,22 @@ function lugarPara(fila: HTMLElement, id: number): Lugar {
   // Cada plato con su propia inclinación, para que no se vean todas iguales
   const giro = id % 2 === 0 ? -4 : 3
 
-  const aLaIzquierda = r.left + r.width / 2 < window.innerWidth / 2
+  const aLaIzquierda = fila.dataset.foto !== 'derecha' && r.left + r.width / 2 < window.innerWidth / 2
   const libre = aLaIzquierda ? r.left : window.innerWidth - r.right
-  if (libre >= ANCHO + SEPARACION + MARGEN) {
-    return {
-      x: sx + (aLaIzquierda ? r.left - SEPARACION - ANCHO : r.right + SEPARACION),
-      y: sy + r.top + r.height / 2 - ALTO / 2,
-      giro,
-      escala: 1,
-    }
-  }
+  const escala = Math.min(1, Math.max(ESCALA_MIN, (libre - SEPARACION - MARGEN) / ANCHO))
+  const ancho = ANCHO * escala
 
-  const ancho = ANCHO * ESCALA_ARRIBA
-  const alto = ALTO * ESCALA_ARRIBA
-  const filtros = document.querySelector('.menu-filtros')?.getBoundingClientRect().bottom ?? 0
-  const arriba = r.top - alto + APOYO
+  const x = aLaIzquierda ? r.left - SEPARACION - ancho : r.right + SEPARACION
   return {
-    x: sx + Math.max(MARGEN, r.right - ancho - 4),
-    y: sy + (arriba >= filtros + MARGEN ? arriba : r.bottom - APOYO),
+    x: sx + Math.min(Math.max(MARGEN, x), window.innerWidth - ancho - MARGEN),
+    y: sy + r.top + r.height / 2 - (ALTO * escala) / 2,
     giro,
-    escala: ESCALA_ARRIBA,
+    escala,
   }
 }
 
 /**
- * Polaroid con la foto del plato que señala el mouse en la carta (solo con mouse). Queda
+ * Foto del plato que señala el mouse en la carta (solo con mouse). Queda
  * pegada al plato y, al pasar a otro, se desliza hasta él; entra con un pequeño rebote y se
  * apaga en su lugar. Al cambiar de plato, la foto cambia con un fundido.
  */
@@ -122,14 +112,10 @@ export function FotoFlotante({ producto, ancla }: { producto: Product | null; an
     >
       {ultimo && (
         <div className="foto-flotante" data-visible={producto !== null}>
-          <div className="absolute -top-2.5 left-1/2 -ml-8 h-5 w-16 rotate-3 bg-[rgba(230,215,185,0.9)]" />
           {/* La key hace que, al cambiar de plato, la foto nueva entre con su fundido */}
           <div key={ultimo.id} className="foto-flotante__foto relative aspect-square w-full overflow-hidden bg-neutral-900">
             <Image src={ultimo.image} alt="" fill sizes="180px" className="object-cover" />
           </div>
-          <span className="absolute inset-x-0 bottom-2 truncate px-2 text-center font-heading text-[13px] uppercase leading-none text-pancho-black">
-            {ultimo.name}
-          </span>
         </div>
       )}
     </div>

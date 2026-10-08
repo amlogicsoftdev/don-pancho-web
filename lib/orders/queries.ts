@@ -20,8 +20,18 @@ export function esFiltro(valor: unknown): valor is FiltroPedidos {
   return typeof valor === 'string' && valor in ESTADOS_POR_FILTRO
 }
 
+/** Cómo se entrega el pedido: todos, solo delivery o solo retiro. */
+export type FiltroEntrega = 'todas' | 'delivery' | 'retiro'
+
+export function esFiltroEntrega(valor: unknown): valor is FiltroEntrega {
+  return valor === 'todas' || valor === 'delivery' || valor === 'retiro'
+}
+
+const porEntrega = (entrega: FiltroEntrega) =>
+  entrega === 'todas' ? undefined : eq(schema.pedidos.modalidad, entrega)
+
 /** Lista de pedidos sin los borrados, el más nuevo primero. */
-export async function listarPedidos(filtro: FiltroPedidos) {
+export async function listarPedidos(filtro: FiltroPedidos, entrega: FiltroEntrega = 'todas') {
   const estados = ESTADOS_POR_FILTRO[filtro]
   return db
     .select()
@@ -30,6 +40,7 @@ export async function listarPedidos(filtro: FiltroPedidos) {
       and(
         isNull(schema.pedidos.borradoEn),
         estados ? inArray(schema.pedidos.estado, [...estados]) : undefined,
+        porEntrega(entrega),
       ),
     )
     .orderBy(desc(schema.pedidos.creadoEn))
@@ -40,7 +51,7 @@ export async function listarPedidos(filtro: FiltroPedidos) {
  * Busca pedidos (sin los borrados, en cualquier estado) por número, nombre, teléfono o
  * dirección. El texto se usa como dato, nunca como SQL: va parametrizado y sin comodines.
  */
-export async function buscarPedidos(texto: string) {
+export async function buscarPedidos(texto: string, entrega: FiltroEntrega = 'todas') {
   const limpio = texto.trim().slice(0, 80)
   if (!limpio) return []
 
@@ -61,7 +72,7 @@ export async function buscarPedidos(texto: string) {
   return db
     .select()
     .from(schema.pedidos)
-    .where(and(isNull(schema.pedidos.borradoEn), or(...condiciones)))
+    .where(and(isNull(schema.pedidos.borradoEn), or(...condiciones), porEntrega(entrega)))
     .orderBy(desc(schema.pedidos.creadoEn))
     .limit(50)
 }
