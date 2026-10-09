@@ -68,6 +68,29 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   // Plato con el menú de adicionales abierto
   const [adicionalesAbierto, setAdicionalesAbierto] = useState<string | null>(null)
 
+  // El menú de adicionales se cierra al tocar fuera del plato o con Escape
+  useEffect(() => {
+    if (!adicionalesAbierto) return
+    const alTocar = (evento: PointerEvent) => {
+      const fila = (evento.target as Element | null)?.closest?.('[data-grupo]')
+      if (fila?.getAttribute('data-grupo') !== adicionalesAbierto) setAdicionalesAbierto(null)
+    }
+    const alTeclear = (evento: KeyboardEvent) => {
+      if (evento.key !== 'Escape') return
+      // El foco vuelve al botón que abrió el menú
+      document
+        .querySelector<HTMLElement>(`[data-grupo="${CSS.escape(adicionalesAbierto)}"] [aria-expanded]`)
+        ?.focus()
+      setAdicionalesAbierto(null)
+    }
+    document.addEventListener('pointerdown', alTocar)
+    document.addEventListener('keydown', alTeclear)
+    return () => {
+      document.removeEventListener('pointerdown', alTocar)
+      document.removeEventListener('keydown', alTeclear)
+    }
+  }, [adicionalesAbierto])
+
   useEffect(() => {
     const nav = document.querySelector('header')
     if (!nav) return
@@ -89,10 +112,17 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   const comboProducts = products.filter(
     (p) => esCombo(p.category) && (isAll || p.category === activeCategory),
   )
+  // El destacado sale de la lista solo si es un plato suelto. Si tiene otros tamaños, queda en su
+  // plato para que el selector no pierda esa variante.
+  const destacadoConVariantes =
+    !!featured &&
+    agruparVariantes(products.filter((p) => p.category === featured.category)).some(
+      (g) => g.variantes.length > 1 && g.variantes.some((v) => v.product.id === featured.id),
+    )
   const gridProducts = products.filter(
     (p) =>
       !esCombo(p.category) &&
-      p.id !== featured?.id &&
+      (destacadoConVariantes || p.id !== featured?.id) &&
       (isAll || p.category === activeCategory),
   )
   const gridGroups = agruparVariantes(gridProducts)
@@ -359,6 +389,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                   return (
                   <div
                     key={grupo.clave}
+                    data-grupo={grupo.clave}
                     {...hoverProps(product)}
                     style={{ '--i': index + 1, zIndex: adicionalesVisibles ? 10 : undefined } as React.CSSProperties}
                     className="menu-row relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4.5 gap-y-1.5 border-b border-pancho-black/20 py-5 [@media(hover:none)]:grid-cols-[minmax(0,1fr)_auto] [@media(hover:none)]:items-start [@media(hover:none)]:gap-x-4"
