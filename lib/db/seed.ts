@@ -42,8 +42,6 @@ async function sembrarConfiguracion() {
       { clave: 'direccion', valor: SITE_CONFIG.address },
       { clave: 'horario', valor: SITE_CONFIG.schedule },
       { clave: 'instagram', valor: SITE_CONFIG.socialLinks.instagram },
-      { clave: 'facebook', valor: SITE_CONFIG.socialLinks.facebook },
-      { clave: 'tiktok', valor: SITE_CONFIG.socialLinks.tiktok },
       // Cuenta para transferencias: datos FALSOS de prueba (ver lib/data.ts)
       { clave: 'transferencia_alias', valor: DATOS_TRANSFERENCIA_PRUEBA.alias },
       { clave: 'transferencia_cbu', valor: DATOS_TRANSFERENCIA_PRUEBA.cbu },

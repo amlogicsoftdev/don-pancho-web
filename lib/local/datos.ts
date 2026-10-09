@@ -10,14 +10,12 @@ export interface DatosLocal {
   whatsapp: string
   direccion: string
   horario: string
-  // Redes: link completo, o texto vacío si el local no tiene esa red (no se muestra)
+  /** Link de Instagram (la única red del local), o texto vacío para no mostrarlo. */
   instagram: string
-  facebook: string
-  tiktok: string
 }
 
-/** Datos que el local puede dejar vacíos a propósito (las redes). */
-export const CAMPOS_OPCIONALES: readonly (keyof DatosLocal)[] = ['instagram', 'facebook', 'tiktok']
+/** Datos que el local puede dejar vacíos a propósito (la red). */
+export const CAMPOS_OPCIONALES: readonly (keyof DatosLocal)[] = ['instagram']
 
 export const CLAVES_LOCAL: Record<keyof DatosLocal, string> = {
   nombre: 'nombre',
@@ -25,8 +23,6 @@ export const CLAVES_LOCAL: Record<keyof DatosLocal, string> = {
   direccion: 'direccion',
   horario: 'horario',
   instagram: 'instagram',
-  facebook: 'facebook',
-  tiktok: 'tiktok',
 }
 
 /** Valores por defecto si la base no tiene un dato (o no responde). */
@@ -36,6 +32,4 @@ export const DATOS_LOCAL_POR_DEFECTO: DatosLocal = {
   direccion: SITE_CONFIG.address,
   horario: SITE_CONFIG.schedule,
   instagram: SITE_CONFIG.socialLinks.instagram,
-  facebook: SITE_CONFIG.socialLinks.facebook,
-  tiktok: SITE_CONFIG.socialLinks.tiktok,
 }

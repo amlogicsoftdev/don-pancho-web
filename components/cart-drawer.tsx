@@ -20,7 +20,8 @@ import {
 } from 'lucide-react'
 import { CartItem } from '@/lib/types'
 import { aclaracionDe, NOTE_MAX_LENGTH } from '@/lib/cart'
-import { formatPrice, SITE_CONFIG } from '@/lib/data'
+import { formatPrice } from '@/lib/data'
+import { useDatosLocal } from './datos-local'
 import { PanchoButton } from './pancho-button'
 
 interface CartDrawerProps {
@@ -57,6 +58,8 @@ export function CartDrawer({
   onOrderCreated,
   unavailableCount = 0,
 }: CartDrawerProps) {
+  // Nombre y WhatsApp del local (los carga el dueño en el panel)
+  const local = useDatosLocal()
   const router = useRouter()
   const [orderType, setOrderType] = useState<'delivery' | 'retiro'>('delivery')
   const [address, setAddress] = useState('')
@@ -129,10 +132,10 @@ export function CartDrawer({
         : '🏪 Entrega: Para retirar por el local'
 
     const paymentLabel = paymentMethod === 'efectivo' ? 'Efectivo' : 'Transferencia'
-    const message = `¡Hola ${SITE_CONFIG.name}! 🍔 Quiero hacer el siguiente pedido:\n\n${itemLines}\n\n💰 Total: ${formatPrice(totalAmount)}\n💳 Método de pago: ${paymentLabel}\n${deliveryLines}\n👤 Nombre: ${customerName.trim()}\n📞 Teléfono: ${customerPhone.trim()}\n\n¡Muchas gracias!`
+    const message = `¡Hola ${local.nombre}! 🍔 Quiero hacer el siguiente pedido:\n\n${itemLines}\n\n💰 Total: ${formatPrice(totalAmount)}\n💳 Método de pago: ${paymentLabel}\n${deliveryLines}\n👤 Nombre: ${customerName.trim()}\n📞 Teléfono: ${customerPhone.trim()}\n\n¡Muchas gracias!`
 
     const encoded = encodeURIComponent(message)
-    window.open(`https://wa.me/${SITE_CONFIG.whatsappNumber}?text=${encoded}`, '_blank', 'noopener,noreferrer')
+    window.open(`https://wa.me/${local.whatsapp}?text=${encoded}`, '_blank', 'noopener,noreferrer')
   }
 
   const clearFieldError = () => {

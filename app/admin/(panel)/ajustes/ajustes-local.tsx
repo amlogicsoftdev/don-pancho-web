@@ -75,7 +75,7 @@ export function AjustesLocal({ corteHora, transferencia, local }: Props) {
     <div className="space-y-6">
       <Hoja
         titulo="Datos del local"
-        descripcion="Se muestran en el sitio (pie de página, carrito y seguimiento), en las comandas y en los mensajes. Los pedidos y las consultas llegan a este WhatsApp. Si el local no tiene alguna red, dejá el link vacío y no se muestra."
+        descripcion="Se muestran en el sitio (pie de página, carrito y seguimiento), en las comandas y en los mensajes. Los pedidos y las consultas llegan a este WhatsApp. Si dejás vacío el link de Instagram, no se muestra."
         onGuardar={(d) =>
           guardarDatosLocal({
             nombre: d.get('nombre'),
@@ -83,8 +83,6 @@ export function AjustesLocal({ corteHora, transferencia, local }: Props) {
             direccion: d.get('direccion'),
             horario: d.get('horario'),
             instagram: d.get('instagram'),
-            facebook: d.get('facebook'),
-            tiktok: d.get('tiktok'),
           })
         }
       >
@@ -115,22 +113,6 @@ export function AjustesLocal({ corteHora, transferencia, local }: Props) {
             maxLength={200}
             defaultValue={local.instagram}
             placeholder="https://instagram.com/..."
-          />
-          <Campo
-            etiqueta="Facebook (link)"
-            name="facebook"
-            type="url"
-            maxLength={200}
-            defaultValue={local.facebook}
-            placeholder="https://facebook.com/..."
-          />
-          <Campo
-            etiqueta="TikTok (link)"
-            name="tiktok"
-            type="url"
-            maxLength={200}
-            defaultValue={local.tiktok}
-            placeholder="https://tiktok.com/@..."
           />
         </div>
       </Hoja>
