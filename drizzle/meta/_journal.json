@@ -43,6 +43,13 @@
       "when": 1791415241561,
       "tag": "0005_descuento_por_linea",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791572584964,
+      "tag": "0006_productos_borrado",
+      "breakpoints": true
     }
   ]
 }

@@ -11,7 +11,7 @@ import {
 
 // Reglas generales (CLAUDE.md, sección 4):
 // - Montos como enteros en pesos, sin decimales.
-// - No se borra físicamente: `activo` en productos y `borrado_en` en pedidos.
+// - No se borra físicamente: `activo` y `borrado_en` en productos, `borrado_en` en pedidos.
 // - Fechas en UTC; el "día" se calcula en America/Argentina/Buenos_Aires en la aplicación.
 
 const fecha = (columna: string) => timestamp(columna, { withTimezone: true })
@@ -123,6 +123,8 @@ export const productos = pgTable(
     etiqueta: text('etiqueta'),
     orden: integer('orden').notNull().default(0),
     activo: boolean('activo').notNull().default(true),
+    // Borrado desde el panel: no se muestra en ningún lado, pero queda para el historial de ventas
+    borradoEn: fecha('borrado_en'),
   },
   (t) => [index('productos_categoria_idx').on(t.categoriaId)],
 )
