@@ -10,7 +10,11 @@ interface MenuPageProps {
 // /menu?categoria=hamburguesas o /menu?categoria=panchos
 export default async function MenuPage({ searchParams }: MenuPageProps) {
   const [{ categoria }, { categories, products }] = await Promise.all([searchParams, obtenerMenu()])
-  const initialCategory = categoriaDesdeParametro(categoria, categories)
+  // «Adicionales» no se puede abrir como sección: sus productos se eligen dentro de cada hamburguesa
+  const initialCategory = categoriaDesdeParametro(
+    categoria,
+    categories.filter((c) => !/^adicionales$/i.test(c.name)),
+  )
 
   // La `key` hace que la vista arranque de nuevo si se navega a otra categoría por enlace
   return (

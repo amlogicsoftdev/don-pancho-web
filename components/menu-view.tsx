@@ -35,6 +35,8 @@ interface MenuViewProps {
 }
 
 const esCombo = (categoria: string) => /combo/i.test(categoria)
+// Los adicionales no son una sección de la carta: se eligen dentro de cada hamburguesa
+const esAdicionales = (categoria: string) => /^adicionales$/i.test(categoria)
 const esMasPedida = (product: Product) => /m[aá]s pedida/i.test(product.badge ?? '')
 
 /**
@@ -108,7 +110,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     return () => observer.disconnect()
   }, [])
 
-  const filterOptions: CategoryFilter[] = [TODAS, ...categories.map((c) => c.name)]
+  const filterOptions: CategoryFilter[] = [TODAS, ...categories.map((c) => c.name).filter((c) => !esAdicionales(c))]
   /** Unidades en el carrito; con `para`, las de ese adicional en esa hamburguesa. */
   const quantityOf = (id: number, para?: number) =>
     cart.find((item) => item.key === claveLinea(id, para))?.quantity ?? 0
@@ -129,16 +131,19 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   const gridProducts = products.filter(
     (p) =>
       !esCombo(p.category) &&
+      !esAdicionales(p.category) &&
       (destacadoConVariantes || p.id !== featured?.id) &&
       (isAll || p.category === activeCategory),
   )
   const gridGroups = agruparVariantes(gridProducts)
-  // Los adicionales (categoría «Adicionales») se ofrecen también dentro de cada hamburguesa
-  const adicionales = products.filter((p) => /^adicionales$/i.test(p.category))
+  // Los adicionales (categoría «Adicionales») se ofrecen dentro de cada hamburguesa
+  const adicionales = products.filter((p) => esAdicionales(p.category))
   const llevaAdicionales = (categoria: string) => /hamburguesa/i.test(categoria)
   // Cada plato con variantes cuenta una sola vez
   const countFor = (category: CategoryFilter) => {
-    const deLaCategoria = category === TODAS ? products : products.filter((p) => p.category === category)
+    const deLaCategoria = (category === TODAS ? products : products.filter((p) => p.category === category)).filter(
+      (p) => !esAdicionales(p.category),
+    )
     return (
       agruparVariantes(deLaCategoria.filter((p) => !esCombo(p.category))).length +
       deLaCategoria.filter((p) => esCombo(p.category)).length
