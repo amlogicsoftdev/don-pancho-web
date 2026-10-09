@@ -2501,7 +2501,7 @@ html:has(.panel) {
   }
 
   /* La elegida y la que tiene el mouse encima quedan por encima, así se ve su borde entero */
-  .pn-segmento > .pn-option:is(:hover, [aria-current='page']) {
+  .pn-segmento > .pn-option:is(:hover, [aria-current='page'], [aria-pressed='true']) {
     position: relative;
     z-index: 1;
   }
