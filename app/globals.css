@@ -1478,6 +1478,39 @@ html:has(.page-menu) {
   padding-top: 0.625rem;
 }
 
+/* Opciones de cada plato (tamaño, panceta, adicionales): livianas, para no competir con el
+   nombre ni con el precio. La elegida se marca con un tinte naranja, no con un bloque lleno */
+.opcion-plato {
+  position: relative;
+  cursor: pointer;
+  border: 1px solid rgb(13 13 13 / 0.18);
+  padding: 0.3125rem 0.625rem;
+  font-size: 0.65625rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(13 13 13 / 0.6);
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+}
+
+.opcion-plato:hover {
+  z-index: 1;
+  border-color: rgb(13 13 13 / 0.4);
+  color: var(--color-pancho-black);
+}
+
+.opcion-plato:is([aria-pressed="true"], [aria-expanded="true"]) {
+  z-index: 2;
+  border-color: var(--color-pancho-orange);
+  background-color: color-mix(in srgb, var(--color-pancho-orange) 16%, transparent);
+  color: var(--color-pancho-black);
+}
+
+.opcion-plato:focus-visible {
+  outline: 2px solid var(--color-pancho-black);
+  outline-offset: 2px;
+}
+
 /* Filtros de la carta: un renglón que se desliza de costado, sin barra de scroll a la vista */
 .filtros-carril {
   scrollbar-width: none;

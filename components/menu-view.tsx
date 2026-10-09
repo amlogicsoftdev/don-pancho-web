@@ -529,11 +529,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                                 type="button"
                                 aria-pressed={actual.tamano === t}
                                 onClick={() => elegirVariante(grupo, { tamano: t })}
-                                className={`-ml-0.5 cursor-pointer border-2 border-pancho-black px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.06em] transition-colors first:ml-0 ${
-                                  actual.tamano === t
-                                    ? 'bg-pancho-orange text-pancho-black'
-                                    : 'text-pancho-black/70 hover:text-pancho-black'
-                                }`}
+                                className="opcion-plato -ml-px first:ml-0"
                               >
                                 {etiquetaTamano(t)}
                               </button>
@@ -545,11 +541,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                             type="button"
                             aria-pressed={actual.conPanceta}
                             onClick={() => elegirVariante(grupo, { panceta: !actual.conPanceta })}
-                            className={`cursor-pointer border-2 border-pancho-black px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.06em] transition-colors ${
-                              actual.conPanceta
-                                ? 'bg-pancho-orange text-pancho-black'
-                                : 'text-pancho-black/70 hover:text-pancho-black'
-                            }`}
+                            className="opcion-plato"
                           >
                             Con panceta
                           </button>
@@ -559,11 +551,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                             type="button"
                             aria-expanded={adicionalesVisibles}
                             onClick={() => setAdicionalesAbierto(adicionalesVisibles ? null : grupo.clave)}
-                            className={`inline-flex cursor-pointer items-center gap-1.5 border-2 border-pancho-black px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.06em] transition-colors ${
-                              adicionalesVisibles
-                                ? 'bg-pancho-black text-white'
-                                : 'text-pancho-black/70 hover:text-pancho-black'
-                            }`}
+                            className="opcion-plato inline-flex items-center gap-1.5"
                           >
                             Adicionales
                             <ChevronDown className={`size-3.5 stroke-3 transition-transform ${adicionalesVisibles ? 'rotate-180' : ''}`} />
