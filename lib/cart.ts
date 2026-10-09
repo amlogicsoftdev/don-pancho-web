@@ -13,12 +13,12 @@ export const claveLinea = (id: number, para?: number) => (para ? `${id}>${para}`
 const claveDe = (entry: CartEntry) => claveLinea(entry.id, entry.para)
 
 /**
- * Aclaración que llega al local: a qué hamburguesa va el adicional y lo que escribió el cliente.
- * Se corta al largo que acepta el servidor.
+ * Aclaración que llega al local. Un adicional no lleva aclaración propia, solo a qué hamburguesa va;
+ * el resto, lo que escribió el cliente.
  */
 export function aclaracionDe(item: CartItem): string | null {
-  const partes = [item.para && `Para ${item.para.name}`, item.note?.trim()].filter(Boolean)
-  return partes.length ? partes.join(' · ').slice(0, NOTE_MAX_LENGTH) : null
+  if (item.para) return `Para ${item.para.name}`.slice(0, NOTE_MAX_LENGTH)
+  return item.note?.trim() || null
 }
 
 /**
@@ -143,7 +143,8 @@ export function useCart(products: Product[]) {
 
   const handleClearCart = () => setEntries([])
 
-  const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+  // Los adicionales no suman al contador: van con su hamburguesa
+  const totalCartCount = cart.reduce((sum, item) => sum + (item.para ? 0 : item.quantity), 0)
 
   return {
     cart,

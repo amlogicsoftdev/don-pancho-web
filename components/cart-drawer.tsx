@@ -77,7 +77,8 @@ export function CartDrawer({
   // Productos cuyo campo de aclaración está abierto (los que ya tienen una siempre lo muestran)
   const [openNotes, setOpenNotes] = useState<string[]>([])
   const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const totalCount = items.reduce((sum, item) => sum + item.quantity, 0)
+  // Los adicionales no cuentan como productos: van con su hamburguesa
+  const totalCount = items.reduce((sum, item) => sum + (item.para ? 0 : item.quantity), 0)
 
   useEffect(() => {
     try {
@@ -375,8 +376,9 @@ export function CartDrawer({
                         </div>
                       </div>
 
-                      {/* Aclaración: sin cebolla, sin aderezo, punto de la carne… */}
-                      {noteVisible ? (
+                      {/* Aclaración: sin cebolla, sin aderezo, punto de la carne… (los adicionales no llevan:
+                          se aclara en su hamburguesa) */}
+                      {item.para ? null : noteVisible ? (
                         <div className="mt-3">
                           <label htmlFor={`nota-${item.key}`} className="sr-only">
                             Aclaración para {item.name}
