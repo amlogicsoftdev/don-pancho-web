@@ -99,7 +99,8 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   useEffect(() => {
     const nav = document.querySelector('header')
     if (!nav) return
-    const measure = () => setNavHeight(nav.offsetHeight)
+    // Con decimales: en celulares la barra mide, por ejemplo, 79,6 px y offsetHeight redondea
+    const measure = () => setNavHeight(nav.getBoundingClientRect().height)
     measure()
     // Al scrollear la barra cambia su relleno, no su contenido: hay que mirar la caja entera
     // (border-box); si no, el cambio no se avisa y queda un hueco arriba de los filtros
@@ -356,7 +357,8 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
 
         {/* Categorías: quedan fijas debajo del encabezado al scrollear */}
         <div
-          style={{ top: navHeight }}
+          // 1 px por debajo de la barra: así no queda una rendija entre las dos
+          style={{ top: Math.max(0, navHeight - 1) }}
           className="menu-filtros sticky z-20 mt-6 border-b border-pancho-black/20 bg-pancho-paper/95 backdrop-blur-sm sm:mt-10"
         >
           {/* Un solo renglón que se desliza de costado: en el celular no tapa media pantalla. Los bordes
