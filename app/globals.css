@@ -1476,6 +1476,9 @@ html:has(.page-menu) {
    separa de la barra sin sombra (el mismo negro suave de las líneas punteadas de la lista) */
 .menu-filtros {
   padding-top: 0.625rem;
+  /* Franja de papel hacia arriba, debajo de la barra: tapa la rendija que se abre por un instante
+     mientras la barra se achica al scrollear (si no, se ve la carta por detrás) */
+  box-shadow: 0 -0.1875rem 0 var(--color-pancho-paper);
 }
 
 /* Opciones de cada plato (tamaño, panceta, adicionales): livianas, para no competir con el
