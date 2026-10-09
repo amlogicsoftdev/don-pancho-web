@@ -65,6 +65,13 @@ export default async function CajaPage({ searchParams }: { searchParams: Promise
           />
           <Fila etiqueta="Efectivo" valor={formatearPrecio(resumen.ventasEfectivo)} />
           <Fila etiqueta="Transferencias" valor={formatearPrecio(resumen.transferenciasConfirmadas)} />
+          {/* Recordatorio: el cliente dice que transfirió, pero nadie confirmó que llegó la plata */}
+          {resumen.cantidadPorConfirmar > 0 && (
+            <Fila
+              etiqueta={`Transferencias por confirmar (${resumen.cantidadPorConfirmar}) · no se suman`}
+              valor={formatearPrecio(resumen.transferenciasPorConfirmar)}
+            />
+          )}
           <Fila etiqueta="Gastos en efectivo" valor={`-${formatearPrecio(resumen.gastosEfectivo)}`} />
           {resumen.gastosTransferencia > 0 && (
             <Fila
