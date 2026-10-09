@@ -155,7 +155,10 @@ export function Navbar({ cartCount, onOpenCart }: NavbarProps) {
     <header
       className={`nav-in fixed top-0 left-0 right-0 z-50 transition-[background-color,border-color,padding,box-shadow] duration-300 ${
         isHome
-          ? solid
+          ? mobileMenuOpen
+            ? // Con el menú de celular abierto, la barra y el menú son una sola hoja de papel de revista
+              'max-md:bg-pancho-paper max-md:bg-[url(/images/fondo-secciones-crema.webp)] max-md:bg-cover max-md:bg-top border-b border-black/10 py-2 shadow-[0_14px_30px_-16px_rgb(0_0_0/0.5)] md:bg-pancho-paper/90 md:backdrop-blur-md'
+            : solid
             ? isMenu
               ? 'bg-pancho-paper/95 backdrop-blur-sm border-b border-transparent py-2'
               : 'bg-pancho-paper/90 backdrop-blur-md border-b border-black/10 py-2 shadow-[0_10px_30px_-18px_rgb(0_0_0/0.45)]'

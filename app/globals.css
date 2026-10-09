@@ -1478,6 +1478,29 @@ html:has(.page-menu) {
   padding-top: 0.625rem;
 }
 
+/* Filtros de la carta: un renglón que se desliza de costado, sin barra de scroll a la vista */
+.filtros-carril {
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filtros-carril::-webkit-scrollbar {
+  display: none;
+}
+
+.filtros-carril[data-mas-der] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+}
+
+.filtros-carril[data-mas-izq] {
+  mask-image: linear-gradient(to right, transparent, #000 3rem);
+}
+
+.filtros-carril[data-mas-izq][data-mas-der] {
+  mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent);
+}
+
 .menu-filtros::before {
   content: '';
   position: absolute;

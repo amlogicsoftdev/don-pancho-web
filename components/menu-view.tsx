@@ -182,6 +182,35 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     return () => cancelAnimationFrame(cuadro)
   }, [activeCategory, volverAlPrincipioDeLaLista])
 
+  // Carril de filtros: si hay más categorías a cada costado (para esfumar ese borde)
+  const filtrosRef = useRef<HTMLDivElement>(null)
+  const [bordesFiltros, setBordesFiltros] = useState({ izq: false, der: false })
+  const medirBordesFiltros = useCallback(() => {
+    const carril = filtrosRef.current
+    if (!carril) return
+    const izq = carril.scrollLeft > 4
+    const der = carril.scrollLeft + carril.clientWidth < carril.scrollWidth - 4
+    setBordesFiltros((b) => (b.izq === izq && b.der === der ? b : { izq, der }))
+  }, [])
+
+  useEffect(() => {
+    const carril = filtrosRef.current
+    if (!carril) return
+    medirBordesFiltros()
+    const observador = new ResizeObserver(medirBordesFiltros)
+    observador.observe(carril)
+    return () => observador.disconnect()
+  }, [medirBordesFiltros])
+
+  // La categoría elegida queda centrada en el carril (solo de costado: la página no se mueve)
+  useEffect(() => {
+    const carril = filtrosRef.current
+    const elegido = carril?.querySelector<HTMLElement>('[aria-selected="true"]')
+    if (!carril || !elegido) return
+    const izquierda = elegido.offsetLeft - (carril.clientWidth - elegido.offsetWidth) / 2
+    carril.scrollTo({ left: Math.max(0, izquierda), behavior: 'smooth' })
+  }, [activeCategory])
+
   const handleCategoryClick = (category: CategoryFilter) => {
     // El filtro que ya está elegido no cambia la lista: sirve para volver arriba de ella, con
     // desplazamiento suave (no hay nada que recortar)
@@ -330,10 +359,16 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
           style={{ top: navHeight }}
           className="menu-filtros sticky z-20 mt-6 border-b border-pancho-black/20 bg-pancho-paper/95 backdrop-blur-sm sm:mt-10"
         >
+          {/* Un solo renglón que se desliza de costado: en el celular no tapa media pantalla. Los bordes
+              se esfuman cuando hay más categorías para ver de ese lado */}
           <div
+            ref={filtrosRef}
             role="tablist"
             aria-label="Categorías del menú"
-            className="mx-auto flex max-w-300 flex-wrap px-4 sm:px-6 lg:px-10"
+            onScroll={medirBordesFiltros}
+            data-mas-izq={bordesFiltros.izq || undefined}
+            data-mas-der={bordesFiltros.der || undefined}
+            className="filtros-carril mx-auto flex max-w-300 overflow-x-auto px-4 sm:px-6 lg:px-10"
           >
             {filterOptions.map((category) => {
               const isActive = activeCategory === category
