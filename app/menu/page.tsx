@@ -1,5 +1,5 @@
 import { MenuView } from '@/components/menu-view'
-import { categoriaDesdeParametro } from '@/lib/menu/categoria'
+import { categoriaDesdeParametro, esCategoriaAdicionales } from '@/lib/menu/categoria'
 import { obtenerMenu } from '@/lib/menu/queries'
 
 interface MenuPageProps {
@@ -13,7 +13,7 @@ export default async function MenuPage({ searchParams }: MenuPageProps) {
   // «Adicionales» no se puede abrir como sección: sus productos se eligen dentro de cada hamburguesa
   const initialCategory = categoriaDesdeParametro(
     categoria,
-    categories.filter((c) => !/^adicionales$/i.test(c.name)),
+    categories.filter((c) => !esCategoriaAdicionales(c.name)),
   )
 
   // La `key` hace que la vista arranque de nuevo si se navega a otra categoría por enlace

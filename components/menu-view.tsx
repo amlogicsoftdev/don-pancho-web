@@ -9,7 +9,7 @@ import { Footer } from '@/components/footer'
 import { CartDrawer } from '@/components/cart-drawer'
 import { formatPrice } from '@/lib/data'
 import { Category, Product, CategoryFilter } from '@/lib/types'
-import { TODAS } from '@/lib/menu/categoria'
+import { esCategoriaAdicionales as esAdicionales, llevaAdicionales, TODAS } from '@/lib/menu/categoria'
 import {
   agruparVariantes,
   etiquetaTamano,
@@ -35,8 +35,6 @@ interface MenuViewProps {
 }
 
 const esCombo = (categoria: string) => /combo/i.test(categoria)
-// Los adicionales no son una sección de la carta: se eligen dentro de cada hamburguesa
-const esAdicionales = (categoria: string) => /^adicionales$/i.test(categoria)
 const esMasPedida = (product: Product) => /m[aá]s pedida/i.test(product.badge ?? '')
 
 /**
@@ -138,7 +136,6 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   const gridGroups = agruparVariantes(gridProducts)
   // Los adicionales (categoría «Adicionales») se ofrecen dentro de cada hamburguesa
   const adicionales = products.filter((p) => esAdicionales(p.category))
-  const llevaAdicionales = (categoria: string) => /hamburguesa/i.test(categoria)
   // Cada plato con variantes cuenta una sola vez
   const countFor = (category: CategoryFilter) => {
     const deLaCategoria = (category === TODAS ? products : products.filter((p) => p.category === category)).filter(

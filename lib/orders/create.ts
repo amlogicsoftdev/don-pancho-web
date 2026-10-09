@@ -2,7 +2,8 @@ import 'server-only'
 import { randomBytes } from 'node:crypto'
 import { and, count, eq, gte, inArray } from 'drizzle-orm'
 import { db, schema } from '@/lib/db'
-import { descuentoDeLinea } from './estados'
+import { esCategoriaAdicionales, llevaAdicionales } from '@/lib/menu/categoria'
+import { aclaracionAdicional, descuentoDeLinea } from './estados'
 import type { ItemPedidoEntrada, PedidoEntrada, VentaMostradorEntrada } from './validate'
 
 // Pedidos seguidos desde un mismo teléfono: protección básica contra pedidos repetidos o falsos.
@@ -33,14 +34,19 @@ export interface PedidoCreado {
 /**
  * Toma los precios de la base (solo productos activos de categorías activas) y calcula
  * subtotal, descuento y total. Del navegador solo se usan ids y cantidades.
+ *
+ * Con `adicionalesAtados` (pedidos de la web) cada adicional tiene que ir justo debajo de una
+ * hamburguesa del pedido, y la aclaración «Para <hamburguesa>» la escribe el servidor con el nombre
+ * de la base. En el mostrador los adicionales se cargan sueltos.
  */
-async function calcularLineas(items: ItemPedidoEntrada[]) {
+async function calcularLineas(items: ItemPedidoEntrada[], adicionalesAtados = false) {
   const ids = [...new Set(items.map((i) => i.productoId))]
   const productos = await db
     .select({
       id: schema.productos.id,
       nombre: schema.productos.nombre,
       precio: schema.productos.precio,
+      categoria: schema.categorias.nombre,
     })
     .from(schema.productos)
     .innerJoin(schema.categorias, eq(schema.productos.categoriaId, schema.categorias.id))
@@ -56,14 +62,29 @@ async function calcularLineas(items: ItemPedidoEntrada[]) {
     throw new ErrorPedido('Algún producto ya no está disponible. Actualizá el menú y volvé a armar el pedido.', 409)
   }
 
+  // Último producto que no es adicional: al que se atan los adicionales que vienen debajo
+  let anterior: { nombre: string; categoria: string } | undefined
   const lineas = items.map((item) => {
     const producto = porId.get(item.productoId)!
+    let aclaraciones = item.aclaraciones
+    if (adicionalesAtados) {
+      if (esCategoriaAdicionales(producto.categoria)) {
+        if (!anterior || !llevaAdicionales(anterior.categoria)) {
+          throw new ErrorPedido('Los adicionales se piden junto con una hamburguesa. Actualizá el menú y volvé a armar el pedido.', 400)
+        }
+        aclaraciones = aclaracionAdicional(anterior.nombre)
+      } else {
+        // Una aclaración del cliente no puede hacerse pasar por la de un adicional
+        if (anterior && aclaraciones === aclaracionAdicional(anterior.nombre)) aclaraciones = null
+        anterior = producto
+      }
+    }
     return {
       productoId: producto.id,
       nombre: producto.nombre,
       precioUnitario: producto.precio,
       cantidad: item.cantidad,
-      aclaraciones: item.aclaraciones,
+      aclaraciones,
       descuentoPorcentaje: item.descuentoPorcentaje,
     }
   })
@@ -116,7 +137,7 @@ export async function crearPedidoWeb(entrada: PedidoEntrada, ipHash: string | nu
   }
 
   // Los pedidos de la web entran sin descuento: si corresponde, lo aplica el local desde el panel
-  const { lineas, subtotal, descuentoMonto, total } = await calcularLineas(entrada.items)
+  const { lineas, subtotal, descuentoMonto, total } = await calcularLineas(entrada.items, true)
   const token = randomBytes(24).toString('base64url')
 
   const { id, numero } = await db.transaction(async (tx) => {
