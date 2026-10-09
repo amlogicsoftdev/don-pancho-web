@@ -11,7 +11,11 @@ import { agruparVariantes } from './variantes'
 
 export async function listarMenuCompleto() {
   const [categorias, productos] = await Promise.all([
-    db.select().from(schema.categorias).orderBy(asc(schema.categorias.orden), asc(schema.categorias.id)),
+    db
+      .select()
+      .from(schema.categorias)
+      .where(isNull(schema.categorias.borradoEn))
+      .orderBy(asc(schema.categorias.orden), asc(schema.categorias.id)),
     db
       .select()
       .from(schema.productos)
@@ -54,7 +58,11 @@ export async function obtenerPlato(id: number) {
 }
 
 export async function listarCategorias() {
-  return db.select().from(schema.categorias).orderBy(asc(schema.categorias.orden), asc(schema.categorias.id))
+  return db
+    .select()
+    .from(schema.categorias)
+    .where(isNull(schema.categorias.borradoEn))
+    .orderBy(asc(schema.categorias.orden), asc(schema.categorias.id))
 }
 
 /** Ajustes editables: hora de corte, cuenta para transferir y datos públicos del local. */

@@ -107,6 +107,9 @@ export const categorias = pgTable('categorias', {
   nombre: text('nombre').notNull().unique(),
   orden: integer('orden').notNull().default(0),
   activa: boolean('activa').notNull().default(true),
+  // Borrada desde el panel (con todos sus productos): no se ve en ningún lado. Al borrarla se le
+  // cambia el nombre (que es único) para poder crear otra con el mismo nombre.
+  borradoEn: fecha('borrado_en'),
 })
 
 export const productos = pgTable(

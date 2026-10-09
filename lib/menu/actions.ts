@@ -62,10 +62,13 @@ export async function crearCategoria(nombreCrudo: unknown): Promise<ResultadoAcc
   const nombre = texto(nombreCrudo, 60)
   if (!nombre) return { ok: false, error: 'Escribí el nombre de la categoría (hasta 60 caracteres).' }
 
-  const [existente] = await db.select({ id: schema.categorias.id }).from(schema.categorias).where(sql`lower(${schema.categorias.nombre}) = ${nombre.toLowerCase()}`)
+  const [existente] = await db
+    .select({ id: schema.categorias.id })
+    .from(schema.categorias)
+    .where(and(sql`lower(${schema.categorias.nombre}) = ${nombre.toLowerCase()}`, isNull(schema.categorias.borradoEn)))
   if (existente) return { ok: false, error: 'Ya existe una categoría con ese nombre.' }
 
-  const [{ ultimo }] = await db.select({ ultimo: max(schema.categorias.orden) }).from(schema.categorias)
+  const [{ ultimo }] = await db.select({ ultimo: max(schema.categorias.orden) }).from(schema.categorias).where(isNull(schema.categorias.borradoEn))
   await db.insert(schema.categorias).values({ nombre, orden: (ultimo ?? -1) + 1 })
   refrescar()
   return { ok: true }
@@ -79,10 +82,10 @@ export async function renombrarCategoria(id: unknown, nombreCrudo: unknown): Pro
   const [otra] = await db
     .select({ id: schema.categorias.id })
     .from(schema.categorias)
-    .where(sql`lower(${schema.categorias.nombre}) = ${nombre.toLowerCase()} and ${schema.categorias.id} <> ${id}`)
+    .where(and(sql`lower(${schema.categorias.nombre}) = ${nombre.toLowerCase()} and ${schema.categorias.id} <> ${id}`, isNull(schema.categorias.borradoEn)))
   if (otra) return { ok: false, error: 'Ya existe una categoría con ese nombre.' }
 
-  await db.update(schema.categorias).set({ nombre }).where(eq(schema.categorias.id, id))
+  await db.update(schema.categorias).set({ nombre }).where(and(eq(schema.categorias.id, id), isNull(schema.categorias.borradoEn)))
   refrescar()
   return { ok: true }
 }
@@ -90,9 +93,35 @@ export async function renombrarCategoria(id: unknown, nombreCrudo: unknown): Pro
 export async function alternarCategoria(id: unknown, activa: unknown): Promise<ResultadoAccion> {
   await requerirDueno()
   if (!idValido(id) || typeof activa !== 'boolean') return { ok: false, error: 'Categoría inválida.' }
-  await db.update(schema.categorias).set({ activa }).where(eq(schema.categorias.id, id))
+  await db.update(schema.categorias).set({ activa }).where(and(eq(schema.categorias.id, id), isNull(schema.categorias.borradoEn)))
   refrescar()
   return { ok: true }
+}
+
+/**
+ * Borra una categoría con todos sus productos. Es un borrado lógico: dejan de verse en el panel y
+ * en la carta, pero quedan en la base porque los pedidos viejos nombran a esos productos.
+ */
+export async function borrarCategoria(id: unknown): Promise<ResultadoAccion> {
+  await requerirDueno()
+  if (!idValido(id)) return { ok: false, error: 'Categoría inválida.' }
+  const ahora = new Date()
+  const borrada = await db.transaction(async (tx) => {
+    const [categoria] = await tx
+      .update(schema.categorias)
+      // El nombre es único: se libera para poder crear otra categoría con el mismo nombre
+      .set({ activa: false, borradoEn: ahora, nombre: sql`${schema.categorias.nombre} || ' · borrada #' || ${schema.categorias.id}` })
+      .where(and(eq(schema.categorias.id, id), isNull(schema.categorias.borradoEn)))
+      .returning({ id: schema.categorias.id })
+    if (!categoria) return false
+    await tx
+      .update(schema.productos)
+      .set({ activo: false, borradoEn: ahora })
+      .where(and(eq(schema.productos.categoriaId, id), isNull(schema.productos.borradoEn)))
+    return true
+  })
+  refrescar()
+  return borrada ? { ok: true } : { ok: false, error: 'La categoría ya no existe.' }
 }
 
 /** Lista de ids sin repetidos (el orden en que quedaron en la pantalla). */
@@ -117,7 +146,7 @@ export async function ordenarCategorias(ids: unknown): Promise<ResultadoAccion> 
   if (!esListaDeIds(ids)) return { ok: false, error: 'Orden inválido.' }
 
   const guardado = await db.transaction(async (tx) => {
-    const actuales = await tx.select({ id: schema.categorias.id }).from(schema.categorias)
+    const actuales = await tx.select({ id: schema.categorias.id }).from(schema.categorias).where(isNull(schema.categorias.borradoEn))
     if (!mismosIds(ids, actuales.map((c) => c.id))) return false
     for (const [orden, id] of ids.entries()) {
       await tx.update(schema.categorias).set({ orden }).where(eq(schema.categorias.id, id))
@@ -150,7 +179,10 @@ export async function guardarProducto(entrada: unknown): Promise<ResultadoAccion
   if (!idValido(d.categoriaId)) return { ok: false, error: 'Elegí una categoría.' }
   if (typeof d.activo !== 'boolean') return { ok: false, error: 'Indicá si el producto está activo.' }
 
-  const [categoria] = await db.select({ id: schema.categorias.id }).from(schema.categorias).where(eq(schema.categorias.id, d.categoriaId))
+  const [categoria] = await db
+    .select({ id: schema.categorias.id })
+    .from(schema.categorias)
+    .where(and(eq(schema.categorias.id, d.categoriaId), isNull(schema.categorias.borradoEn)))
   if (!categoria) return { ok: false, error: 'La categoría elegida no existe.' }
 
   const id = d.id === undefined || d.id === null ? null : d.id
@@ -256,7 +288,7 @@ export async function guardarPlato(entrada: unknown): Promise<ResultadoAccion & 
   const [categoria] = await db
     .select({ id: schema.categorias.id })
     .from(schema.categorias)
-    .where(eq(schema.categorias.id, d.categoriaId))
+    .where(and(eq(schema.categorias.id, d.categoriaId), isNull(schema.categorias.borradoEn)))
   if (!categoria) return { ok: false, error: 'La categoría elegida no existe.' }
 
   // Imagen: vacía, la que ya tenía alguna variante o una de nuestra cuenta de Cloudinary

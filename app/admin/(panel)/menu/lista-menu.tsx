@@ -7,6 +7,7 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import {
   alternarCategoria,
   alternarProductos,
+  borrarCategoria,
   borrarProductos,
   crearCategoria,
   ordenarCategorias,
@@ -150,6 +151,7 @@ function TarjetaCategoria({ categoria, refElemento, arrastrando, asa, enCurso, e
   const [editando, setEditando] = useState<string | null>(null)
   // Plato al que se le tocó el tacho: pide confirmar antes de borrar
   const [aBorrar, setABorrar] = useState<number | null>(null)
+  const [borrandoCategoria, setBorrandoCategoria] = useState(false)
   // Cada hamburguesa con sus tamaños y su versión con panceta es un solo renglón. Se identifica por
   // el id de su primera variante; al ordenar se mueven todas juntas.
   const platos = agruparVariantes<ProductoAgrupable>(
@@ -204,28 +206,61 @@ function TarjetaCategoria({ categoria, refElemento, arrastrando, asa, enCurso, e
           </h2>
         )}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" disabled={enCurso} onClick={() => setEditando(categoria.nombre)}>
-            Renombrar
-          </Button>
-          <Button
-            size="sm"
-            disabled={enCurso}
-            onClick={() => ejecutar(() => alternarCategoria(categoria.id, !categoria.activa))}
-          >
-            {categoria.activa ? 'Ocultar' : 'Mostrar'}
-          </Button>
-          <Link
-            href={`/admin/menu/productos/nuevo?categoria=${categoria.id}`}
-            className={buttonVariants({ variant: 'default', size: 'sm' })}
-          >
-            <Plus strokeWidth={3} />
-            Producto
-          </Link>
-          <button {...asa}>
-            <Menu className="size-5" strokeWidth={2.75} aria-hidden="true" />
-          </button>
-        </div>
+        {borrandoCategoria ? (
+          <div role="group" aria-label={`Confirmar borrado de ${categoria.nombre}`} className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-bold">
+              ¿Borrar «{categoria.nombre}»
+              {categoria.productos.length > 0 &&
+                ` y ${platos.length === 1 ? 'su producto' : `sus ${platos.length} productos`}`}
+              ?
+            </span>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={enCurso}
+              onClick={() => ejecutar(() => borrarCategoria(categoria.id))}
+            >
+              <Trash2 />
+              Borrar todo
+            </Button>
+            <Button size="sm" variant="ghost" disabled={enCurso} onClick={() => setBorrandoCategoria(false)}>
+              No
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" disabled={enCurso} onClick={() => setEditando(categoria.nombre)}>
+              Renombrar
+            </Button>
+            <Button
+              size="sm"
+              disabled={enCurso}
+              onClick={() => ejecutar(() => alternarCategoria(categoria.id, !categoria.activa))}
+            >
+              {categoria.activa ? 'Ocultar' : 'Mostrar'}
+            </Button>
+            <Link
+              href={`/admin/menu/productos/nuevo?categoria=${categoria.id}`}
+              className={buttonVariants({ variant: 'default', size: 'sm' })}
+            >
+              <Plus strokeWidth={3} />
+              Producto
+            </Link>
+            <Button
+              size="icon-sm"
+              variant="destructive"
+              disabled={enCurso}
+              onClick={() => setBorrandoCategoria(true)}
+              aria-label={`Borrar la categoría ${categoria.nombre}`}
+              title="Borrar categoría"
+            >
+              <Trash2 />
+            </Button>
+            <button {...asa}>
+              <Menu className="size-5" strokeWidth={2.75} aria-hidden="true" />
+            </button>
+          </div>
+        )}
       </header>
 
       <p role="status" className="sr-only">

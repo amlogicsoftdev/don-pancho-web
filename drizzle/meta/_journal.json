@@ -50,6 +50,13 @@
       "when": 1791572584964,
       "tag": "0006_productos_borrado",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791573083550,
+      "tag": "0007_categorias_borrado",
+      "breakpoints": true
     }
   ]
 }
