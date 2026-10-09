@@ -3,13 +3,20 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Plus } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Plus } from 'lucide-react'
 import { Navbar } from '@/components/navbar'
 import { Footer } from '@/components/footer'
 import { CartDrawer } from '@/components/cart-drawer'
 import { formatPrice } from '@/lib/data'
 import { Category, Product, CategoryFilter } from '@/lib/types'
 import { TODAS } from '@/lib/menu/categoria'
+import {
+  agruparVariantes,
+  etiquetaTamano,
+  tamanosDe,
+  variantePara,
+  type GrupoMenu,
+} from '@/lib/menu/variantes'
 import { useCart } from '@/lib/cart'
 import { useMounted } from '@/hooks/use-mounted'
 import { SplitLines } from '@/components/split-lines'
@@ -56,6 +63,10 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   // Plato que señala el mouse y su fila (la foto se pega a la fila)
   const [hovered, setHovered] = useState<{ product: Product; fila: HTMLElement } | null>(null)
   const ocultarFoto = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Tamaño elegido en cada plato con variantes (por defecto, el más simple)
+  const [elegido, setElegido] = useState<Record<string, number | null>>({})
+  // Plato con el menú de adicionales abierto
+  const [adicionalesAbierto, setAdicionalesAbierto] = useState<string | null>(null)
 
   useEffect(() => {
     const nav = document.querySelector('header')
@@ -84,8 +95,18 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
       p.id !== featured?.id &&
       (isAll || p.category === activeCategory),
   )
-  const countFor = (category: CategoryFilter) =>
-    category === TODAS ? products.length : products.filter((p) => p.category === category).length
+  const gridGroups = agruparVariantes(gridProducts)
+  // Los adicionales (categoría «Adicionales») se ofrecen también dentro de cada hamburguesa
+  const adicionales = products.filter((p) => /^adicionales$/i.test(p.category))
+  const llevaAdicionales = (categoria: string) => /hamburguesa/i.test(categoria)
+  // Cada plato con variantes cuenta una sola vez
+  const countFor = (category: CategoryFilter) => {
+    const deLaCategoria = category === TODAS ? products : products.filter((p) => p.category === category)
+    return (
+      agruparVariantes(deLaCategoria.filter((p) => !esCombo(p.category))).length +
+      deLaCategoria.filter((p) => esCombo(p.category)).length
+    )
+  }
   const nothingToShow = !featured && gridProducts.length === 0 && comboProducts.length === 0
 
   /**
@@ -153,6 +174,14 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
       )
     },
   })
+
+  /** Cambia el tamaño de un plato; la foto que sigue al mouse pasa a la variante nueva. */
+  const elegirTamano = (grupo: GrupoMenu, tamano: number) => {
+    const actual = variantePara(grupo, elegido[grupo.clave])
+    const nueva = variantePara(grupo, tamano)
+    setElegido((e) => ({ ...e, [grupo.clave]: nueva.tamano }))
+    setHovered((h) => (h?.product.id === actual.product.id ? { product: nueva.product, fila: h.fila } : h))
+  }
 
   /** Botón cuadrado de agregar: cuando el producto ya está en el pedido se estira a −  n  + */
   const renderAdd = (product: Product) => (
@@ -321,12 +350,18 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                 </div>
               )}
               <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,460px),1fr))] gap-x-14">
-                {gridProducts.map((product, index) => (
+                {gridGroups.map((grupo, index) => {
+                  const actual = variantePara(grupo, elegido[grupo.clave])
+                  const product = actual.product
+                  const tamanos = tamanosDe(grupo)
+                  const conAdicionales = adicionales.length > 0 && llevaAdicionales(product.category)
+                  const adicionalesVisibles = adicionalesAbierto === grupo.clave
+                  return (
                   <div
-                    key={product.id}
+                    key={grupo.clave}
                     {...hoverProps(product)}
-                    style={{ '--i': index + 1 } as React.CSSProperties}
-                    className="menu-row grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4.5 gap-y-1.5 border-b border-pancho-black/20 py-5 [@media(hover:none)]:grid-cols-[minmax(0,1fr)_auto] [@media(hover:none)]:items-start [@media(hover:none)]:gap-x-4"
+                    style={{ '--i': index + 1, zIndex: adicionalesVisibles ? 10 : undefined } as React.CSSProperties}
+                    className="menu-row relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4.5 gap-y-1.5 border-b border-pancho-black/20 py-5 [@media(hover:none)]:grid-cols-[minmax(0,1fr)_auto] [@media(hover:none)]:items-start [@media(hover:none)]:gap-x-4"
                   >
                     {/* Sin mouse no hay foto que siga al puntero: va grande a la derecha de cada
                         plato, y el precio con el + pasa abajo de la descripción */}
@@ -339,7 +374,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                         una carta); el + va abajo, a la derecha, en un hueco que ya tiene el ancho de la caja
                         abierta. Así abrir el contador no corre ni acomoda el texto de la fila. */}
                     <div className="col-span-2 flex min-w-0 items-baseline gap-2.5 [@media(hover:none)]:col-span-1">
-                      <h3 className="font-heading text-[clamp(22px,2vw,26px)] leading-[1.05]">{product.name}</h3>
+                      <h3 className="font-heading text-[clamp(22px,2vw,26px)] leading-[1.05]">{grupo.variantes.length > 1 ? grupo.nombre : product.name}</h3>
                       {product.badge && (
                         <span className="flex-none -translate-y-0.75 bg-pancho-red-deep px-1.5 py-0.75 text-[9.5px] font-extrabold uppercase tracking-widest text-white">
                           {product.badge}
@@ -358,8 +393,63 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                       {renderAdd(product)}
                     </div>
                     <p className="text-[13px] font-medium leading-relaxed text-pancho-black/70">{product.description}</p>
+                    {(tamanos.length > 1 || conAdicionales) && (
+                      <div className="col-span-2 mt-1 flex flex-wrap items-center gap-2 [@media(hover:none)]:col-span-1">
+                        {tamanos.length > 1 && (
+                          <div role="group" aria-label={`Tamaño de ${grupo.nombre}`} className="flex">
+                            {tamanos.map((t) => (
+                              <button
+                                key={t}
+                                type="button"
+                                aria-pressed={actual.tamano === t}
+                                onClick={() => elegirTamano(grupo, t)}
+                                className={`-ml-0.5 cursor-pointer border-2 border-pancho-black px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.06em] transition-colors first:ml-0 ${
+                                  actual.tamano === t
+                                    ? 'bg-pancho-orange text-pancho-black'
+                                    : 'text-pancho-black/70 hover:text-pancho-black'
+                                }`}
+                              >
+                                {etiquetaTamano(t)}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {conAdicionales && (
+                          <button
+                            type="button"
+                            aria-expanded={adicionalesVisibles}
+                            onClick={() => setAdicionalesAbierto(adicionalesVisibles ? null : grupo.clave)}
+                            className={`inline-flex cursor-pointer items-center gap-1.5 border-2 border-pancho-black px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.06em] transition-colors ${
+                              adicionalesVisibles
+                                ? 'bg-pancho-black text-white'
+                                : 'text-pancho-black/70 hover:text-pancho-black'
+                            }`}
+                          >
+                            Adicionales
+                            <ChevronDown className={`size-3.5 stroke-3 transition-transform ${adicionalesVisibles ? 'rotate-180' : ''}`} />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {conAdicionales && adicionalesVisibles && (
+                      <ul className="col-span-2 mt-1 flex flex-col border border-pancho-black/15 bg-white bg-[url('/images/fondo-papel-blanco.webp')] bg-cover bg-center px-3.5 py-1.5 [@media(hover:hover)]:absolute [@media(hover:hover)]:inset-x-0 [@media(hover:hover)]:top-full [@media(hover:hover)]:z-20 [@media(hover:hover)]:mt-0 [@media(hover:hover)]:shadow-[0_10px_24px_rgba(0,0,0,0.12)]">
+                        {adicionales.map((extra) => (
+                          <li
+                            key={extra.id}
+                            className="flex items-center gap-3 border-b border-pancho-black/10 py-2 last:border-b-0"
+                          >
+                            <span className="min-w-0 flex-1 text-[13px] font-semibold leading-tight">{extra.name}</span>
+                            <span className="flex-none font-heading text-lg leading-none text-pancho-red-deep">
+                              +{formatPrice(extra.price)}
+                            </span>
+                            {renderAdd(extra)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
