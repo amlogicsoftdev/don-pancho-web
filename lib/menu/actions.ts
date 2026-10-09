@@ -395,7 +395,7 @@ async function guardarClaves(pares: readonly (readonly [string, string])[]) {
   revalidatePath('/admin/ajustes')
 }
 
-/** Nombre, WhatsApp, dirección, horario y redes: los ve el cliente en todo el sitio. */
+/** Nombre, WhatsApp, dirección, horario e Instagram: los ve el cliente en todo el sitio. */
 export async function guardarDatosLocal(entrada: unknown): Promise<ResultadoAccion> {
   await requerirDueno()
   if (typeof entrada !== 'object' || entrada === null) return { ok: false, error: 'Los datos no son válidos.' }
@@ -412,11 +412,9 @@ export async function guardarDatosLocal(entrada: unknown): Promise<ResultadoAcci
   }
   if (!direccion) return { ok: false, error: 'Ingresá la dirección del local (máximo 120 caracteres).' }
   if (!horario) return { ok: false, error: 'Ingresá el horario de atención (máximo 80 caracteres).' }
-  const redes = { instagram: urlDeRed(d.instagram), facebook: urlDeRed(d.facebook), tiktok: urlDeRed(d.tiktok) }
-  for (const [red, valor] of Object.entries(redes)) {
-    if (valor === null) {
-      return { ok: false, error: `El link de ${red} debe empezar con https:// (o dejalo vacío si no tienen).` }
-    }
+  const instagram = urlDeRed(d.instagram)
+  if (instagram === null) {
+    return { ok: false, error: 'El link de Instagram debe empezar con https:// (o dejalo vacío si no tienen).' }
   }
 
   await guardarClaves([
@@ -424,9 +422,7 @@ export async function guardarDatosLocal(entrada: unknown): Promise<ResultadoAcci
     [CLAVES_LOCAL.whatsapp, whatsapp],
     [CLAVES_LOCAL.direccion, direccion],
     [CLAVES_LOCAL.horario, horario],
-    [CLAVES_LOCAL.instagram, redes.instagram ?? ''],
-    [CLAVES_LOCAL.facebook, redes.facebook ?? ''],
-    [CLAVES_LOCAL.tiktok, redes.tiktok ?? ''],
+    [CLAVES_LOCAL.instagram, instagram],
   ])
   // Se muestran en todo el sitio (pie, carrito, seguimiento) y en mensajes y comandas
   revalidatePath('/', 'layout')

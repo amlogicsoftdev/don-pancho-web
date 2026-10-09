@@ -13,8 +13,6 @@ export const SITE_CONFIG: SiteConfig = {
   schedule: 'Mar — Dom · 20:30 a 00:10',
   socialLinks: {
     instagram: 'https://instagram.com',
-    facebook: 'https://facebook.com',
-    tiktok: 'https://tiktok.com',
   },
 }
 

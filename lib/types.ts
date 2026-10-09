@@ -46,7 +46,5 @@ export interface SiteConfig {
   schedule: string
   socialLinks: {
     instagram: string
-    facebook: string
-    tiktok: string
   }
 }
