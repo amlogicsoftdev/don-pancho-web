@@ -83,7 +83,7 @@ export function FormularioCierre({ dia, ventasEfectivo, gastosEfectivo, cierraCo
           className={`pn-alert ${diferencia === 0 ? 'pn-alert--ok' : diferencia > 0 ? 'pn-alert--warn' : 'pn-alert--error'}`}
         >
           {diferencia === 0
-            ? 'La caja cuadra: no hay diferencia.'
+            ? 'Da justo: no falta ni sobra nada.'
             : diferencia > 0
               ? `Sobran ${formatearPrecio(diferencia)}.`
               : `Faltan ${formatearPrecio(-diferencia)}.`}
