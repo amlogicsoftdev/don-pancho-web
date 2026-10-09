@@ -2,8 +2,9 @@
 
 import { Minus, Plus } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { agruparVariantes, etiquetaTamano, tamanosDe, variantePara, versionConPanceta, type GrupoMenu } from '@/lib/menu/variantes'
 import { registrarVentaMostrador } from '@/lib/orders/actions'
 import { descuentoDeLinea, esPorcentajeValido, formatearNumero, formatearPrecio } from '@/lib/orders/estados'
 import { CuadroConfirmar } from '../pedidos/cuadro-confirmar'
@@ -12,6 +13,20 @@ interface Categoria {
   id: number
   nombre: string
   productos: { id: number; nombre: string; precio: number }[]
+}
+
+/** Producto de la carta listo para agrupar sus variantes (tamaño y panceta). */
+interface ProductoVenta {
+  id: number
+  name: string
+  category: string
+  precio: number
+}
+
+/** Elección de un plato con variantes: tamaño y si va con panceta. */
+interface Eleccion {
+  tamano?: number | null
+  panceta?: boolean
 }
 
 interface Registrada {
@@ -39,6 +54,34 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
   const [confirmando, setConfirmando] = useState(false)
   // La venta se guardó en este cuadro: al cerrarlo se limpia el formulario para la próxima
   const [guardadaEnCuadro, setGuardadaEnCuadro] = useState(false)
+  // Categoría a la vista (null = todas) y tamaño / panceta elegidos en cada plato
+  const [filtro, setFiltro] = useState<number | null>(null)
+  const [elecciones, setElecciones] = useState<Record<string, Eleccion>>({})
+  // Alto de la barra del panel: los filtros quedan pegados justo debajo al scrollear
+  const [altoBarra, setAltoBarra] = useState(0)
+
+  useEffect(() => {
+    const barra = document.querySelector<HTMLElement>('.pn-bar')
+    if (!barra) return
+    const medir = () => setAltoBarra(barra.offsetHeight)
+    medir()
+    const observador = new ResizeObserver(medir)
+    observador.observe(barra)
+    return () => observador.disconnect()
+  }, [])
+
+  // Cada hamburguesa es un solo renglón: el tamaño y la panceta se eligen con botones, como en la carta
+  const grupos = menu.map((c) => ({
+    ...c,
+    platos: agruparVariantes<ProductoVenta>(
+      c.productos.map((p) => ({ id: p.id, name: p.nombre, category: c.nombre, precio: p.precio })),
+    ),
+  }))
+  const aLaVista = filtro === null ? grupos : grupos.filter((c) => c.id === filtro)
+
+  function elegir(grupo: GrupoMenu<ProductoVenta>, cambio: Eleccion) {
+    setElecciones((actual) => ({ ...actual, [grupo.clave]: { ...actual[grupo.clave], ...cambio } }))
+  }
 
   const productos = menu.flatMap((c) => c.productos)
   const lineas = productos.filter((p) => (cantidades[p.id] ?? 0) > 0)
@@ -120,25 +163,54 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
       {/* La carta: se suma o se quita con los botones de cada renglón */}
       <div className="space-y-6">
         {menu.length === 0 && <p className="pn-card pn-muted p-6 font-semibold">No hay productos activos en el menú.</p>}
-        {menu.map((categoria) => (
+
+        {/* Filtros por categoría, pegados debajo de la barra: así no hay que recorrer toda la carta */}
+        {menu.length > 1 && (
+          <nav
+            aria-label="Filtrar por categoría"
+            style={{ top: altoBarra }}
+            className="sticky z-10 -mx-1 flex gap-2 overflow-x-auto bg-[rgb(255_238_214/0.94)] px-1 py-2 backdrop-blur-md"
+          >
+            {[{ id: null, nombre: 'Todas' }, ...menu].map((c) => (
+              <button
+                key={c.id ?? 'todas'}
+                type="button"
+                onClick={() => setFiltro(c.id)}
+                aria-pressed={filtro === c.id}
+                className="pn-option flex-none"
+              >
+                {c.nombre}
+              </button>
+            ))}
+          </nav>
+        )}
+
+        {aLaVista.map((categoria) => (
           <div key={categoria.id} className="pn-card p-5 sm:p-6">
             <h2 className="text-2xl leading-none">{categoria.nombre}</h2>
             <ul className="pn-rows mt-3">
-              {categoria.productos.map((p) => {
+              {categoria.platos.map((grupo) => {
+                const eleccion = elecciones[grupo.clave] ?? {}
+                const actual = variantePara(grupo, eleccion.tamano, eleccion.panceta ?? false)
+                const p = actual.product
+                const tamanos = tamanosDe(grupo)
+                const panceta = versionConPanceta(grupo, actual.tamano)
                 const cantidad = cantidades[p.id] ?? 0
+                // Lo que ya hay en la venta de este plato, sumando todas sus variantes
+                const delPlato = grupo.variantes.reduce((suma, v) => suma + (cantidades[v.product.id] ?? 0), 0)
                 return (
-                  <li key={p.id} className="flex items-center justify-between gap-3 py-2.5">
-                    <div className="min-w-0">
-                      <p className="truncate text-base leading-snug font-bold">{p.nombre}</p>
-                      <p className="pn-muted text-sm font-semibold tabular-nums">{formatearPrecio(p.precio)}</p>
+                  <li key={grupo.clave} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-2.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-base leading-snug font-bold">
+                        {grupo.variantes.length > 1 ? grupo.nombre : p.name}
+                      </p>
+                      <p className="pn-muted text-sm font-semibold tabular-nums">
+                        {formatearPrecio(p.precio)}
+                        {delPlato > cantidad && ` · ${delPlato} en la venta`}
+                      </p>
                     </div>
                     <div className="flex flex-none items-center gap-1.5">
-                      <Button
-                        size="icon"
-                        onClick={() => cambiar(p.id, -1)}
-                        disabled={cantidad === 0}
-                        aria-label={`Quitar ${p.nombre}`}
-                      >
+                      <Button size="icon" onClick={() => cambiar(p.id, -1)} disabled={cantidad === 0} aria-label={`Quitar ${p.name}`}>
                         <Minus strokeWidth={3} />
                       </Button>
                       <span
@@ -146,10 +218,41 @@ export function VentaMostrador({ menu }: { menu: Categoria[] }) {
                       >
                         {cantidad}
                       </span>
-                      <Button size="icon" onClick={() => cambiar(p.id, 1)} aria-label={`Agregar ${p.nombre}`}>
+                      <Button size="icon" onClick={() => cambiar(p.id, 1)} aria-label={`Agregar ${p.name}`}>
                         <Plus strokeWidth={3} />
                       </Button>
                     </div>
+                    {(tamanos.length > 1 || panceta) && (
+                      <div className="flex w-full flex-wrap items-center gap-2">
+                        {tamanos.length > 1 && (
+                          <div role="group" aria-label={`Tamaño de ${grupo.nombre}`} className="pn-segmento">
+                            {tamanos.map((t) => (
+                              <button
+                                key={t}
+                                type="button"
+                                onClick={() => elegir(grupo, { tamano: t })}
+                                aria-pressed={actual.tamano === t}
+                                className="pn-option"
+                              >
+                                {etiquetaTamano(t)}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {panceta && (
+                          <div className="pn-segmento">
+                            <button
+                              type="button"
+                              onClick={() => elegir(grupo, { tamano: actual.tamano, panceta: !actual.conPanceta })}
+                              aria-pressed={actual.conPanceta}
+                              className="pn-option"
+                            >
+                              Con panceta
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </li>
                 )
               })}

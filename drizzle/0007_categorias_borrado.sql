@@ -1,0 +1,1 @@
+ALTER TABLE "categorias" ADD COLUMN "borrado_en" timestamp with time zone;

@@ -1,13 +1,10 @@
 'use client'
 
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
-import { guardarProducto, pedirFirmaSubida } from '@/lib/menu/actions'
-
-const FORMATOS = ['image/jpeg', 'image/png', 'image/webp']
-const MAX_MB = 5
+import { guardarProducto } from '@/lib/menu/actions'
+import { CampoImagen } from '../../campo-imagen'
 
 interface Props {
   categorias: { id: number; nombre: string }[]
@@ -30,41 +27,6 @@ export function FormularioProducto({ categorias, cloudinaryListo, inicial }: Pro
   const [subiendo, setSubiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [enCurso, iniciar] = useTransition()
-
-  async function subirImagen(archivo: File) {
-    setError(null)
-    if (!FORMATOS.includes(archivo.type)) return setError('La imagen tiene que ser JPG, PNG o WebP.')
-    if (archivo.size > MAX_MB * 1024 * 1024) return setError(`La imagen pesa más de ${MAX_MB} MB. Probá con una más liviana.`)
-
-    setSubiendo(true)
-    try {
-      // La firma la genera el servidor (solo el dueño puede pedirla); el archivo va directo a Cloudinary.
-      const firma = await pedirFirmaSubida()
-      if (!firma.ok) return setError(firma.error)
-
-      const datos = new FormData()
-      datos.append('file', archivo)
-      datos.append('api_key', firma.firma.apiKey)
-      datos.append('timestamp', String(firma.firma.timestamp))
-      datos.append('folder', firma.firma.folder)
-      datos.append('allowed_formats', firma.firma.allowedFormats)
-      datos.append('signature', firma.firma.signature)
-
-      const respuesta = await fetch(`https://api.cloudinary.com/v1_1/${firma.firma.cloudName}/image/upload`, {
-        method: 'POST',
-        body: datos,
-      })
-      const resultado = await respuesta.json().catch(() => ({}))
-      if (!respuesta.ok || typeof resultado.secure_url !== 'string') {
-        return setError(resultado?.error?.message ?? 'No se pudo subir la imagen. Probá de nuevo.')
-      }
-      setImagenUrl(resultado.secure_url)
-    } catch {
-      setError('No se pudo subir la imagen. Revisá tu conexión.')
-    } finally {
-      setSubiendo(false)
-    }
-  }
 
   function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
@@ -133,51 +95,13 @@ export function FormularioProducto({ categorias, cloudinaryListo, inicial }: Pro
         </label>
       </div>
 
-      {/* Imagen: la vista previa a la izquierda y, al lado, cómo cambiarla */}
-      <div className="border-y border-pancho-black/10 py-5">
-        <span className="pn-label">Imagen</span>
-        <div className="flex flex-wrap items-start gap-5">
-          {imagenUrl ? (
-            <div className="relative size-36 flex-none overflow-hidden border border-pancho-black/15 bg-pancho-paper">
-              <Image src={imagenUrl} alt="Vista previa de la imagen del producto" fill sizes="144px" className="object-cover" />
-            </div>
-          ) : (
-            <div className="pn-muted grid size-36 flex-none place-items-center border border-dashed border-pancho-black/25 p-3 text-center text-xs font-semibold">
-              Sin imagen: en la carta se muestra el logo.
-            </div>
-          )}
-
-          <div className="min-w-56 flex-1 space-y-3 text-sm">
-            {cloudinaryListo ? (
-              <div className="flex flex-wrap items-center gap-3">
-                <input
-                  type="file"
-                  accept={FORMATOS.join(',')}
-                  disabled={subiendo}
-                  aria-label="Elegir imagen del producto"
-                  onChange={(e) => {
-                    const archivo = e.target.files?.[0]
-                    if (archivo) void subirImagen(archivo)
-                    e.target.value = ''
-                  }}
-                  className="max-w-full text-xs font-semibold file:mr-3 file:h-10 file:cursor-pointer file:rounded-xs file:border file:border-solid file:border-pancho-black/25 file:bg-white file:px-3 file:font-sans file:text-[0.6875rem] file:font-extrabold file:tracking-[0.06em] file:text-pancho-black file:uppercase"
-                />
-                {subiendo && <span className="pn-muted font-semibold">Subiendo…</span>}
-                {imagenUrl && !subiendo && (
-                  <Button type="button" variant="ghost" size="sm" onClick={() => setImagenUrl('')}>
-                    Quitar imagen
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <p className="pn-alert pn-alert--warn">
-                La subida de imágenes todavía no está configurada (faltan las claves de Cloudinary en el servidor).
-              </p>
-            )}
-            <p className="pn-muted text-xs font-medium">JPG, PNG o WebP, hasta {MAX_MB} MB. Se ve mejor una foto cuadrada.</p>
-          </div>
-        </div>
-      </div>
+      <CampoImagen
+        url={imagenUrl}
+        onCambiar={setImagenUrl}
+        onSubiendo={setSubiendo}
+        onError={setError}
+        cloudinaryListo={cloudinaryListo}
+      />
 
       <label className="flex cursor-pointer items-center gap-3 text-sm font-bold">
         <input type="checkbox" name="activo" defaultChecked={inicial.activo} className="pn-check" />

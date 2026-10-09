@@ -9,15 +9,16 @@ import { Footer } from '@/components/footer'
 import { CartDrawer } from '@/components/cart-drawer'
 import { formatPrice } from '@/lib/data'
 import { Category, Product, CategoryFilter } from '@/lib/types'
-import { TODAS } from '@/lib/menu/categoria'
+import { esCategoriaAdicionales as esAdicionales, llevaAdicionales, TODAS } from '@/lib/menu/categoria'
 import {
   agruparVariantes,
   etiquetaTamano,
   tamanosDe,
   variantePara,
+  versionConPanceta,
   type GrupoMenu,
 } from '@/lib/menu/variantes'
-import { useCart } from '@/lib/cart'
+import { claveLinea, useCart } from '@/lib/cart'
 import { useMounted } from '@/hooks/use-mounted'
 import { SplitLines } from '@/components/split-lines'
 import { FotoFlotante } from '@/components/foto-flotante'
@@ -65,8 +66,35 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   const ocultarFoto = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Tamaño elegido en cada plato con variantes (por defecto, el más simple)
   const [elegido, setElegido] = useState<Record<string, number | null>>({})
+  // Platos en los que se eligió la versión con panceta
+  const [conPanceta, setConPanceta] = useState<Record<string, boolean>>({})
+  // Adicionales elegidos en un plato antes de sumar la hamburguesa: plato → id del adicional → cantidad
+  const [extrasPrevios, setExtrasPrevios] = useState<Record<string, Record<number, number>>>({})
   // Plato con el menú de adicionales abierto
   const [adicionalesAbierto, setAdicionalesAbierto] = useState<string | null>(null)
+
+  // El menú de adicionales se cierra al tocar fuera del plato o con Escape
+  useEffect(() => {
+    if (!adicionalesAbierto) return
+    const alTocar = (evento: PointerEvent) => {
+      const fila = (evento.target as Element | null)?.closest?.('[data-grupo]')
+      if (fila?.getAttribute('data-grupo') !== adicionalesAbierto) setAdicionalesAbierto(null)
+    }
+    const alTeclear = (evento: KeyboardEvent) => {
+      if (evento.key !== 'Escape') return
+      // El foco vuelve al botón que abrió el menú
+      document
+        .querySelector<HTMLElement>(`[data-grupo="${CSS.escape(adicionalesAbierto)}"] [aria-expanded]`)
+        ?.focus()
+      setAdicionalesAbierto(null)
+    }
+    document.addEventListener('pointerdown', alTocar)
+    document.addEventListener('keydown', alTeclear)
+    return () => {
+      document.removeEventListener('pointerdown', alTocar)
+      document.removeEventListener('keydown', alTeclear)
+    }
+  }, [adicionalesAbierto])
 
   useEffect(() => {
     const nav = document.querySelector('header')
@@ -80,8 +108,10 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     return () => observer.disconnect()
   }, [])
 
-  const filterOptions: CategoryFilter[] = [TODAS, ...categories.map((c) => c.name)]
-  const quantityOf = (id: number) => cart.find((item) => item.id === id)?.quantity ?? 0
+  const filterOptions: CategoryFilter[] = [TODAS, ...categories.map((c) => c.name).filter((c) => !esAdicionales(c))]
+  /** Unidades en el carrito; con `para`, las de ese adicional en esa hamburguesa. */
+  const quantityOf = (id: number, para?: number) =>
+    cart.find((item) => item.key === claveLinea(id, para))?.quantity ?? 0
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
   const isAll = activeCategory === TODAS
@@ -89,19 +119,28 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   const comboProducts = products.filter(
     (p) => esCombo(p.category) && (isAll || p.category === activeCategory),
   )
+  // El destacado sale de la lista solo si es un plato suelto. Si tiene otros tamaños, queda en su
+  // plato para que el selector no pierda esa variante.
+  const destacadoConVariantes =
+    !!featured &&
+    agruparVariantes(products.filter((p) => p.category === featured.category)).some(
+      (g) => g.variantes.length > 1 && g.variantes.some((v) => v.product.id === featured.id),
+    )
   const gridProducts = products.filter(
     (p) =>
       !esCombo(p.category) &&
-      p.id !== featured?.id &&
+      !esAdicionales(p.category) &&
+      (destacadoConVariantes || p.id !== featured?.id) &&
       (isAll || p.category === activeCategory),
   )
   const gridGroups = agruparVariantes(gridProducts)
-  // Los adicionales (categoría «Adicionales») se ofrecen también dentro de cada hamburguesa
-  const adicionales = products.filter((p) => /^adicionales$/i.test(p.category))
-  const llevaAdicionales = (categoria: string) => /hamburguesa/i.test(categoria)
+  // Los adicionales (categoría «Adicionales») se ofrecen dentro de cada hamburguesa
+  const adicionales = products.filter((p) => esAdicionales(p.category))
   // Cada plato con variantes cuenta una sola vez
   const countFor = (category: CategoryFilter) => {
-    const deLaCategoria = category === TODAS ? products : products.filter((p) => p.category === category)
+    const deLaCategoria = (category === TODAS ? products : products.filter((p) => p.category === category)).filter(
+      (p) => !esAdicionales(p.category),
+    )
     return (
       agruparVariantes(deLaCategoria.filter((p) => !esCombo(p.category))).length +
       deLaCategoria.filter((p) => esCombo(p.category)).length
@@ -143,6 +182,35 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     return () => cancelAnimationFrame(cuadro)
   }, [activeCategory, volverAlPrincipioDeLaLista])
 
+  // Carril de filtros: si hay más categorías a cada costado (para esfumar ese borde)
+  const filtrosRef = useRef<HTMLDivElement>(null)
+  const [bordesFiltros, setBordesFiltros] = useState({ izq: false, der: false })
+  const medirBordesFiltros = useCallback(() => {
+    const carril = filtrosRef.current
+    if (!carril) return
+    const izq = carril.scrollLeft > 4
+    const der = carril.scrollLeft + carril.clientWidth < carril.scrollWidth - 4
+    setBordesFiltros((b) => (b.izq === izq && b.der === der ? b : { izq, der }))
+  }, [])
+
+  useEffect(() => {
+    const carril = filtrosRef.current
+    if (!carril) return
+    medirBordesFiltros()
+    const observador = new ResizeObserver(medirBordesFiltros)
+    observador.observe(carril)
+    return () => observador.disconnect()
+  }, [medirBordesFiltros])
+
+  // La categoría elegida queda centrada en el carril (solo de costado: la página no se mueve)
+  useEffect(() => {
+    const carril = filtrosRef.current
+    const elegido = carril?.querySelector<HTMLElement>('[aria-selected="true"]')
+    if (!carril || !elegido) return
+    const izquierda = elegido.offsetLeft - (carril.clientWidth - elegido.offsetWidth) / 2
+    carril.scrollTo({ left: Math.max(0, izquierda), behavior: 'smooth' })
+  }, [activeCategory])
+
   const handleCategoryClick = (category: CategoryFilter) => {
     // El filtro que ya está elegido no cambia la lista: sirve para volver arriba de ella, con
     // desplazamiento suave (no hay nada que recortar)
@@ -175,21 +243,46 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     },
   })
 
-  /** Cambia el tamaño de un plato; la foto que sigue al mouse pasa a la variante nueva. */
-  const elegirTamano = (grupo: GrupoMenu, tamano: number) => {
-    const actual = variantePara(grupo, elegido[grupo.clave])
-    const nueva = variantePara(grupo, tamano)
+  /** Cambia el tamaño o la panceta de un plato; la foto que sigue al mouse pasa a la variante nueva. */
+  const elegirVariante = (grupo: GrupoMenu, cambio: { tamano?: number; panceta?: boolean }) => {
+    const panceta = conPanceta[grupo.clave] ?? false
+    const actual = variantePara(grupo, elegido[grupo.clave], panceta)
+    const nueva = variantePara(grupo, cambio.tamano ?? actual.tamano, cambio.panceta ?? panceta)
     setElegido((e) => ({ ...e, [grupo.clave]: nueva.tamano }))
+    if (cambio.panceta !== undefined) setConPanceta((c) => ({ ...c, [grupo.clave]: cambio.panceta! }))
     setHovered((h) => (h?.product.id === actual.product.id ? { product: nueva.product, fila: h.fila } : h))
   }
 
-  /** Botón cuadrado de agregar: cuando el producto ya está en el pedido se estira a −  n  + */
-  const renderAdd = (product: Product) => (
+  /** Cambia la cantidad de un adicional elegido antes de sumar la hamburguesa. */
+  const cambiarExtraPrevio = (clave: string, extraId: number, delta: number) =>
+    setExtrasPrevios((todos) => {
+      const delPlato = { ...todos[clave] }
+      const cantidad = Math.max(0, Math.min(50, (delPlato[extraId] ?? 0) + delta))
+      if (cantidad) delPlato[extraId] = cantidad
+      else delete delPlato[extraId]
+      return { ...todos, [clave]: delPlato }
+    })
+
+  /** Suma la hamburguesa y, atados a ella, los adicionales que se eligieron antes. */
+  const agregarConExtras = (clave: string, product: Product) => {
+    handleAddToCart(product)
+    for (const [id, cantidad] of Object.entries(extrasPrevios[clave] ?? {})) {
+      const extra = adicionales.find((a) => a.id === Number(id))
+      if (extra) for (let i = 0; i < cantidad; i++) handleAddToCart(extra, product.id)
+    }
+    setExtrasPrevios((todos) => ({ ...todos, [clave]: {} }))
+  }
+
+  /**
+   * Botón cuadrado de agregar: cuando el producto ya está en el pedido se estira a −  n  +.
+   * Con `para`, el producto es un adicional de esa hamburguesa y va en su propia línea.
+   */
+  const renderAdd = (product: Product, para?: Product) => (
     <ControlCantidad
-      nombre={product.name}
-      cantidad={quantityOf(product.id)}
-      onAgregar={() => handleAddToCart(product)}
-      onCambiar={(delta) => handleUpdateQuantity(product.id, delta)}
+      nombre={para ? `${product.name} para ${para.name}` : product.name}
+      cantidad={quantityOf(product.id, para?.id)}
+      onAgregar={() => handleAddToCart(product, para?.id)}
+      onCambiar={(delta) => handleUpdateQuantity(claveLinea(product.id, para?.id), delta)}
     />
   )
 
@@ -266,10 +359,16 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
           style={{ top: navHeight }}
           className="menu-filtros sticky z-20 mt-6 border-b border-pancho-black/20 bg-pancho-paper/95 backdrop-blur-sm sm:mt-10"
         >
+          {/* Un solo renglón que se desliza de costado: en el celular no tapa media pantalla. Los bordes
+              se esfuman cuando hay más categorías para ver de ese lado */}
           <div
+            ref={filtrosRef}
             role="tablist"
             aria-label="Categorías del menú"
-            className="mx-auto flex max-w-300 flex-wrap px-4 sm:px-6 lg:px-10"
+            onScroll={medirBordesFiltros}
+            data-mas-izq={bordesFiltros.izq || undefined}
+            data-mas-der={bordesFiltros.der || undefined}
+            className="filtros-carril mx-auto flex max-w-300 overflow-x-auto px-4 sm:px-6 lg:px-10"
           >
             {filterOptions.map((category) => {
               const isActive = activeCategory === category
@@ -351,14 +450,36 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
               )}
               <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,460px),1fr))] gap-x-14">
                 {gridGroups.map((grupo, index) => {
-                  const actual = variantePara(grupo, elegido[grupo.clave])
+                  const actual = variantePara(grupo, elegido[grupo.clave], conPanceta[grupo.clave])
                   const product = actual.product
                   const tamanos = tamanosDe(grupo)
-                  const conAdicionales = adicionales.length > 0 && llevaAdicionales(product.category)
+                  // La panceta se elige con su botón y se cobra con el precio de la versión «(con panceta)»
+                  const panceta = versionConPanceta(grupo, actual.tamano)
+                  // La descripción es la del plato común: la de la versión con panceta repite «y panceta»
+                  const sinPanceta = variantePara(grupo, actual.tamano, false).product
+                  const extrasDelPlato = panceta
+                    ? adicionales.filter((a) => !/panceta.*hamburguesa/i.test(a.name))
+                    : adicionales
+                  const conAdicionales = extrasDelPlato.length > 0 && llevaAdicionales(product.category)
                   const adicionalesVisibles = adicionalesAbierto === grupo.clave
+                  // Mientras la hamburguesa no está en el pedido, los adicionales se van eligiendo en el
+                  // plato y suman al precio (como el tamaño); al tocar el + entran con ella.
+                  const enPedido = quantityOf(product.id) > 0
+                  const cantidadExtra = (extra: Product) =>
+                    enPedido ? quantityOf(extra.id, product.id) : (extrasPrevios[grupo.clave]?.[extra.id] ?? 0)
+                  const precioPlato =
+                    product.price + extrasDelPlato.reduce((suma, extra) => suma + extra.price * cantidadExtra(extra), 0)
+                  const nombrePlato = [
+                    grupo.variantes.length > 1 ? grupo.nombre : product.name,
+                    tamanos.length > 1 && actual.tamano ? etiquetaTamano(actual.tamano) : null,
+                    actual.conPanceta ? 'con panceta' : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' ')
                   return (
                   <div
                     key={grupo.clave}
+                    data-grupo={grupo.clave}
                     {...hoverProps(product)}
                     style={{ '--i': index + 1, zIndex: adicionalesVisibles ? 10 : undefined } as React.CSSProperties}
                     className="menu-row relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4.5 gap-y-1.5 border-b border-pancho-black/20 py-5 [@media(hover:none)]:grid-cols-[minmax(0,1fr)_auto] [@media(hover:none)]:items-start [@media(hover:none)]:gap-x-4"
@@ -382,18 +503,23 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                       )}
                       <span className="min-w-4 flex-1 -translate-y-1.25 border-b-2 border-dotted border-pancho-black/35" />
                       <span className="hidden flex-none font-heading text-[26px] leading-none text-pancho-red-deep [@media(hover:hover)]:inline">
-                        {formatPrice(product.price)}
+                        {formatPrice(precioPlato)}
                       </span>
                     </div>
                     <div className="col-start-2 row-start-2 flex items-center justify-self-end gap-3.5 [@media(hover:none)]:order-last [@media(hover:none)]:col-auto [@media(hover:none)]:row-auto [@media(hover:none)]:mt-1.5 [@media(hover:none)]:justify-self-auto">
                       {/* El precio de esta línea es solo para pantallas táctiles: con mouse va en el título */}
                       <span className="font-heading text-[26px] leading-none text-pancho-red-deep [@media(hover:hover)]:hidden">
-                        {formatPrice(product.price)}
+                        {formatPrice(precioPlato)}
                       </span>
-                      {renderAdd(product)}
+                      <ControlCantidad
+                        nombre={product.name}
+                        cantidad={quantityOf(product.id)}
+                        onAgregar={() => agregarConExtras(grupo.clave, product)}
+                        onCambiar={(delta) => handleUpdateQuantity(claveLinea(product.id), delta)}
+                      />
                     </div>
-                    <p className="text-[13px] font-medium leading-relaxed text-pancho-black/70">{product.description}</p>
-                    {(tamanos.length > 1 || conAdicionales) && (
+                    <p className="text-[13px] font-medium leading-relaxed text-pancho-black/70">{sinPanceta.description}</p>
+                    {(tamanos.length > 1 || panceta || conAdicionales) && (
                       <div className="col-span-2 mt-1 flex flex-wrap items-center gap-2 [@media(hover:none)]:col-span-1">
                         {tamanos.length > 1 && (
                           <div role="group" aria-label={`Tamaño de ${grupo.nombre}`} className="flex">
@@ -402,28 +528,30 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                                 key={t}
                                 type="button"
                                 aria-pressed={actual.tamano === t}
-                                onClick={() => elegirTamano(grupo, t)}
-                                className={`-ml-0.5 cursor-pointer border-2 border-pancho-black px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.06em] transition-colors first:ml-0 ${
-                                  actual.tamano === t
-                                    ? 'bg-pancho-orange text-pancho-black'
-                                    : 'text-pancho-black/70 hover:text-pancho-black'
-                                }`}
+                                onClick={() => elegirVariante(grupo, { tamano: t })}
+                                className="opcion-plato -ml-px first:ml-0"
                               >
                                 {etiquetaTamano(t)}
                               </button>
                             ))}
                           </div>
                         )}
+                        {panceta && (
+                          <button
+                            type="button"
+                            aria-pressed={actual.conPanceta}
+                            onClick={() => elegirVariante(grupo, { panceta: !actual.conPanceta })}
+                            className="opcion-plato"
+                          >
+                            Con panceta
+                          </button>
+                        )}
                         {conAdicionales && (
                           <button
                             type="button"
                             aria-expanded={adicionalesVisibles}
                             onClick={() => setAdicionalesAbierto(adicionalesVisibles ? null : grupo.clave)}
-                            className={`inline-flex cursor-pointer items-center gap-1.5 border-2 border-pancho-black px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.06em] transition-colors ${
-                              adicionalesVisibles
-                                ? 'bg-pancho-black text-white'
-                                : 'text-pancho-black/70 hover:text-pancho-black'
-                            }`}
+                            className="opcion-plato inline-flex items-center gap-1.5"
                           >
                             Adicionales
                             <ChevronDown className={`size-3.5 stroke-3 transition-transform ${adicionalesVisibles ? 'rotate-180' : ''}`} />
@@ -433,7 +561,10 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                     )}
                     {conAdicionales && adicionalesVisibles && (
                       <ul className="col-span-2 mt-1 flex flex-col border border-pancho-black/15 bg-white bg-[url('/images/fondo-papel-blanco.webp')] bg-cover bg-center px-3.5 py-1.5 [@media(hover:hover)]:absolute [@media(hover:hover)]:inset-x-0 [@media(hover:hover)]:top-full [@media(hover:hover)]:z-20 [@media(hover:hover)]:mt-0 [@media(hover:hover)]:shadow-[0_10px_24px_rgba(0,0,0,0.12)]">
-                        {adicionales.map((extra) => (
+                        <li className="pt-1 pb-1.5 text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-pancho-black/55">
+                          Para tu {nombrePlato}
+                        </li>
+                        {extrasDelPlato.map((extra) => (
                           <li
                             key={extra.id}
                             className="flex items-center gap-3 border-b border-pancho-black/10 py-2 last:border-b-0"
@@ -442,7 +573,16 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                             <span className="flex-none font-heading text-lg leading-none text-pancho-red-deep">
                               +{formatPrice(extra.price)}
                             </span>
-                            {renderAdd(extra)}
+                            {enPedido ? (
+                              renderAdd(extra, product)
+                            ) : (
+                              <ControlCantidad
+                                nombre={`${extra.name} para ${product.name}`}
+                                cantidad={cantidadExtra(extra)}
+                                onAgregar={() => cambiarExtraPrevio(grupo.clave, extra.id, 1)}
+                                onCambiar={(delta) => cambiarExtraPrevio(grupo.clave, extra.id, delta)}
+                              />
+                            )}
                           </li>
                         ))}
                       </ul>

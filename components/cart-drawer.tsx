@@ -19,7 +19,7 @@ import {
   MessageSquarePlus,
 } from 'lucide-react'
 import { CartItem } from '@/lib/types'
-import { NOTE_MAX_LENGTH } from '@/lib/cart'
+import { aclaracionDe, NOTE_MAX_LENGTH } from '@/lib/cart'
 import { formatPrice, SITE_CONFIG } from '@/lib/data'
 import { PanchoButton } from './pancho-button'
 
@@ -27,10 +27,10 @@ interface CartDrawerProps {
   items: CartItem[]
   isOpen: boolean
   onClose: () => void
-  onUpdateQuantity: (id: number, delta: number) => void
-  onRemoveItem: (id: number) => void
+  onUpdateQuantity: (key: string, delta: number) => void
+  onRemoveItem: (key: string) => void
   /** Guarda la aclaración de un producto (sin cebolla, sin aderezo…). */
-  onUpdateNote: (id: number, note: string) => void
+  onUpdateNote: (key: string, note: string) => void
   onOrderCreated: () => void
   /** Productos que estaban en el carrito y ya no están en el menú. */
   unavailableCount?: number
@@ -75,9 +75,10 @@ export function CartDrawer({
   const [fallbackAvailable, setFallbackAvailable] = useState(false)
   const [confirmation, setConfirmation] = useState<{ numero: number; total: number; token: string } | null>(null)
   // Productos cuyo campo de aclaración está abierto (los que ya tienen una siempre lo muestran)
-  const [openNotes, setOpenNotes] = useState<number[]>([])
+  const [openNotes, setOpenNotes] = useState<string[]>([])
   const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const totalCount = items.reduce((sum, item) => sum + item.quantity, 0)
+  // Los adicionales no cuentan como productos: van con su hamburguesa
+  const totalCount = items.reduce((sum, item) => sum + (item.para ? 0 : item.quantity), 0)
 
   useEffect(() => {
     try {
@@ -110,14 +111,15 @@ export function CartDrawer({
     router.push('/menu')
   }
 
-  const openNote = (id: number) => setOpenNotes((current) => (current.includes(id) ? current : [...current, id]))
+  const openNote = (key: string) => setOpenNotes((current) => (current.includes(key) ? current : [...current, key]))
 
   // Respaldo: si no se pudo guardar el pedido, se manda por WhatsApp al local para no perder la venta.
   const openWhatsAppFallback = () => {
     const itemLines = items
       .map((item) => {
-        const line = `🍔 ${item.quantity}x ${item.name} (${formatPrice(item.price * item.quantity)})`
-        return item.note?.trim() ? `${line}\n   ✏️ ${item.note.trim()}` : line
+        const line = `${item.para ? '   ➕' : '🍔'} ${item.quantity}x ${item.name} (${formatPrice(item.price * item.quantity)})`
+        const aclaracion = aclaracionDe(item)
+        return aclaracion ? `${line}\n   ✏️ ${aclaracion}` : line
       })
       .join('\n')
 
@@ -176,7 +178,7 @@ export function CartDrawer({
           items: items.map((item) => ({
             productoId: item.id,
             cantidad: item.quantity,
-            aclaraciones: item.note?.trim() || null,
+            aclaraciones: aclaracionDe(item),
           })),
         }),
       })
@@ -316,16 +318,22 @@ export function CartDrawer({
                 <div className="flex-1 border-b border-pancho-black/20" />
               </div>
 
-              <div className="mb-8 divide-y divide-pancho-black/20">
+              <div className="mb-8">
                 {items.map((item) => {
-                  const noteVisible = Boolean(item.note) || openNotes.includes(item.id)
+                  const noteVisible = Boolean(item.note) || openNotes.includes(item.key)
                   return (
-                    <div key={item.id} className="py-4 first:pt-1 last:pb-1">
+                    <div
+                      key={item.key}
+                      className={`py-4 first:pt-1 last:pb-1 ${item.para ? 'mb-3 ml-1 border-l-2 border-pancho-black/15 py-0! pl-3' : 'border-t border-pancho-black/20 first:border-t-0'}`}
+                    >
                       {/* Nombre ············ subtotal, como una comanda */}
                       <div className="flex items-baseline justify-between gap-2">
-                        <h4 className="truncate font-heading text-xl">{item.name}</h4>
+                        <h4 className={`truncate font-heading ${item.para ? 'text-base' : 'text-xl'}`}>
+                          {item.para && <span className="mr-1 text-pancho-red-deep">+</span>}
+                          {item.name}
+                        </h4>
                         <div className="mx-2 mb-1 flex-1 self-baseline border-b-2 border-dotted border-pancho-black/35" />
-                        <span className="shrink-0 font-heading text-xl text-pancho-red-deep">
+                        <span className={`shrink-0 font-heading text-pancho-red-deep ${item.para ? 'text-base' : 'text-xl'}`}>
                           {formatPrice(item.price * item.quantity)}
                         </span>
                       </div>
@@ -340,7 +348,7 @@ export function CartDrawer({
                         <div className="flex items-center gap-2.5">
                           <div className="flex items-stretch border-2 border-pancho-black bg-white">
                             <button
-                              onClick={() => onUpdateQuantity(item.id, -1)}
+                              onClick={() => onUpdateQuantity(item.key, -1)}
                               className="flex size-7 cursor-pointer items-center justify-center transition-colors hover:bg-pancho-orange"
                               aria-label={`Disminuir cantidad de ${item.name}`}
                             >
@@ -350,7 +358,7 @@ export function CartDrawer({
                               {item.quantity}
                             </span>
                             <button
-                              onClick={() => onUpdateQuantity(item.id, 1)}
+                              onClick={() => onUpdateQuantity(item.key, 1)}
                               className="flex size-7 cursor-pointer items-center justify-center transition-colors hover:bg-pancho-orange"
                               aria-label={`Aumentar cantidad de ${item.name}`}
                             >
@@ -359,7 +367,7 @@ export function CartDrawer({
                           </div>
 
                           <button
-                            onClick={() => onRemoveItem(item.id)}
+                            onClick={() => onRemoveItem(item.key)}
                             className="cursor-pointer p-1.5 text-pancho-black/55 transition-colors hover:text-pancho-red-deep"
                             aria-label={`Eliminar ${item.name}`}
                           >
@@ -368,19 +376,20 @@ export function CartDrawer({
                         </div>
                       </div>
 
-                      {/* Aclaración: sin cebolla, sin aderezo, punto de la carne… */}
-                      {noteVisible ? (
+                      {/* Aclaración: sin cebolla, sin aderezo, punto de la carne… (los adicionales no llevan:
+                          se aclara en su hamburguesa) */}
+                      {item.para ? null : noteVisible ? (
                         <div className="mt-3">
-                          <label htmlFor={`nota-${item.id}`} className="sr-only">
+                          <label htmlFor={`nota-${item.key}`} className="sr-only">
                             Aclaración para {item.name}
                           </label>
                           <input
-                            id={`nota-${item.id}`}
+                            id={`nota-${item.key}`}
                             type="text"
                             value={item.note ?? ''}
                             maxLength={NOTE_MAX_LENGTH}
                             autoFocus={!item.note}
-                            onChange={(e) => onUpdateNote(item.id, e.target.value)}
+                            onChange={(e) => onUpdateNote(item.key, e.target.value)}
                             onFocus={() => setIsInputFocused(true)}
                             onBlur={() => setIsInputFocused(false)}
                             placeholder="Ej: sin cebolla, sin aderezo…"
@@ -390,7 +399,7 @@ export function CartDrawer({
                       ) : (
                         <button
                           type="button"
-                          onClick={() => openNote(item.id)}
+                          onClick={() => openNote(item.key)}
                           className="mt-3 flex cursor-pointer items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.06em] text-pancho-red-deep underline-offset-4 hover:underline"
                         >
                           <MessageSquarePlus className="size-4" />
