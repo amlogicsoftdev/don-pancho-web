@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { aclaracionAdicional } from './orders/estados'
 import { CartEntry, CartItem, Product } from './types'
 
 const CART_STORAGE_KEY = 'donpancho_cart'
@@ -17,7 +18,7 @@ const claveDe = (entry: CartEntry) => claveLinea(entry.id, entry.para)
  * el resto, lo que escribió el cliente.
  */
 export function aclaracionDe(item: CartItem): string | null {
-  if (item.para) return `Para ${item.para.name}`.slice(0, NOTE_MAX_LENGTH)
+  if (item.para) return aclaracionAdicional(item.para.name).slice(0, NOTE_MAX_LENGTH)
   return item.note?.trim() || null
 }
 

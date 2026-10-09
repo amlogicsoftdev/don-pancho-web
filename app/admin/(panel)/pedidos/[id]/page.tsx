@@ -16,6 +16,7 @@ import {
   formatearHora,
   formatearNumero,
   formatearPrecio,
+  marcarAdicionales,
   pasosDelPedido,
   sePuedeCancelar,
 } from '@/lib/orders/estados'
@@ -142,16 +143,35 @@ export default async function PedidoPage({ params }: { params: Promise<{ id: str
             </div>
 
             <ul className="pn-rows mt-4">
-              {items.map((item) => (
-                <li key={item.id} className="flex items-start gap-4 py-3">
-                  <span className="grid size-9 flex-none place-items-center bg-pancho-black font-heading text-lg leading-none text-white">
+              {/* Los adicionales cuelgan de su hamburguesa, como en el carrito */}
+              {marcarAdicionales(items).map((item) => (
+                <li
+                  key={item.id}
+                  className={
+                    item.esAdicional
+                      ? 'ml-4.5 flex items-start gap-3 border-l-2 border-l-pancho-black/15 py-1.5 pl-3 [border-top:0]! last:pb-3'
+                      : 'flex items-start gap-4 py-3'
+                  }
+                >
+                  <span
+                    className={
+                      item.esAdicional
+                        ? 'grid size-7 flex-none place-items-center bg-pancho-black/10 font-heading text-base leading-none'
+                        : 'grid size-9 flex-none place-items-center bg-pancho-black font-heading text-lg leading-none text-white'
+                    }
+                  >
                     {item.cantidad}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-base leading-snug font-bold">{item.nombre}</p>
-                    {item.aclaraciones && <p className="pn-muted text-sm font-medium">{item.aclaraciones}</p>}
+                    <p className={item.esAdicional ? 'pt-1 text-sm leading-snug font-semibold' : 'text-base leading-snug font-bold'}>
+                      {item.esAdicional && <span className="mr-1 text-pancho-red-deep">+</span>}
+                      {item.nombre}
+                    </p>
+                    {item.aclaraciones && !item.esAdicional && (
+                      <p className="pn-muted text-sm font-medium">{item.aclaraciones}</p>
+                    )}
                   </div>
-                  <span className="pt-0.5 text-right text-base font-bold tabular-nums">
+                  <span className={`text-right font-bold tabular-nums ${item.esAdicional ? 'pt-1 text-sm' : 'pt-0.5 text-base'}`}>
                     {item.descuentoPorcentaje > 0 && (
                       <span className="pn-muted block text-xs font-semibold">
                         -{item.descuentoPorcentaje}% · {formatearPrecio(item.precioUnitario * item.cantidad)}

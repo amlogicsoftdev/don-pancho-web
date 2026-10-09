@@ -128,6 +128,24 @@ export function descuentoDeLinea(precioUnitario: number, cantidad: number, porce
   return Math.round((precioUnitario * cantidad * porcentaje) / 100)
 }
 
+/** Aclaración con la que la carta indica a qué hamburguesa va un adicional. */
+export const aclaracionAdicional = (hamburguesa: string) => `Para ${hamburguesa}`
+
+/**
+ * Marca las líneas que son adicionales de la línea de arriba: la carta las guarda justo debajo de
+ * su hamburguesa con la aclaración «Para <hamburguesa>».
+ */
+export function marcarAdicionales<T extends { nombre: string; aclaraciones: string | null }>(
+  items: T[],
+): (T & { esAdicional: boolean })[] {
+  let hamburguesa: T | undefined
+  return items.map((item) => {
+    const esAdicional = !!hamburguesa && item.aclaraciones === aclaracionAdicional(hamburguesa.nombre)
+    if (!esAdicional) hamburguesa = item
+    return { ...item, esAdicional }
+  })
+}
+
 /** Porcentaje de descuento válido: entero entre 0 y 100. */
 export function esPorcentajeValido(valor: unknown): valor is number {
   return typeof valor === 'number' && Number.isInteger(valor) && valor >= 0 && valor <= 100
