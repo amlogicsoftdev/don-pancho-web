@@ -68,6 +68,8 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   const [elegido, setElegido] = useState<Record<string, number | null>>({})
   // Platos en los que se eligió la versión con panceta
   const [conPanceta, setConPanceta] = useState<Record<string, boolean>>({})
+  // Adicionales elegidos en un plato antes de sumar la hamburguesa: plato → id del adicional → cantidad
+  const [extrasPrevios, setExtrasPrevios] = useState<Record<string, Record<number, number>>>({})
   // Plato con el menú de adicionales abierto
   const [adicionalesAbierto, setAdicionalesAbierto] = useState<string | null>(null)
 
@@ -218,6 +220,26 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     setElegido((e) => ({ ...e, [grupo.clave]: nueva.tamano }))
     if (cambio.panceta !== undefined) setConPanceta((c) => ({ ...c, [grupo.clave]: cambio.panceta! }))
     setHovered((h) => (h?.product.id === actual.product.id ? { product: nueva.product, fila: h.fila } : h))
+  }
+
+  /** Cambia la cantidad de un adicional elegido antes de sumar la hamburguesa. */
+  const cambiarExtraPrevio = (clave: string, extraId: number, delta: number) =>
+    setExtrasPrevios((todos) => {
+      const delPlato = { ...todos[clave] }
+      const cantidad = Math.max(0, Math.min(50, (delPlato[extraId] ?? 0) + delta))
+      if (cantidad) delPlato[extraId] = cantidad
+      else delete delPlato[extraId]
+      return { ...todos, [clave]: delPlato }
+    })
+
+  /** Suma la hamburguesa y, atados a ella, los adicionales que se eligieron antes. */
+  const agregarConExtras = (clave: string, product: Product) => {
+    handleAddToCart(product)
+    for (const [id, cantidad] of Object.entries(extrasPrevios[clave] ?? {})) {
+      const extra = adicionales.find((a) => a.id === Number(id))
+      if (extra) for (let i = 0; i < cantidad; i++) handleAddToCart(extra, product.id)
+    }
+    setExtrasPrevios((todos) => ({ ...todos, [clave]: {} }))
   }
 
   /**
@@ -396,12 +418,27 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                   const tamanos = tamanosDe(grupo)
                   // La panceta se elige con su botón y se cobra con el precio de la versión «(con panceta)»
                   const panceta = versionConPanceta(grupo, actual.tamano)
+                  // La descripción es la del plato común: la de la versión con panceta repite «y panceta»
                   const sinPanceta = variantePara(grupo, actual.tamano, false).product
                   const extrasDelPlato = panceta
                     ? adicionales.filter((a) => !/panceta.*hamburguesa/i.test(a.name))
                     : adicionales
                   const conAdicionales = extrasDelPlato.length > 0 && llevaAdicionales(product.category)
                   const adicionalesVisibles = adicionalesAbierto === grupo.clave
+                  // Mientras la hamburguesa no está en el pedido, los adicionales se van eligiendo en el
+                  // plato y suman al precio (como el tamaño); al tocar el + entran con ella.
+                  const enPedido = quantityOf(product.id) > 0
+                  const cantidadExtra = (extra: Product) =>
+                    enPedido ? quantityOf(extra.id, product.id) : (extrasPrevios[grupo.clave]?.[extra.id] ?? 0)
+                  const precioPlato =
+                    product.price + extrasDelPlato.reduce((suma, extra) => suma + extra.price * cantidadExtra(extra), 0)
+                  const nombrePlato = [
+                    grupo.variantes.length > 1 ? grupo.nombre : product.name,
+                    tamanos.length > 1 && actual.tamano ? etiquetaTamano(actual.tamano) : null,
+                    actual.conPanceta ? 'con panceta' : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' ')
                   return (
                   <div
                     key={grupo.clave}
@@ -429,17 +466,22 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                       )}
                       <span className="min-w-4 flex-1 -translate-y-1.25 border-b-2 border-dotted border-pancho-black/35" />
                       <span className="hidden flex-none font-heading text-[26px] leading-none text-pancho-red-deep [@media(hover:hover)]:inline">
-                        {formatPrice(product.price)}
+                        {formatPrice(precioPlato)}
                       </span>
                     </div>
                     <div className="col-start-2 row-start-2 flex items-center justify-self-end gap-3.5 [@media(hover:none)]:order-last [@media(hover:none)]:col-auto [@media(hover:none)]:row-auto [@media(hover:none)]:mt-1.5 [@media(hover:none)]:justify-self-auto">
                       {/* El precio de esta línea es solo para pantallas táctiles: con mouse va en el título */}
                       <span className="font-heading text-[26px] leading-none text-pancho-red-deep [@media(hover:hover)]:hidden">
-                        {formatPrice(product.price)}
+                        {formatPrice(precioPlato)}
                       </span>
-                      {renderAdd(product)}
+                      <ControlCantidad
+                        nombre={product.name}
+                        cantidad={quantityOf(product.id)}
+                        onAgregar={() => agregarConExtras(grupo.clave, product)}
+                        onCambiar={(delta) => handleUpdateQuantity(claveLinea(product.id), delta)}
+                      />
                     </div>
-                    <p className="text-[13px] font-medium leading-relaxed text-pancho-black/70">{product.description}</p>
+                    <p className="text-[13px] font-medium leading-relaxed text-pancho-black/70">{sinPanceta.description}</p>
                     {(tamanos.length > 1 || panceta || conAdicionales) && (
                       <div className="col-span-2 mt-1 flex flex-wrap items-center gap-2 [@media(hover:none)]:col-span-1">
                         {tamanos.length > 1 && (
@@ -472,7 +514,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                                 : 'text-pancho-black/70 hover:text-pancho-black'
                             }`}
                           >
-                            Con panceta +{formatPrice(panceta.product.price - sinPanceta.price)}
+                            Con panceta
                           </button>
                         )}
                         {conAdicionales && (
@@ -495,7 +537,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                     {conAdicionales && adicionalesVisibles && (
                       <ul className="col-span-2 mt-1 flex flex-col border border-pancho-black/15 bg-white bg-[url('/images/fondo-papel-blanco.webp')] bg-cover bg-center px-3.5 py-1.5 [@media(hover:hover)]:absolute [@media(hover:hover)]:inset-x-0 [@media(hover:hover)]:top-full [@media(hover:hover)]:z-20 [@media(hover:hover)]:mt-0 [@media(hover:hover)]:shadow-[0_10px_24px_rgba(0,0,0,0.12)]">
                         <li className="pt-1 pb-1.5 text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-pancho-black/55">
-                          Para tu {product.name}
+                          Para tu {nombrePlato}
                         </li>
                         {extrasDelPlato.map((extra) => (
                           <li
@@ -506,7 +548,16 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                             <span className="flex-none font-heading text-lg leading-none text-pancho-red-deep">
                               +{formatPrice(extra.price)}
                             </span>
-                            {renderAdd(extra, product)}
+                            {enPedido ? (
+                              renderAdd(extra, product)
+                            ) : (
+                              <ControlCantidad
+                                nombre={`${extra.name} para ${product.name}`}
+                                cantidad={cantidadExtra(extra)}
+                                onAgregar={() => cambiarExtraPrevio(grupo.clave, extra.id, 1)}
+                                onCambiar={(delta) => cambiarExtraPrevio(grupo.clave, extra.id, delta)}
+                              />
+                            )}
                           </li>
                         ))}
                       </ul>
