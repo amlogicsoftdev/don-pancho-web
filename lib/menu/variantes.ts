@@ -2,7 +2,8 @@ import type { Product } from '@/lib/types'
 
 // Los productos de la base se cargan uno por uno («DON CHEESE x2 (con panceta)»). Para la carta
 // pública se juntan los que comparten nombre base en un solo plato donde se elige el tamaño (x1,
-// x2, x3). Las versiones «(con panceta)» no se ofrecen: la panceta se pide desde Adicionales. Cada variante sigue siendo un producto con su propio id y precio:
+// x2, x3) y si va con panceta: la versión «(con panceta)» se elige con un botón del plato y se
+// cobra con su propio precio. Cada variante sigue siendo un producto con su propio id y precio:
 // el carrito y el servidor no se enteran del agrupado.
 
 export interface Variante {
@@ -45,9 +46,7 @@ export function agruparVariantes(products: Product[]): GrupoMenu[] {
     else grupos.set(clave, { clave, nombre: base, variantes: [variante] })
   }
   for (const grupo of grupos.values()) {
-    // Si el plato tiene versión sin panceta, la de con panceta no se muestra
-    if (grupo.variantes.some((v) => !v.conPanceta)) grupo.variantes = grupo.variantes.filter((v) => !v.conPanceta)
-    grupo.variantes.sort((a, b) => (a.tamano ?? 0) - (b.tamano ?? 0))
+    grupo.variantes.sort((a, b) => (a.tamano ?? 0) - (b.tamano ?? 0) || Number(a.conPanceta) - Number(b.conPanceta))
   }
   return [...grupos.values()]
 }
@@ -55,8 +54,17 @@ export function agruparVariantes(products: Product[]): GrupoMenu[] {
 export const tamanosDe = (grupo: GrupoMenu) =>
   [...new Set(grupo.variantes.map((v) => v.tamano))].filter((t): t is number => t !== null)
 
-export function variantePara(grupo: GrupoMenu, tamano?: number | null): Variante {
-  return grupo.variantes.find((v) => v.tamano === tamano) ?? grupo.variantes[0]
+/** Variante del tamaño y la panceta elegidos; si esa combinación no existe, la más parecida. */
+export function variantePara(grupo: GrupoMenu, tamano?: number | null, conPanceta = false): Variante {
+  const delTamano = grupo.variantes.filter((v) => tamano === undefined || v.tamano === tamano)
+  const opciones = delTamano.length ? delTamano : grupo.variantes
+  return opciones.find((v) => v.conPanceta === conPanceta) ?? opciones[0]
+}
+
+/** La versión con panceta del mismo tamaño, si el plato la tiene (y también una sin panceta). */
+export function versionConPanceta(grupo: GrupoMenu, tamano: number | null): Variante | undefined {
+  const delTamano = grupo.variantes.filter((v) => v.tamano === tamano)
+  return delTamano.some((v) => !v.conPanceta) ? delTamano.find((v) => v.conPanceta) : undefined
 }
 
 export function etiquetaTamano(tamano: number): string {

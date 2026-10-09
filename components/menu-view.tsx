@@ -15,9 +15,10 @@ import {
   etiquetaTamano,
   tamanosDe,
   variantePara,
+  versionConPanceta,
   type GrupoMenu,
 } from '@/lib/menu/variantes'
-import { useCart } from '@/lib/cart'
+import { claveLinea, useCart } from '@/lib/cart'
 import { useMounted } from '@/hooks/use-mounted'
 import { SplitLines } from '@/components/split-lines'
 import { FotoFlotante } from '@/components/foto-flotante'
@@ -65,6 +66,8 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   const ocultarFoto = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Tamaño elegido en cada plato con variantes (por defecto, el más simple)
   const [elegido, setElegido] = useState<Record<string, number | null>>({})
+  // Platos en los que se eligió la versión con panceta
+  const [conPanceta, setConPanceta] = useState<Record<string, boolean>>({})
   // Plato con el menú de adicionales abierto
   const [adicionalesAbierto, setAdicionalesAbierto] = useState<string | null>(null)
 
@@ -104,7 +107,9 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
   }, [])
 
   const filterOptions: CategoryFilter[] = [TODAS, ...categories.map((c) => c.name)]
-  const quantityOf = (id: number) => cart.find((item) => item.id === id)?.quantity ?? 0
+  /** Unidades en el carrito; con `para`, las de ese adicional en esa hamburguesa. */
+  const quantityOf = (id: number, para?: number) =>
+    cart.find((item) => item.key === claveLinea(id, para))?.quantity ?? 0
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
   const isAll = activeCategory === TODAS
@@ -205,21 +210,26 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
     },
   })
 
-  /** Cambia el tamaño de un plato; la foto que sigue al mouse pasa a la variante nueva. */
-  const elegirTamano = (grupo: GrupoMenu, tamano: number) => {
-    const actual = variantePara(grupo, elegido[grupo.clave])
-    const nueva = variantePara(grupo, tamano)
+  /** Cambia el tamaño o la panceta de un plato; la foto que sigue al mouse pasa a la variante nueva. */
+  const elegirVariante = (grupo: GrupoMenu, cambio: { tamano?: number; panceta?: boolean }) => {
+    const panceta = conPanceta[grupo.clave] ?? false
+    const actual = variantePara(grupo, elegido[grupo.clave], panceta)
+    const nueva = variantePara(grupo, cambio.tamano ?? actual.tamano, cambio.panceta ?? panceta)
     setElegido((e) => ({ ...e, [grupo.clave]: nueva.tamano }))
+    if (cambio.panceta !== undefined) setConPanceta((c) => ({ ...c, [grupo.clave]: cambio.panceta! }))
     setHovered((h) => (h?.product.id === actual.product.id ? { product: nueva.product, fila: h.fila } : h))
   }
 
-  /** Botón cuadrado de agregar: cuando el producto ya está en el pedido se estira a −  n  + */
-  const renderAdd = (product: Product) => (
+  /**
+   * Botón cuadrado de agregar: cuando el producto ya está en el pedido se estira a −  n  +.
+   * Con `para`, el producto es un adicional de esa hamburguesa y va en su propia línea.
+   */
+  const renderAdd = (product: Product, para?: Product) => (
     <ControlCantidad
-      nombre={product.name}
-      cantidad={quantityOf(product.id)}
-      onAgregar={() => handleAddToCart(product)}
-      onCambiar={(delta) => handleUpdateQuantity(product.id, delta)}
+      nombre={para ? `${product.name} para ${para.name}` : product.name}
+      cantidad={quantityOf(product.id, para?.id)}
+      onAgregar={() => handleAddToCart(product, para?.id)}
+      onCambiar={(delta) => handleUpdateQuantity(claveLinea(product.id, para?.id), delta)}
     />
   )
 
@@ -381,10 +391,16 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
               )}
               <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,460px),1fr))] gap-x-14">
                 {gridGroups.map((grupo, index) => {
-                  const actual = variantePara(grupo, elegido[grupo.clave])
+                  const actual = variantePara(grupo, elegido[grupo.clave], conPanceta[grupo.clave])
                   const product = actual.product
                   const tamanos = tamanosDe(grupo)
-                  const conAdicionales = adicionales.length > 0 && llevaAdicionales(product.category)
+                  // La panceta se elige con su botón y se cobra con el precio de la versión «(con panceta)»
+                  const panceta = versionConPanceta(grupo, actual.tamano)
+                  const sinPanceta = variantePara(grupo, actual.tamano, false).product
+                  const extrasDelPlato = panceta
+                    ? adicionales.filter((a) => !/panceta.*hamburguesa/i.test(a.name))
+                    : adicionales
+                  const conAdicionales = extrasDelPlato.length > 0 && llevaAdicionales(product.category)
                   const adicionalesVisibles = adicionalesAbierto === grupo.clave
                   return (
                   <div
@@ -424,7 +440,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                       {renderAdd(product)}
                     </div>
                     <p className="text-[13px] font-medium leading-relaxed text-pancho-black/70">{product.description}</p>
-                    {(tamanos.length > 1 || conAdicionales) && (
+                    {(tamanos.length > 1 || panceta || conAdicionales) && (
                       <div className="col-span-2 mt-1 flex flex-wrap items-center gap-2 [@media(hover:none)]:col-span-1">
                         {tamanos.length > 1 && (
                           <div role="group" aria-label={`Tamaño de ${grupo.nombre}`} className="flex">
@@ -433,7 +449,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                                 key={t}
                                 type="button"
                                 aria-pressed={actual.tamano === t}
-                                onClick={() => elegirTamano(grupo, t)}
+                                onClick={() => elegirVariante(grupo, { tamano: t })}
                                 className={`-ml-0.5 cursor-pointer border-2 border-pancho-black px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.06em] transition-colors first:ml-0 ${
                                   actual.tamano === t
                                     ? 'bg-pancho-orange text-pancho-black'
@@ -444,6 +460,20 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                               </button>
                             ))}
                           </div>
+                        )}
+                        {panceta && (
+                          <button
+                            type="button"
+                            aria-pressed={actual.conPanceta}
+                            onClick={() => elegirVariante(grupo, { panceta: !actual.conPanceta })}
+                            className={`cursor-pointer border-2 border-pancho-black px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.06em] transition-colors ${
+                              actual.conPanceta
+                                ? 'bg-pancho-orange text-pancho-black'
+                                : 'text-pancho-black/70 hover:text-pancho-black'
+                            }`}
+                          >
+                            Con panceta +{formatPrice(panceta.product.price - sinPanceta.price)}
+                          </button>
                         )}
                         {conAdicionales && (
                           <button
@@ -464,7 +494,10 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                     )}
                     {conAdicionales && adicionalesVisibles && (
                       <ul className="col-span-2 mt-1 flex flex-col border border-pancho-black/15 bg-white bg-[url('/images/fondo-papel-blanco.webp')] bg-cover bg-center px-3.5 py-1.5 [@media(hover:hover)]:absolute [@media(hover:hover)]:inset-x-0 [@media(hover:hover)]:top-full [@media(hover:hover)]:z-20 [@media(hover:hover)]:mt-0 [@media(hover:hover)]:shadow-[0_10px_24px_rgba(0,0,0,0.12)]">
-                        {adicionales.map((extra) => (
+                        <li className="pt-1 pb-1.5 text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-pancho-black/55">
+                          Para tu {product.name}
+                        </li>
+                        {extrasDelPlato.map((extra) => (
                           <li
                             key={extra.id}
                             className="flex items-center gap-3 border-b border-pancho-black/10 py-2 last:border-b-0"
@@ -473,7 +506,7 @@ export function MenuView({ categories, products, initialCategory = TODAS }: Menu
                             <span className="flex-none font-heading text-lg leading-none text-pancho-red-deep">
                               +{formatPrice(extra.price)}
                             </span>
-                            {renderAdd(extra)}
+                            {renderAdd(extra, product)}
                           </li>
                         ))}
                       </ul>
